@@ -1564,7 +1564,10 @@ giv_load_image(const char *new_img_name)
 
   shrink_wrap();
   if (image_viewer)
-    gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(image_viewer), img_display);
+    {
+      gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(image_viewer), img_display);
+      gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0/8.0,128.0);
+    }
 
   if (w_window)
     {
@@ -1572,8 +1575,6 @@ giv_load_image(const char *new_img_name)
         gtk_window_set_title(GTK_WINDOW(w_window), img_name);
       cb_reset_image();
     }
-  gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0/8.0,128.0);
-
 }
 
 static void
