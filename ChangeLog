@@ -1,3 +1,12 @@
+2003-06-26    <dov@imagic.weizmann.ac.il>
+
+	* Made load image and load marks windows pop down after image load.
+
+	* Fixed last directory problem on windows.
+
+	* Bumped version to 0.3.5
+	
+
 2002-12-13  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 
 	* giv.c: Support for low contrast display, suitable for 
