@@ -1,3 +1,9 @@
+2005-03-14  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
+
+	* Bumped to version 0.3.13
+
+	* Changed dialogs to filechooser.
+
 2005-02-17  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
 
 	* Bumped to version 0.3.12 

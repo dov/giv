@@ -1234,6 +1234,7 @@ gint cb_load_image_ok(gpointer dummy1,
   return 1;
 }
 
+#if 0
 static gint
 cb_load_image()
 {
@@ -1252,6 +1253,73 @@ cb_load_image()
 		    window);
 
   gtk_widget_show (GTK_WIDGET(window));
+
+  return 0;
+}
+#endif
+
+static void
+cb_file_chooser_response(GtkWidget *dialog,
+			 gint response,
+			 gpointer user_data)
+{
+  GtkWidget *file_chooser = GTK_WIDGET(dialog);
+  int action = GPOINTER_TO_INT(user_data);
+  
+  if (response == GTK_RESPONSE_ACCEPT)
+    {
+      GString *info_label = g_string_new("");
+      gchar *selected_filename = 
+	gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(file_chooser));
+
+      set_last_directory_from_filename(selected_filename);
+      if (action == 0)
+	{
+	  g_string_sprintf(info_label, "Loading file %s", selected_filename);
+	  gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
+	  g_string_free(info_label, TRUE);
+
+	  giv_load_image(selected_filename);
+	}
+      else
+	{
+	  g_string_sprintf(info_label, "Loading file %s", selected_filename);
+	  gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
+	  g_string_free(info_label, TRUE);
+
+	  giv_load_marks(selected_filename);
+	}
+      
+      g_free(selected_filename);
+    }
+  gtk_widget_destroy (file_chooser);
+}
+
+static gint
+cb_load_image()
+{
+  GtkWidget *file_chooser;
+  
+  file_chooser = gtk_file_chooser_dialog_new ("Open File",
+					      GTK_WINDOW (w_window),
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
+  
+  if (giv_last_directory)
+      gtk_file_chooser_set_filename(GTK_FILE_CHOOSER (file_chooser),
+				    giv_last_directory);
+  
+  g_signal_connect (GTK_OBJECT (file_chooser), 
+		    "response", 
+		    G_CALLBACK (cb_file_chooser_response),
+		    GINT_TO_POINTER(0));
+  
+  gtk_window_move (GTK_WINDOW (file_chooser), 30, 30);
+  
+  /* Display that dialog */
+  gtk_widget_show_all (file_chooser);
 
   return 0;
 }
@@ -1274,6 +1342,36 @@ gint cb_load_marks_ok(gpointer dummy1,
 static gint
 cb_load_marks()
 {
+  GtkWidget *file_chooser;
+  
+  file_chooser = gtk_file_chooser_dialog_new ("Load Marks",
+					      GTK_WINDOW (w_window),
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
+  
+  if (giv_last_directory)
+      gtk_file_chooser_set_filename(GTK_FILE_CHOOSER (file_chooser),
+				    giv_last_directory);
+  
+  g_signal_connect (GTK_OBJECT (file_chooser), 
+		    "response", 
+		    G_CALLBACK (cb_file_chooser_response),
+		    GINT_TO_POINTER(1));
+  
+  gtk_window_move (GTK_WINDOW (file_chooser), 30, 30);
+  
+  /* Display that dialog */
+  gtk_widget_show_all (file_chooser);
+
+  return 0;
+}
+
+#if 0
+static gint
+cb_load_marks()
+{
   GtkFileSelection *window = GTK_FILE_SELECTION(gtk_file_selection_new("giv: load marks"));
 
   gtk_file_selection_hide_fileop_buttons(window);
@@ -1292,6 +1390,7 @@ cb_load_marks()
 
   return 0;
 }
+#endif
 
 /* Create a new backing pixmap of the appropriate size */
 static gint
