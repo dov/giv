@@ -58,6 +58,7 @@
 #define STRING_CHANGE_MARK_SIZE 10
 #define STRING_CHANGE_LINE 11
 #define STRING_CHANGE_NO_MARK 12
+#define STRING_IMAGE_REFERENCE 13
 
 #define MARK_TYPE_CIRCLE 1
 #define MARK_TYPE_SQUARE 2
@@ -121,7 +122,9 @@ static void		create_print_window    ();
 static void		create_goto_point_window    ();
 static void		cb_quit		  (void);
 static gint             cb_nextprev_image(gboolean do_prev);
-static GPtrArray *	read_mark_set_list(GPtrArray *mark_file_name_list);
+static GPtrArray        *read_mark_set_list(GPtrArray *mark_file_name_list,
+                                            /* output */
+                                            GPtrArray *image_file_name_list);
 /* static void		print_mark_set_list(GPtrArray *mark_set_list); */
 static void		free_mark_set_list(GPtrArray *mark_set_list);
 static mark_set_t*	new_mark_set      ();
@@ -163,6 +166,8 @@ static void             draw_marks_in_postscript(GtkImageViewer *image_viewer,
 /* Private floor in order to work with Cygwin! */
 static double           giv_floor(double x);
 static void             set_last_directory_from_filename(const gchar *filename);
+static void             add_filename_to_image_list(gchar *image_file_name,
+                                                   GPtrArray *image_file_name_list);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
@@ -180,7 +185,7 @@ double current_scale_x, current_scale_y, current_x0, current_y0;
 GPtrArray *mark_set_list = NULL;
 GPtrArray *mark_file_name_list;
 GPtrArray *img_file_name_list;
-int img_idx; /* The curretn image being displayed */
+int img_idx; /* The current image being displayed */
 gboolean control_window_is_shown;
 gboolean histogram_window_is_shown;
 GtkWidget *w_histogram_window, *histogram_drawing_area;
@@ -317,15 +322,18 @@ main (int argc, char *argv[])
           g_ptr_array_add(img_file_name_list, filename);
       }
     
-    if (img_file_name_list->len > 0)
-      img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
-
   }
   img_idx = 0;
   
   /* The image name is the first image */
-  mark_set_list = read_mark_set_list(mark_file_name_list);
+  mark_set_list = read_mark_set_list(mark_file_name_list,
+                                     img_file_name_list
+                                     );
 	
+  if (img_file_name_list->len > 0)
+    img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
+
+
   create_widgets();
 
 #ifndef G_PLATFORM_WIN32
@@ -502,6 +510,9 @@ gint parse_string(char *string, char *fn, gint linenum)
     NCASE("$line") {
       type = STRING_CHANGE_LINE;
     }
+    NCASE("$image") {
+      type = STRING_IMAGE_REFERENCE;
+    }
     if (type == -1) {
       fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
     }
@@ -532,8 +543,16 @@ parse_mark_type(char *S_, gchar *fn, gint linenum)
   return MARK_TYPE_CIRCLE;
 }
 
+/*======================================================================
+//  Read a mark set list. The mark set may also modify the image list
+//  as it is possible to reference images in the mark set by the
+//  $image: command.
+//----------------------------------------------------------------------*/
 static GPtrArray *
-read_mark_set_list(GPtrArray *mark_file_name_list)
+read_mark_set_list(GPtrArray *mark_file_name_list,
+                   /* output */
+                   GPtrArray *image_file_name_list
+                   )
 {
   GPtrArray *mark_set_list;
   FILE *IN;
@@ -614,6 +633,17 @@ read_mark_set_list(GPtrArray *mark_file_name_list)
 	  case STRING_CHANGE_LINE_WIDTH:
 	    marks->line_width = string_to_atoi(S_, 1);
 	    break;
+	  case STRING_IMAGE_REFERENCE:
+              {
+                  char *image_filename = string_strdup_word(S_, 1);
+                  
+                  // Todo: Make image relative to the marks list
+                  add_filename_to_image_list(image_filename,
+                                             image_file_name_list);
+                  
+                  free(image_filename);
+                  break;
+              }
 	  case STRING_CHANGE_NO_LINE:
 	    marks->do_draw_lines = FALSE;
 	    break;
@@ -666,6 +696,25 @@ read_mark_set_list(GPtrArray *mark_file_name_list)
     }
   
   return mark_set_list;
+}
+
+/*======================================================================
+//  Add a filename to the image file name list. This function will
+//  search the list if the filename already exists.
+//----------------------------------------------------------------------*/
+static void
+add_filename_to_image_list(gchar *image_filename,
+                           GPtrArray *image_filename_list)
+{
+  int i;
+  for(i=0; i<image_filename_list->len; i++) {
+    gchar *fn = g_ptr_array_index (mark_set_list, i);
+    if (strcmp(image_filename, fn) == 0)
+        return;
+  }
+
+  /* It doesn't exist. Add it. */
+  g_ptr_array_add(image_filename_list, strdup(image_filename));
 }
 
 /*======================================================================
@@ -1253,7 +1302,8 @@ giv_load_marks(const char *mark_file_name)
   free_mark_set_list(mark_set_list);
 
   g_ptr_array_add(mark_file_name_list, strdup(mark_file_name));
-  mark_set_list = read_mark_set_list(mark_file_name_list);
+  mark_set_list = read_mark_set_list(mark_file_name_list,
+                                     img_file_name_list);
 
   if (w_window)
     {
