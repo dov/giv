@@ -39,6 +39,7 @@
 #include <gtk_image_viewer/gtk_image_viewer.h>
 #include "giv_types.h"
 #include "giv_mark_tree.h"
+#include "colormaps.h"
 
 #ifdef G_OS_WIN32
 #define SEP "\\"
@@ -105,7 +106,8 @@ typedef enum {
   TRANS_FUNC_NORM,
   TRANS_FUNC_EQ,
   TRANS_FUNC_CURVE,
-  TRANS_FUNC_LOW_CONTRAST
+  TRANS_FUNC_LOW_CONTRAST,
+  TRANS_FUNC_COLOR_MAP
 } trans_func_t;
 
 typedef enum {
@@ -152,6 +154,7 @@ static void		set_transfer_function(trans_func_t which_trans_func);
 static void		cb_reset_image();
 static void		cb_invert_image();
 static void		cb_normalize_image();
+static void		cb_open_false_color_window();
 static void		cb_equalize_image();
 static void		cb_low_contrast_image();
 static void		cb_show_histogram();
@@ -163,6 +166,8 @@ static void		cb_blue_only_image();
 static void		cb_toggle_marks();
 static gint		cb_load_image();
 static gint		cb_load_marks();
+static gint		cb_set_color_map(GtkWidget *widget,
+					 gpointer userdata);
 static void             shrink_wrap();
 static void		draw_histogram();
 static void		calc_histogram();
@@ -200,7 +205,7 @@ GPtrArray *img_file_name_list;
 int img_idx; /* The current image being displayed */
 gboolean control_window_is_shown;
 gboolean histogram_window_is_shown;
-GtkWidget *w_histogram_window, *histogram_drawing_area;
+GtkWidget *w_histogram_window, *histogram_drawing_area, *w_false_color_window;
 gdouble histogram_scale;
 gboolean default_draw_lines;
 gboolean default_draw_marks;
@@ -230,6 +235,39 @@ PangoLayout *layout;
 PangoFontDescription *font_description;
 const char *font_family = "Sans";
 const int font_scale = 12;
+int current_color_map = 0;
+const int num_maps = 6;
+
+/* Color maps */
+struct color_maps_struct {
+  const char *name;
+  const guint8 *lut;
+} color_maps[6] = {
+  {
+    "BW Linear",
+    lut_bw_linear,
+  },
+  {
+    "Rainbow ",
+    lut_rainbow,
+  },
+  {
+    "Red temperature",
+    lut_red_temperature,
+  },
+  {
+    "Blue Green Red Yellow",
+    lut_blue_green_red_yellow
+  },
+  {
+    "Blue White",
+    lut_blue_white
+  },
+  {
+    "Green Reed Blue White",
+    lut_grn_red_blu_wht
+  }
+};
 
 struct {
   GtkWidget *filename_entry;
@@ -2149,6 +2187,7 @@ create_control_window()
   create_button(vbox, "Reset", cb_reset_image);
   create_button(vbox, "Invert", cb_invert_image);
   create_button(vbox, "Normalize", cb_normalize_image);
+  create_button(vbox, "False color", cb_open_false_color_window);
   create_button(vbox, "Equalize", cb_equalize_image);
   create_button(vbox, "Histogram", cb_show_histogram);
   create_button(vbox, "Color", cb_color_image);
@@ -2243,7 +2282,14 @@ set_transfer_function(trans_func_t which_trans_func)
     break;
   case TRANS_FUNC_CURVE:
     break;
+  case TRANS_FUNC_COLOR_MAP:
+    for (col_idx = 0; col_idx<3; col_idx++) 
+      for (hist_idx = 0; hist_idx < 256; hist_idx++)
+	current_maps[col_idx][hist_idx] = color_maps[current_color_map].lut[hist_idx*3+col_idx];
+    break;
+    
   }
+  
 
   if (image_viewer)
   gtk_image_viewer_set_transfer_map(GTK_IMAGE_VIEWER(image_viewer),
@@ -2307,6 +2353,109 @@ cb_show_histogram()
     gtk_widget_show(w_histogram_window);
   }
   histogram_window_is_shown = !histogram_window_is_shown;
+}
+
+static gint cb_set_color_map(GtkWidget *widget,
+			     gpointer userdata)
+{
+  int map_idx = GPOINTER_TO_INT(userdata);
+
+  if ( !gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)))
+    return;
+  
+  current_color_map = map_idx;
+
+  set_transfer_function(TRANS_FUNC_COLOR_MAP);
+
+  return 0;
+}
+
+
+static void
+cb_open_false_color_window()
+{
+  if (!img_display)
+    return;
+  if (w_false_color_window)
+    {
+      gtk_widget_destroy(w_false_color_window);
+      w_false_color_window = NULL;
+    }
+  else
+    {
+      GtkWidget *vbox, *label, *table, *button, *radiobutton;
+      GSList *radio_group = NULL;
+      gint map_idx;
+
+      w_false_color_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+      gtk_container_border_width (GTK_CONTAINER (w_false_color_window), 3);
+      gtk_window_set_title (GTK_WINDOW (w_false_color_window),
+			    "False color options");
+
+      vbox = gtk_vbox_new(0,0);
+      gtk_container_add (GTK_CONTAINER (w_false_color_window), vbox);
+      
+      gtk_box_pack_start (GTK_BOX(vbox), gtk_label_new("Choose coloring"), 0,0,0);
+      
+      table = gtk_table_new(2,5,0);
+      gtk_box_pack_start (GTK_BOX(vbox), table, 0,0,0);
+
+      for (map_idx=0; map_idx<num_maps; map_idx++)
+	{
+          radiobutton = gtk_radio_button_new_with_label (radio_group, color_maps[map_idx].name);
+	  g_signal_connect (G_OBJECT(radiobutton), "toggled",
+			    G_CALLBACK(cb_set_color_map),
+			    GINT_TO_POINTER(map_idx));
+
+          radio_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radiobutton));
+          gtk_table_attach (GTK_TABLE (table), radiobutton, 0, 1, map_idx, map_idx+1,
+                            (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                            (GtkAttachOptions) (0), 0, 0);
+          {
+	    // Create a histogram for the lookup table
+	    GdkPixbuf *pb = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
+					   FALSE,
+					   gdk_pixbuf_get_bits_per_sample(img_display),
+					   64, 16);
+	    guint8 *buf = gdk_pixbuf_get_pixels (pb);
+	    guint row_stride = gdk_pixbuf_get_rowstride (pb);
+	    gint row_idx, col_idx;
+	    
+	    for (row_idx = 0; row_idx < 16; row_idx++)
+	      {
+		guint8 *row = buf + row_stride * row_idx;
+		for (col_idx = 0; col_idx < 64; col_idx++)
+		  {
+		    int sub_idx;
+		    int r,g,b;
+
+		    /* Average the color lookup table */
+		    r = g = b = 0;
+		    for (sub_idx=0; sub_idx<256/64; sub_idx++)
+		      {
+			r += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3];
+			g += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+1];
+			b += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+2];
+		      }
+		    row[col_idx * 3  ] = r/4;
+		    row[col_idx * 3+1] = g/4;
+		    row[col_idx * 3+2] = b/4;
+		  }
+	      }
+	    
+	    GtkWidget *image = gtk_image_new_from_pixbuf(pb);
+	    gtk_table_attach (GTK_TABLE (table), image, 1, 2, map_idx, map_idx+1,
+			      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+			      (GtkAttachOptions) (0), 10, 0);
+          }
+	}
+          
+      button = gtk_button_new_with_label("Close");
+      g_signal_connect( G_OBJECT(button), "clicked", GTK_SIGNAL_FUNC( cb_open_false_color_window ), NULL);
+      gtk_box_pack_start (GTK_BOX(vbox), button, 0,0,0);
+      
+      gtk_widget_show_all(w_false_color_window);
+    }
 }
 
 static void
@@ -2788,8 +2937,8 @@ draw_marks(GtkImageViewer *image_viewer)
 
       if (op == OP_TEXT) {
 	  pango_layout_set_text(layout, p.data.text_object->string, -1);
-	  
-	  gdk_draw_layout (drawing_area, gc, cx, cy, layout);
+
+	  gdk_draw_layout (drawing_area, gc, floor(cx+0.5), floor(cy+0.5), layout);
 	  
 	  continue;
       }
