@@ -1,3 +1,8 @@
+2004-09-19  Dov Grobgeld  <dov@orbotech.com>
+
+	* giv/giv.c: Fixed segfault when reading $image attributes
+	from mark files.
+
 2004-05-30  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
 
 	* Fixed error in loading of image from stdin.

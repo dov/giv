@@ -958,7 +958,7 @@ add_filename_to_image_list(gchar *image_filename,
 {
   int i;
   for(i=0; i<image_filename_list->len; i++) {
-    gchar *fn = g_ptr_array_index (mark_set_list, i);
+    gchar *fn = g_ptr_array_index (image_filename_list, i);
     if (strcmp(image_filename, fn) == 0)
         return;
   }
