@@ -76,7 +76,9 @@ enum {
   STRING_IMAGE_REFERENCE,
   STRING_MARKS_REFERENCE,
   STRING_LOW_CONTRAST,
-  STRING_PATH_NAME
+  STRING_PATH_NAME,
+  STRING_STYLE,
+  STRING_DEF_STYLE
 };
 
 #define MARK_TYPE_CIRCLE 1
@@ -184,6 +186,11 @@ static void             add_filename_to_image_list(gchar *image_file_name,
 static void             fit_marks_in_window(gboolean do_calc_scale);
 static void             giv_print(const char *filename);
 static void             giv_goto_xy(double x0, double y0, double zoom);
+static void             giv_free_style_array(gpointer data);
+static void             giv_style_add_string(const char *style_name,
+					     const char *style_string);
+static void             set_props_from_style(mark_set_t *marks,
+					     const char *style_name);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
@@ -237,6 +244,7 @@ const char *font_family = "Sans";
 const int font_scale = 12;
 int current_color_map = 0;
 const int num_maps = 6;
+GHashTable *style_hash = NULL;
 
 /* Color maps */
 struct color_maps_struct {
@@ -290,6 +298,14 @@ main (int argc, char *argv[])
   mark_file_name_list = g_ptr_array_new ();
   img_file_name_list = g_ptr_array_new ();
 
+  /* The style hash has a key=string, and value=array of values */
+  style_hash = g_hash_table_new_full(g_str_hash,
+				     g_str_equal,
+				     g_free,
+				     giv_free_style_array
+				     );
+
+  
   /* Parse arguments */
   while(argp < argc && argv[argp][0] == '-')
   {
@@ -507,10 +523,10 @@ static void init_globals()
 // by something in glib.
 //
 //----------------------------------------------------------------------*/
-static int string_count_words(char *string)
+static int string_count_words(const char *string)
 {
   int nwords = 0;
-  char *p = string;
+  const char *p = string;
   int in_word = 0;
   while(*p) {
     if (!in_word) {
@@ -613,7 +629,7 @@ static char* string_strdup_rest(const char *string, int idx)
   return word;
 }
 
-static int string_to_atoi(char *string, int idx)
+static int string_to_atoi(const char *string, int idx)
 {
   char *word = string_strdup_word(string, idx);
   int value = atoi(word);
@@ -622,7 +638,7 @@ static int string_to_atoi(char *string, int idx)
   return value;
 }
 
-static gdouble string_to_atof(char *string, int idx)
+static gdouble string_to_atof(const char *string, int idx)
 {
   char *word = string_strdup_word(string, idx);
   gdouble value = atof(word);
@@ -709,6 +725,14 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_LOW_CONTRAST;
         }
+      NCASE("$def_style")
+	{
+	  type = STRING_DEF_STYLE;
+	}
+      NCASE("$style")
+	{
+	  type = STRING_STYLE;
+	}
       if (type == -1)
         {
           fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
@@ -731,7 +755,7 @@ gint parse_string(const char *string, char *fn, gint linenum)
 }
 
 static gint
-parse_mark_type(char *S_, gchar *fn, gint linenum)
+parse_mark_type(const char *S_, const char *fn, gint linenum)
 {
   NCASE("circle")
     return MARK_TYPE_CIRCLE;
@@ -946,6 +970,21 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	      g_free(marks->path_name);
 	    marks->path_name = string_strdup_rest(S_, 1);
 	    break;
+	  case STRING_DEF_STYLE:
+	    {
+	      char *style_name = string_strdup_word(S_, 1);
+	      char *style_string = string_strdup_rest(S_, 2);
+	      giv_style_add_string(style_name, style_string);
+	      g_free(style_name);
+	      g_free(style_string);
+	    }
+	    break;
+	  case STRING_STYLE:
+	    {
+	      char *style_name = string_strdup_word(S_, 1);
+	      set_props_from_style(marks, style_name);
+	      g_free(style_name);
+	    }
 	  }
 	}
 
@@ -3363,4 +3402,111 @@ fit_marks_in_window(gboolean do_calc_scale)
                                     (int)(global_mark_max_x * 1.2));
   gtk_image_viewer_set_scroll_height(GTK_IMAGE_VIEWER(image_viewer),
                                      (int)(global_mark_max_y* 1.2));
+}
+
+static void giv_free_style_array(gpointer data)
+{
+    g_ptr_array_free((GPtrArray *)data, TRUE);
+}
+
+static void giv_style_add_string(const char *style_name,
+				 const char *style_string)
+{
+    /* Try to get previous array */
+    GPtrArray *style_array = g_hash_table_lookup (style_hash,
+						  style_name);
+
+    /* Create a new style entry if it doesn't already exist */
+    if (style_array == NULL)
+      {
+	style_array = g_ptr_array_new();
+
+	g_hash_table_insert(style_hash,
+			    g_strdup(style_name),
+			    style_array);
+      }
+
+    /* Push the new string at the end of the array */
+    g_ptr_array_add(style_array, g_strdup(style_string));
+}
+
+static void set_props_from_style(mark_set_t *marks,
+				 const char *style_name)
+{
+  /* Try to get previous array */
+  GPtrArray *style_array = g_hash_table_lookup (style_hash,
+						style_name);
+  int prop_idx;
+
+  if (!style_array)
+    {
+      printf("No such style defined: %s!\n", style_name);
+      return;
+    }
+
+  /* Loop over all style properties and parse them */
+  for (prop_idx=0; prop_idx < style_array->len; prop_idx++)
+    {
+      const gchar *style_string = (const gchar*)g_ptr_array_index (style_array, prop_idx);
+      gchar *S_ = string_strdup_word(style_string, 0);
+
+      NCASE("lw")
+	{
+	  marks->line_width = string_to_atof(style_string,1);
+	}
+      NCASE("color")
+	{
+	  char *color_name = string_strdup_word(style_string, 1);
+	  GdkColor color;
+	  if (gdk_color_parse(color_name,&color))
+	    marks->color = color;
+	  g_free(color_name);
+	}
+      NCASE("outline_color")
+	{
+	  char *color_name = string_strdup_word(style_string, 1);
+	  GdkColor color;
+	  if (gdk_color_parse(color_name,&color))
+	    marks->outline_color = color;
+	  marks->do_draw_polygon_outline = TRUE;
+	  g_free(color_name);
+	}
+      NCASE("marks")
+	{
+	  char *mark_name = string_strdup_word(style_string, 1);
+	  marks->do_draw_marks = TRUE;
+	  
+	  marks->mark_type = parse_mark_type(mark_name, style_name, prop_idx);
+	  
+	  g_free(mark_name);
+	}
+      NCASE("noline")
+	{
+	  marks->do_draw_lines = FALSE;
+	}
+      NCASE("line")
+	{
+	  marks->do_draw_lines = TRUE;
+	}
+      NCASE("scale_marks")
+	{
+	  if (string_count_words(S_) == 1)
+	    marks->do_scale_marks = 1;
+	  else
+	    marks->do_scale_marks = string_to_atoi(style_string, 1);
+	}
+      NCASE("mark_size")
+	{
+	  marks->mark_size = string_to_atof(style_string, 1);
+	}
+      NCASE("nomark")
+	{
+	  marks->do_draw_marks = FALSE;
+	}
+      NCASE("polygon")
+        {
+	  marks->do_draw_polygon = TRUE;
+        }
+      g_free(S_);
+    }
 }

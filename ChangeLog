@@ -1,3 +1,8 @@
+2005-02-16  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
+
+	* giv/giv.c: Added support for $def_style and $style statements
+	that handle styles.
+
 2004-09-19  Dov Grobgeld  <dov@orbotech.com>
 
 	* giv/giv.c: Fixed chopping of path.
