@@ -1,6 +1,6 @@
 bin_PROGRAMS = giv
 
-EXTRA_DIST = makefile.mingw giv.nsi
+EXTRA_DIST = makefile.mingw giv.nsi giv_types.h giv_mark_tree.h
 
 giv_SOURCES = giv.c giv_mark_tree.c
 giv_LDADD  =  $(GTK_LIBS) 

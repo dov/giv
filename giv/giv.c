@@ -175,7 +175,7 @@ static double           giv_floor(double x);
 static void             set_last_directory_from_filename(const gchar *filename);
 static void             add_filename_to_image_list(gchar *image_file_name,
                                                    GPtrArray *image_file_name_list);
-static void             fit_marks_in_window();
+static void             fit_marks_in_window(gboolean do_calc_scale);
 static void             giv_print(const char *filename);
 
 /*======================================================================
@@ -191,7 +191,7 @@ GtkWidget *w_control_window;
 GdkPixbuf *img_org, *img_display;
 GdkPixmap *histogram_drawing_pixmap;
 int canvas_width, canvas_height;
-double current_scale_x, current_scale_y, current_x0, current_y0;
+double current_scale_x = 1.0, current_scale_y = 1.0, current_x0, current_y0;
 GPtrArray *mark_set_list = NULL;
 GPtrArray *mark_file_name_list;
 GPtrArray *img_file_name_list;
@@ -236,6 +236,7 @@ main (int argc, char *argv[])
 {
   int argp = 1;
   char *print_filename = NULL;
+  gboolean do_set_manual_scale = FALSE;
   
   init_globals();
   
@@ -283,10 +284,15 @@ main (int argc, char *argv[])
       exit(0);
     }
     CASE("-") { img_name = "-"; continue; }
-    CASE("-expand") { current_scale_x = current_scale_y = atof(argv[argp++]); continue; }
+    CASE("-expand") {
+      current_scale_x = current_scale_y = atof(argv[argp++]);
+      do_set_manual_scale = TRUE;
+      continue;
+    }
     CASE("-scale") {
       current_scale_x = atof(argv[argp++]);
       current_scale_y = atof(argv[argp++]);
+      do_set_manual_scale = TRUE;
       continue;
     }
     CASE("-marks") {
@@ -360,7 +366,14 @@ main (int argc, char *argv[])
   create_widgets();
 
   if (img_file_name_list->len == 0)
-    fit_marks_in_window();
+    fit_marks_in_window(!do_set_manual_scale);
+  else
+    gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
+                                             current_scale_x,
+                                             current_scale_y,
+                                             0,0,
+                                             0,0);
+  
 
 #if 0
   // Using ctrl-c for reloading was a bad idea to begin with...
@@ -3087,7 +3100,7 @@ set_last_directory_from_filename(const gchar *filename)
 //  Make the window exactly fit the marks.
 //----------------------------------------------------------------------*/
 static void
-fit_marks_in_window()
+fit_marks_in_window(gboolean do_calc_scale)
 {
   // 500 is the default window width and height. It should be changed
   // to a parameter...
@@ -3095,11 +3108,19 @@ fit_marks_in_window()
   double y_scale = 500 / (global_mark_max_y - global_mark_min_y)*0.7;
   double scale = x_scale;
 
-  if (y_scale < scale)
-    scale = y_scale;
+  if (!do_calc_scale)
+    {
+      x_scale = current_scale_x;
+      y_scale = current_scale_y;
+    }
+  else
+    {
+      if (y_scale < scale)
+        scale = y_scale;
 
-  if (do_square_aspect_ratio)
-    y_scale = x_scale;
+      if (do_square_aspect_ratio)
+        y_scale = x_scale;
+    }
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
