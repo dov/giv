@@ -36,7 +36,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <strings.h>
-#include <gtk_image_viewer/gtk_image_viewer.h>
+#include <gtk_image_viewer.h>
 
 // #define DEBUG_CLIP 1
 #define CASE(s) if (!strcmp(s, S_))
