@@ -1,3 +1,4 @@
+$PATH circles
 $LW 3
 $NOLINE
 $MARKS circle
@@ -10,6 +11,7 @@ $path circles
 110 120
 110 110
 
+$PATH squares
 $MARKS square
 $MARK_SIZE 12
 $LW 5
@@ -20,13 +22,13 @@ $path squares
 120 150
 120 120
 
-$path lines
+$PATH A single line
 120 220
 150 250
 move 120 250
 120 220
 
-$path a line
+$PATH Another line
 $LW 5
 300 130
 300 180

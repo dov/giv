@@ -1248,6 +1248,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     cb_quit();
   else if (k == 'g')
     cb_toggle_goto_point_window();
+  else if (k == 'f')
+    fit_marks_in_window(TRUE);
   else if (k == ' ')
     cb_nextprev_image(FALSE);
   else if (k == GDK_BackSpace)
@@ -3104,8 +3106,8 @@ fit_marks_in_window(gboolean do_calc_scale)
 {
   // 500 is the default window width and height. It should be changed
   // to a parameter...
-  double x_scale = 500 / (global_mark_max_x - global_mark_min_x)*0.7;
-  double y_scale = 500 / (global_mark_max_y - global_mark_min_y)*0.7;
+  double x_scale = 500 / (global_mark_max_x)*0.7;
+  double y_scale = 500 / (global_mark_max_y)*0.7;
   double scale = x_scale;
 
   if (!do_calc_scale)
@@ -3121,14 +3123,16 @@ fit_marks_in_window(gboolean do_calc_scale)
       if (do_square_aspect_ratio)
         y_scale = x_scale;
     }
+
+  printf("max = %f %f\n", global_mark_max_x, global_mark_max_y);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
-                                           global_mark_min_x,
-                                           global_mark_min_y,
-                                           0,0);
+                                           global_mark_max_x/2.0,
+                                           global_mark_max_y/2.0,
+                                           250,250);
   gtk_image_viewer_set_scroll_width(GTK_IMAGE_VIEWER(image_viewer),
-                                    global_mark_max_x*1.3);
+                                    (int)(global_mark_max_x * 1.2));
   gtk_image_viewer_set_scroll_height(GTK_IMAGE_VIEWER(image_viewer),
-                                     global_mark_max_y*1.3);
+                                     (int)(global_mark_max_y* 1.2));
 }
