@@ -1,0 +1,18 @@
+* Major cleanup of source.
+
+* Support for several views.
+
+* Support for an image browser.
+
+* Improve histogram.
+
+* Support for scientific image formats, e.g. Dicom and FITS.
+
+* Support for saving.
+
+* Printing of the image as well as the vector graphics.
+
+* Online help.
+
+* Text annotation.
+

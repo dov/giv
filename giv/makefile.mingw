@@ -1,0 +1,28 @@
+PATH = /usr/local/bin:/usr/local/lib:/usr/bin:/usr/lib:/bin:/lib
+COPT = -fnative-struct -mno-cygwin
+DEBUG = -g -Wall
+INCLUDE = `pkg-config --cflags gtk+-2.0`
+CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) -I/usr/local/include
+LDFLAGS = -lgtk_image_viewer `pkg-config --libs gtk+-2.0` -mwindows
+SRC = giv.c
+OBJ = $(SRC:.c=.o)
+GOBJ = ghello.c
+NSI_TOP = /usr/local
+
+giv : $(OBJ)
+	$(LINK.c) -o giv $(OBJ) $(LDFLAGS)
+
+ghello : $(GOBJ)
+	$(LINK.c) -o ghello $(GOBJ) $(LDFLAGS)
+
+clean : 
+	rm giv.exe $(OBJ)
+
+nsi :
+	mkdir -p nsi
+	bunzip2 -c ../../gtkwinbase.tar.bz2 | tar -C./nsi -xf -
+	perl -pe 's/\n/\r\n/' ../COPYING > COPYING.dos
+	/cygdrive/c/Program\ Files/NSIS/makensis giv.nsi
+	rm -rf nsi COPYING.dos
+
+

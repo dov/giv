@@ -1,0 +1,35 @@
+AC_INIT(README)
+
+AM_CONFIG_HEADER(config.h)
+
+AM_INIT_AUTOMAKE(giv, 0.3.0)
+
+AM_MAINTAINER_MODE
+
+AC_PROG_CC
+AC_ISC_POSIX
+AC_HEADER_STDC
+
+GTK_REQUIRED_VERSION=2.0.0
+REQ_PACKAGES="gtkimageviewer"
+
+AM_PATH_GTK_2_0($GTK_REQUIRED_VERSION, :,
+  AC_MSG_ERROR([
+*** GLIB $GLIB_REQUIRED_VERSION or better is required. The latest version of 
+*** GLIB is always available from ftp://ftp.gtk.org/.]),
+  gobject gmodule gthread)
+
+LIBS="$LIBS $GTK_LIBS"
+
+MY_DEP_CFLAGS="`$PKG_CONFIG --cflags  $REQ_PACKAGES`"
+MY_DEP_LIBS="`$PKG_CONFIG --libs  $REQ_PACKAGES`"
+AC_SUBST(MY_DEP_CFLAGS)
+AC_SUBST(MY_DEP_LIBS)
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
+
+AC_OUTPUT(Makefile giv/Makefile)
+
+

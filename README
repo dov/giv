@@ -1,0 +1,20 @@
+                      giv - The G(reat|tk|NU) Image Viewer
+                               Dov Grobgeld 
+
+giv is an image and vector viewer based on the gtk_image_viewer
+widget. It was designed especially with the scientific vision and the
+computational geometry audience in mind and has support for drawing
+vector graphics on top of the image.
+
+Installation:
+
+    * See INSTALL
+
+Requirements:
+
+    * gtk_image_viewer - See 
+          http://imagic.weizmann.ac.il/~dov/freesw/gtk/gtk-image-viewer/
+
+Documentation:
+
+    * See doc/giv.html for documentation.

@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!-- process with eperl (from CPAN) to produce html file>
+<html>
+<head>
+<title>GIV user manual</title>
+<!-- Changed by: Dov Grobgeld,  5-Mar-2001 -->
+</head>
+
+
+<body bgcolor=white>
+<h1 align=center>A Manual for Giv<br>
+    <font size=-1>Dov Grobgeld</font><br>
+    <font size=-1><a href="mailto:dov@imagic.weizmann.ac.il">dov@imagic.weizmann.ac.il</a></font><br>
+    <font size=-1>Last modified: 2001-03-04</font>
+</h1>
+
+<h2><a name="SEC1">1. Name</a></h2>
+
+<blockquote>
+  giv - The 
+  <font size=+2 color=#000080>G</font>(reat|tk|NU)
+  <font size=+2  color=#000080>I</font>mage
+  <font size=+2  color=#000080>V</font>iewer
+</blockquote>
+
+<h2><a name="SEC2">2. Syntax</a></h2>
+
+<blockquote>
+  <pre>
+    giv {options} img
+  </pre>
+</blockquote>
+
+<h2><a name="SEC3">3. Description</a></h2>
+
+<blockquote>
+  giv is an image viewer with the following advantages:
+  <UL>
+    <LI> Based on the gtk_image_viewer widget. </LI>
+    <LI> It doesn't suffer from the commercial restrictions of xv. </LI>
+    <LI> It can display marks on top of an image. </LI>
+    <LI> It can display monochrome components of a color image.</LI>
+    <LI> In the future it should show histograms on top of images. </LI>
+    
+    <LI> It is especially suited for computational geometry and vision
+    scientific and educational applications.</LI>
+  </UL>
+</blockquote>
+
+<h3><a name="SEC3.1">3.1. Images</a></h3>
+
+<blockquote>
+  Images are loaded through gdk_pixbuf and giv supports all the formats
+  supported by it. The image may be scrolled and zoomed with the
+  mouse or the keyboard.
+  <p>
+    Here is an example of the image display:
+  <table>
+    <tr><td><img src="giv-maja.jpg">
+	<td><img src="giv-zoom-in.jpg">
+    </tr>
+    <tr><th>Normal scale
+	  <th>Zoom in
+    </tr>
+  </table>
+    
+</blockquote>
+
+<h3><a name="SEC3.2">3.2. Marks</a></h3>
+
+<blockquote>
+  giv has the cabability to read marks files describing annotations that
+  are drawn on top of the image. The annotations are loaded in marks files.
+  The marks files contains one or more data sets. The data sets consist of
+  properties, followed by the list of data points.
+  <p>
+  The properties all start with the $ sign. Here is a list of the properties
+  supported:<p>
+  
+  <table>
+    <tr><th bgcolor=#eeeeff>Property
+	<th bgcolor=#eeeeff>Example
+	<th bgcolor=#eeeeff>Description
+    <tr><td bgcolor=#ffeeee valign=top>$color
+        <td bgcolor=#ffeeee valign=top>$color pink3
+	<td bgcolor=#ffeeee valign=top>The color of the data set
+	  
+    <tr><td bgcolor=#fbf2ee valign=top>$marks
+        <td bgcolor=#fbf2ee valign=top>$marks
+	<td bgcolor=#fbf2ee valign=top>Indicates that the no lines should be drawn
+			    for the data set.
+			    
+    <tr><td bgcolor=#ffeeee valign=top>$marks
+        <td bgcolor=#ffeeee valign=top>$marks circle
+	<td bgcolor=#ffeeee valign=top>The type of the mark. Valid marks are:
+	    <ul>
+	      <li>circle
+	      <li>square
+	    </ul>
+	  
+    <tr><td bgcolor=#fbf2ee valign=top>$scale_marks
+        <td bgcolor=#fbf2ee valign=top>$scale_marks
+	<td bgcolor=#fbf2ee valign=top>Indicates whether the marks should be scaled together with the image. Default is not to scale.
+
+    <tr><td bgcolor=#ffeeee valign=top>$noline
+        <td bgcolor=#ffeeee valign=top>$noline
+        <td bgcolor=#ffeeee valign=top>Don't draw line between the coordinates.
+
+    <tr><td bgcolor=#fbf2ee valign=top>$mark_size
+        <td bgcolor=#fbf2ee valign=top>$mark_size 15
+        <td bgcolor=#fbf2ee valign=top>Specify the size of the marks in pixels.
+
+    <tr><td bgcolor=#ffeeee valign=top>$line
+        <td bgcolor=#ffeeee valign=top>$line
+        <td bgcolor=#ffeeee valign=top>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
+
+    <tr><td bgcolor=#fbf2ee valign=top>$lw
+        <td bgcolor=#fbf2ee valign=top>$lw 3
+        <td bgcolor=#fbf2ee valign=top>Line width.
+  </table>
+  
+</blockquote>
+
+<h3><a name="SEC3.3">3.3. Mark example</a></h3>
+
+<blockquote>
+<table border><tr><th bgcolor=#E0E0FF><a href="example.marks">example.marks</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>$LW 3 
+<font size=-1 color=red>  2:  </font>$NOLINE 
+<font size=-1 color=red>  3:  </font>$MARKS circle 
+<font size=-1 color=red>  4:  </font>$SCALE_MARKS 1 
+<font size=-1 color=red>  5:  </font>$COLOR midnightblue 
+<font size=-1 color=red>  6:  </font>110 110 
+<font size=-1 color=red>  7:  </font>120 110 
+<font size=-1 color=red>  8:  </font>120 120 
+<font size=-1 color=red>  9:  </font>110 120 
+<font size=-1 color=red> 10:  </font>110 110 
+<font size=-1 color=red> 11:  </font> 
+<font size=-1 color=red> 12:  </font>$MARKS square 
+<font size=-1 color=red> 13:  </font>$MARK_SIZE 12 
+<font size=-1 color=red> 14:  </font>$LW 5 
+<font size=-1 color=red> 15:  </font>$SCALE_MARKS 0 
+<font size=-1 color=red> 16:  </font>120 120 
+<font size=-1 color=red> 17:  </font>150 150 
+<font size=-1 color=red> 18:  </font>120 150 
+<font size=-1 color=red> 19:  </font>120 120 
+<font size=-1 color=red> 20:  </font> 
+<font size=-1 color=red> 21:  </font>120 220 
+<font size=-1 color=red> 22:  </font>150 250 
+<font size=-1 color=red> 23:  </font>move 120 250 
+<font size=-1 color=red> 24:  </font>120 220 
+<font size=-1 color=red> 25:  </font> 
+<font size=-1 color=red> 26:  </font>$LW 5 
+<font size=-1 color=red> 27:  </font>300 130 
+<font size=-1 color=red> 28:  </font>300 180 </pre></table>
+  <table>
+    <tr><td><img src="marks-view-1.png">
+	<td><img src="marks-view-2.png">
+    </tr>
+    <tr><th>Marks at default zoom
+	  <th>Marks zoomed in by 4
+    </tr>
+  </table>
+	    
+  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations is the physical memory and the speed of the CPU.
+</blockquote>
+
+<h2><a name="SEC4">4. Command line options</a></h2>
+
+<blockquote>
+  
+<table>
+    <tr><th bgcolor=#eeeeff>Option
+	<th bgcolor=#eeeeff>Description
+  
+<tr><td bgcolor=#ffeeee valign=top>-marks markfile<td bgcolor=#ffeeee valign=top>Specify a marks file.
+<tr><td bgcolor=#fbf2ee valign=top>-nl<td bgcolor=#fbf2ee valign=top>Don't draw lines by default.
+<tr><td bgcolor=#ffeeee valign=top>-ms ms<td bgcolor=#ffeeee valign=top>Specify default mark size.
+<tr><td bgcolor=#fbf2ee valign=top>-sm<td bgcolor=#fbf2ee valign=top>Marks should scale by default.
+<tr><td bgcolor=#ffeeee valign=top>-P<td bgcolor=#ffeeee valign=top>Draw marks by default.
+<tr><td bgcolor=#fbf2ee valign=top>-lw lw<td bgcolor=#fbf2ee valign=top>Default line width.
+<tr><td bgcolor=#ffeeee valign=top>-expand e<td bgcolor=#ffeeee valign=top>Initial expansion.
+</table>
+</blockquote>
+
+<h2><a name="SEC5">5. Interaction</a></h2>
+
+<blockquote>
+<table>
+    <tr><th bgcolor=#eeeeff>Option
+	<th bgcolor=#eeeeff>Description
+  
+<tr><td bgcolor=#ffeeee valign=top>q
+	  <td bgcolor=#ffeeee valign=top>Quit
+<tr><td bgcolor=#fbf2ee valign=top>=<br>Ctrl-B1
+	  <td bgcolor=#fbf2ee valign=top>Zoom in
+<tr><td bgcolor=#ffeeee valign=top>-<br>Ctrl-B3
+	  <td bgcolor=#ffeeee valign=top>Zoom out
+<tr><td bgcolor=#fbf2ee valign=top>t
+	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
+<tr><td bgcolor=#ffeeee valign=top>h
+	  <td bgcolor=#ffeeee valign=top>Histogram equalization
+<tr><td bgcolor=#fbf2ee valign=top>n
+	  <td bgcolor=#fbf2ee valign=top>Normal view.
+<tr><td bgcolor=#ffeeee valign=top>N
+	  <td bgcolor=#ffeeee valign=top>Normalize histogram.
+<tr><td bgcolor=#fbf2ee valign=top>r
+	  <td bgcolor=#fbf2ee valign=top>Reset histogram
+<tr><td bgcolor=#ffeeee valign=top>B3
+	  <td bgcolor=#ffeeee valign=top>Popup options menu.
+</table>
+</blockquote>

@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!-- process with eperl (from CPAN) to produce html file>
+<html>
+<head>
+<title>GIV user manual</title>
+<!-- Changed by: Dov Grobgeld,  5-Mar-2001 -->
+</head>
+<:
+
+BEGIN {
+    $sec=0;
+    $subsec=0;
+    open(TOC, "perl-toc.html");
+    $toc = join("", <TOC>);
+    open(TOC, ">perl-toc.html");
+    print TOC "<ul>\n";
+}
+
+END {
+    print TOC "</ul>\n";
+    close(TOC);
+}
+
+sub html_quote {
+    my $html = shift;
+    $html=~ s/&/&amp;/g;
+    $html=~ s/</&lt;/g;
+    $html=~ s/>/&gt;/g;
+    return $html;
+}
+
+sub warning {
+    my $text = shift;
+    print
+        "<center>\n"
+       ."  <table border width=75%>\n"
+       ."    <tr><td bgcolor=yellow><font color=#800040><h2 align=center>Note!</h3></font><font color=#800000 size=+1>$text</font>"
+       ."  </table>\n"
+       ."</center>\n";
+}
+
+sub section {
+   $sec++;
+   $subsec=0;
+   print "<h2><a name=\"SEC$sec\">$sec. @_</a></h2>\n";
+   print TOC "<li> <a href=\"#SEC$sec\">$sec. @_</a></li>\n";
+}
+
+sub subsection {
+   $subsec++;
+   print "<h3><a name=\"SEC$sec.$subsec\">$sec.$subsec. @_</a></h3>\n";
+   print TOC "<li> <a href=\"#SEC$sec.$subsec\">$sec.$subsec. @_</a></li>\n";
+}
+
+sub mycomment {
+   print "<i><font color=\"#8B5A00\">@_</font></i><p>";
+}
+
+sub dtb { print "<dt><b>@_</b>" }
+
+sub code_snippet {   # usage: code_snippet($filename, title)
+   my $filename = shift;
+   my $title = shift || "$filename";
+   my $snippet = shift;
+   my $lineno = 0;
+   my $par;
+   $par = "<table border>" .
+           "<tr><th bgcolor=#E0E0FF><a href=\"$filename\">$title</a>" .
+	   "<tr><td bgcolor=#FFE0E0><pre>";
+   open(IN, $filename);
+   while(<IN>) {
+       chomp;
+       $_ = html_quote($_);
+       $lineno++;
+       my $pref = "     ";
+       $pref = sprintf("%3d: ", $lineno);
+       $par.= "<font size=-1 color=red>$pref </font>$_ \n";
+   }
+   close(IN);
+   chop($par);
+   $par.= "</pre></table>";
+   print $par;
+}
+:>
+
+<body bgcolor=white>
+<h1 align=center>A Manual for Giv<br>
+    <font size=-1>Dov Grobgeld</font><br>
+    <font size=-1><a href="mailto:dov@imagic.weizmann.ac.il">dov@imagic.weizmann.ac.il</a></font><br>
+    <font size=-1>Last modified: 2001-03-04</font>
+</h1>
+
+<: section("Name") :>
+<blockquote>
+  giv - The 
+  <font size=+2 color=#000080>G</font>(reat|tk|NU)
+  <font size=+2  color=#000080>I</font>mage
+  <font size=+2  color=#000080>V</font>iewer
+</blockquote>
+
+<: section("Syntax") :>
+<blockquote>
+  <pre>
+    giv {options} img
+  </pre>
+</blockquote>
+
+<: section("Description") :>
+<blockquote>
+  giv is an image viewer with the following advantages:
+  <UL>
+    <LI> Based on the gtk_image_viewer widget. </LI>
+    <LI> It doesn't suffer from the commercial restrictions of xv. </LI>
+    <LI> It can display marks on top of an image. </LI>
+    <LI> It can display monochrome components of a color image.</LI>
+    <LI> In the future it should show histograms on top of images. </LI>
+    
+    <LI> It is especially suited for computational geometry and vision
+    scientific and educational applications.</LI>
+  </UL>
+</blockquote>
+
+<: subsection("Images") :>
+<blockquote>
+  Images are loaded through gdk_pixbuf and giv supports all the formats
+  supported by it. The image may be scrolled and zoomed with the
+  mouse or the keyboard.
+  <p>
+    Here is an example of the image display:
+  <table>
+    <tr><td><img src="giv-maja.jpg">
+	<td><img src="giv-zoom-in.jpg">
+    </tr>
+    <tr><th>Normal scale
+	  <th>Zoom in
+    </tr>
+  </table>
+    
+</blockquote>
+
+<: subsection("Marks") :>
+<blockquote>
+  giv has the cabability to read marks files describing annotations that
+  are drawn on top of the image. The annotations are loaded in marks files.
+  The marks files contains one or more data sets. The data sets consist of
+  properties, followed by the list of data points.
+  <p>
+  The properties all start with the $ sign. Here is a list of the properties
+  supported:<p>
+  <: $row_idx=0;
+     sub td {
+        my @colors = ("#ffeeee", "#fbf2ee");
+        print "<td bgcolor=" . $colors[$row_idx % 2] . " valign=top>";
+     }
+     sub TR {
+        print "<tr>";
+        $row_idx++;
+     }
+   :>
+  <table>
+    <: TR() :><th bgcolor=#eeeeff>Property
+	<th bgcolor=#eeeeff>Example
+	<th bgcolor=#eeeeff>Description
+    <:TR():><: td() :>$color
+        <: td() :>$color pink3
+	<: td() :>The color of the data set
+	  
+    <:TR():><: td() :>$marks
+        <: td() :>$marks
+	<: td() :>Indicates that the no lines should be drawn
+			    for the data set.
+			    
+    <:TR():><: td() :>$marks
+        <: td() :>$marks circle
+	<: td() :>The type of the mark. Valid marks are:
+	    <ul>
+	      <li>circle
+	      <li>square
+	    </ul>
+	  
+    <:TR():><: td() :>$scale_marks
+        <: td() :>$scale_marks
+	<: td() :>Indicates whether the marks should be scaled together with the image. Default is not to scale.
+
+    <:TR():><: td() :>$noline
+        <: td() :>$noline
+        <: td() :>Don't draw line between the coordinates.
+
+    <:TR():><: td() :>$mark_size
+        <: td() :>$mark_size 15
+        <: td() :>Specify the size of the marks in pixels.
+
+    <:TR():><: td() :>$line
+        <: td() :>$line
+        <: td() :>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
+
+    <:TR():><: td() :>$lw
+        <: td() :>$lw 3
+        <: td() :>Line width.
+  </table>
+  
+</blockquote>
+
+<: subsection("Mark example") :>
+<blockquote>
+<: code_snippet("example.marks") :>
+  <table>
+    <tr><td><img src="marks-view-1.png">
+	<td><img src="marks-view-2.png">
+    </tr>
+    <tr><th>Marks at default zoom
+	  <th>Marks zoomed in by 4
+    </tr>
+  </table>
+	    
+  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations is the physical memory and the speed of the CPU.
+</blockquote>
+
+<: section("Command line options") :>
+<blockquote>
+  <: $row_idx = 0 :>
+<table>
+    <: TR() :><th bgcolor=#eeeeff>Option
+	<th bgcolor=#eeeeff>Description
+  
+<: TR() :><: td() :>-marks markfile<: td() :>Specify a marks file.
+<: TR() :><: td() :>-nl<: td() :>Don't draw lines by default.
+<: TR() :><: td() :>-ms ms<: td() :>Specify default mark size.
+<: TR() :><: td() :>-sm<: td() :>Marks should scale by default.
+<: TR() :><: td() :>-P<: td() :>Draw marks by default.
+<: TR() :><: td() :>-lw lw<: td() :>Default line width.
+<: TR() :><: td() :>-expand e<: td() :>Initial expansion.
+</table>
+</blockquote>
+
+<: section("Interaction") :>
+<blockquote>
+<table>
+    <: TR() :><th bgcolor=#eeeeff>Option
+	<th bgcolor=#eeeeff>Description
+  
+<: TR() :><: td() :>q
+	  <: td() :>Quit
+<: TR() :><: td() :>=<br>Ctrl-B1
+	  <: td() :>Zoom in
+<: TR() :><: td() :>-<br>Ctrl-B3
+	  <: td() :>Zoom out
+<: TR() :><: td() :>t
+	  <: td() :>Shrink wrap
+<: TR() :><: td() :>h
+	  <: td() :>Histogram equalization
+<: TR() :><: td() :>n
+	  <: td() :>Normal view.
+<: TR() :><: td() :>N
+	  <: td() :>Normalize histogram.
+<: TR() :><: td() :>r
+	  <: td() :>Reset histogram
+<: TR() :><: td() :>B3
+	  <: td() :>Popup options menu.
+</table>
+</blockquote>
