@@ -308,21 +308,21 @@ main (int argc, char *argv[])
   }
   
   if (!img_name)
-  {
-    while (argp<argc)
-      {
-        gchar *filename = strdup(argv[argp++]);
-
-        /* Check if the filename ends with .marks */
-        if (g_strrstr(filename, ".marks") != NULL
-            || g_strrstr(filename, ".givm") != NULL
-            )
-          g_ptr_array_add(mark_file_name_list, filename);
-        else
-          g_ptr_array_add(img_file_name_list, filename);
-      }
-    
-  }
+    {
+      while (argp<argc)
+        {
+          gchar *filename = strdup(argv[argp++]);
+          
+          /* Check if the filename ends with .marks */
+          if (g_strrstr(filename, ".marks") != NULL
+              || g_strrstr(filename, ".givm") != NULL
+              )
+            g_ptr_array_add(mark_file_name_list, filename);
+          else
+            g_ptr_array_add(img_file_name_list, filename);
+        }
+        
+    }
   img_idx = 0;
   
   /* The image name is the first image */
@@ -332,7 +332,6 @@ main (int argc, char *argv[])
 	
   if (img_file_name_list->len > 0)
     img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
-
 
   create_widgets();
 
@@ -1414,6 +1413,9 @@ int create_widgets()
 
   /* My image drawing widget */
   image_viewer = GTK_IMAGE_VIEWER(gtk_image_viewer_new(img_display));
+  if (!img_display)
+    gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
+  gtk_widget_set_usize(GTK_WIDGET(image_viewer), w, h);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,
 					   current_scale_y,
