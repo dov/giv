@@ -36,7 +36,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <strings.h>
-#include <gtk_image_viewer.h>
+#include <gtk_image_viewer/gtk_image_viewer.h>
 
 // #define DEBUG_CLIP 1
 #define CASE(s) if (!strcmp(s, S_))
@@ -1450,6 +1450,10 @@ int create_widgets()
       {
 	w=gdk_pixbuf_get_width(img_display)*current_scale_x;
 	h=gdk_pixbuf_get_height(img_display)*current_scale_y;
+
+        /* Add some margin to get around windows bug */
+	w+= 40;
+	h+= 40;
       }
     else
       w = h = 100;
@@ -1490,6 +1494,7 @@ int create_widgets()
   image_viewer = GTK_IMAGE_VIEWER(gtk_image_viewer_new(img_display));
   if (!img_display)
     gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
+
   gtk_widget_set_usize(GTK_WIDGET(image_viewer), w, h);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,

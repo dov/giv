@@ -1,9 +1,9 @@
 PATH = /usr/local/bin:/usr/local/lib:/usr/bin:/usr/lib:/bin:/lib
-COPT = -fnative-struct -mno-cygwin
+COPT = -mms-bitfields -mno-cygwin
 DEBUG = -g -Wall
-INCLUDE = `pkg-config --cflags gtk+-2.0`
-CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) -I/usr/local/include -I/usr/local/include/gtk_image_viewer
-LDFLAGS = -lgtk_image_viewer `pkg-config --libs gtk+-2.0` -mwindows
+INCLUDE = `pkg-config --cflags gtk+-2.0 gtkimageviewer`
+CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) 
+LDFLAGS = `pkg-config --libs gtk+-2.0 gtkimageviewer` -mwindows
 SRC = giv.c
 OBJ = $(SRC:.c=.o)
 GOBJ = ghello.c
