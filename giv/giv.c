@@ -78,7 +78,8 @@ enum {
   STRING_LOW_CONTRAST,
   STRING_PATH_NAME,
   STRING_STYLE,
-  STRING_DEF_STYLE
+  STRING_DEF_STYLE,
+  STRING_IGNORE
 };
 
 #define MARK_TYPE_CIRCLE 1
@@ -665,6 +666,11 @@ gint parse_string(const char *string, char *fn, gint linenum)
   else if (first_char == '$')
     {
       char *S_ = string_strdup_word(string, 0);
+      NCASE("$tag")
+	{
+	  // This is ignored
+	  type = STRING_IGNORE;
+	}
       NCASE("$lw")
         {
           type = STRING_CHANGE_LINE_WIDTH;
