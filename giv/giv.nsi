@@ -1,5 +1,5 @@
 Name "Giv"
-OutFile "InstallGiv-0.3.5.exe"
+OutFile "InstallGiv-0.3.8.exe"
 
 SetCompress force ; (can be off or force)
 CRCCheck on ; (can be off)

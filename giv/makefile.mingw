@@ -4,16 +4,12 @@ DEBUG = -g -Wall
 INCLUDE = `pkg-config --cflags gtk+-2.0 gtkimageviewer`
 CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) 
 LDFLAGS = `pkg-config --libs gtk+-2.0 gtkimageviewer` -mwindows
-SRC = giv.c
+SRC = giv.c giv_mark_tree.c
 OBJ = $(SRC:.c=.o)
-GOBJ = ghello.c
 NSI_TOP = /usr/local
 
 giv : $(OBJ)
 	$(LINK.c) -o giv $(OBJ) $(LDFLAGS)
-
-ghello : $(GOBJ)
-	$(LINK.c) -o ghello $(GOBJ) $(LDFLAGS)
 
 clean : 
 	rm giv.exe $(OBJ)

@@ -1,6 +1,8 @@
 2003-11-06  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 
 	* Added -gotoxyz and -invert options from command line.
+	
+	* Added initial support for text marks. (See doc/examples.marks).
 
 2003-11-03  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 

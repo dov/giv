@@ -795,7 +795,7 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_TEXT:
 	    {
 	      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
-	      sscanf(S_, "%s %lf %lf %s", dummy, &tm->x, &tm->y);
+	      sscanf(S_, "%s %lf %lf", dummy, &tm->x, &tm->y);
 	      tm->string = string_strdup_rest(S_, 3);
 	      p.op = OP_TEXT;
 	      p.data.point.x = tm->x;
@@ -2011,7 +2011,6 @@ create_goto_point_window()
   GtkWidget *table1;
   GtkWidget *button_goto, *button_cancel;
   gchar *fields[] = { "x:", "y:", "zoom:" };
-  int num_fields = 3;
   int field_idx;
 
   if (w_goto_point_window)
@@ -2856,9 +2855,7 @@ static void
 draw_image_in_postscript(GtkWidget *widget,
 			 FILE *PS)
 {
-  double cx, cy;
   int bpp = 3;
-  int pix_idx;
   int row_stride;
   int img_width, img_height;
   double scale_x;
