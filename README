@@ -1,5 +1,5 @@
                       giv - The G(reat|tk|NU) Image Viewer
-                               Dov Grobgeld 
+                   Dov Grobgeld <dov.grobgeld@weizmann.ac.il>
 
 giv is an image and vector viewer based on the gtk_image_viewer
 widget. It was designed especially with the scientific vision and the

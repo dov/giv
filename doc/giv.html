@@ -3,14 +3,14 @@
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld,  5-Mar-2001 -->
+<!-- Changed by: Dov Grobgeld, 18-May-2004 -->
 </head>
 
 
 <body bgcolor=white>
 <h1 align=center>A Manual for Giv<br>
     <font size=-1>Dov Grobgeld</font><br>
-    <font size=-1><a href="mailto:dov@imagic.weizmann.ac.il">dov@imagic.weizmann.ac.il</a></font><br>
+    <font size=-1><a href="mailto:dov.grobgeld@weizmann.ac.il">dov.grobgeld@weizmann.ac.il</a></font><br>
     <font size=-1>Last modified: 2001-03-04</font>
 </h1>
 
@@ -124,34 +124,58 @@
 <h3><a name="SEC3.3">3.3. Mark example</a></h3>
 
 <blockquote>
-<table border><tr><th bgcolor=#E0E0FF><a href="example.marks">example.marks</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>$LW 3 
-<font size=-1 color=red>  2:  </font>$NOLINE 
-<font size=-1 color=red>  3:  </font>$MARKS circle 
-<font size=-1 color=red>  4:  </font>$SCALE_MARKS 1 
-<font size=-1 color=red>  5:  </font>$COLOR midnightblue 
-<font size=-1 color=red>  6:  </font>110 110 
-<font size=-1 color=red>  7:  </font>120 110 
-<font size=-1 color=red>  8:  </font>120 120 
-<font size=-1 color=red>  9:  </font>110 120 
-<font size=-1 color=red> 10:  </font>110 110 
-<font size=-1 color=red> 11:  </font> 
-<font size=-1 color=red> 12:  </font>$MARKS square 
-<font size=-1 color=red> 13:  </font>$MARK_SIZE 12 
-<font size=-1 color=red> 14:  </font>$LW 5 
-<font size=-1 color=red> 15:  </font>$SCALE_MARKS 0 
-<font size=-1 color=red> 16:  </font>120 120 
-<font size=-1 color=red> 17:  </font>150 150 
-<font size=-1 color=red> 18:  </font>120 150 
-<font size=-1 color=red> 19:  </font>120 120 
-<font size=-1 color=red> 20:  </font> 
-<font size=-1 color=red> 21:  </font>120 220 
-<font size=-1 color=red> 22:  </font>150 250 
-<font size=-1 color=red> 23:  </font>move 120 250 
-<font size=-1 color=red> 24:  </font>120 220 
-<font size=-1 color=red> 25:  </font> 
-<font size=-1 color=red> 26:  </font>$LW 5 
-<font size=-1 color=red> 27:  </font>300 130 
-<font size=-1 color=red> 28:  </font>300 180 </pre></table>
+<table border><tr><th bgcolor=#E0E0FF><a href="example.marks">example.marks</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>$PATH circles 
+<font size=-1 color=red>  2:  </font>$LW 3 
+<font size=-1 color=red>  3:  </font>$NOLINE 
+<font size=-1 color=red>  4:  </font>$MARKS circle 
+<font size=-1 color=red>  5:  </font>$SCALE_MARKS 1 
+<font size=-1 color=red>  6:  </font>$COLOR midnightblue 
+<font size=-1 color=red>  7:  </font>$path circles 
+<font size=-1 color=red>  8:  </font>110 110 
+<font size=-1 color=red>  9:  </font>120 110 
+<font size=-1 color=red> 10:  </font>120 120 
+<font size=-1 color=red> 11:  </font>110 120 
+<font size=-1 color=red> 12:  </font>110 110 
+<font size=-1 color=red> 13:  </font> 
+<font size=-1 color=red> 14:  </font>$PATH squares 
+<font size=-1 color=red> 15:  </font>$MARKS square 
+<font size=-1 color=red> 16:  </font>$MARK_SIZE 12 
+<font size=-1 color=red> 17:  </font>$LW 5 
+<font size=-1 color=red> 18:  </font>$SCALE_MARKS 0 
+<font size=-1 color=red> 19:  </font>$path squares 
+<font size=-1 color=red> 20:  </font>120 120 
+<font size=-1 color=red> 21:  </font>150 150 
+<font size=-1 color=red> 22:  </font>120 150 
+<font size=-1 color=red> 23:  </font>120 120 
+<font size=-1 color=red> 24:  </font> 
+<font size=-1 color=red> 25:  </font>$PATH A single line 
+<font size=-1 color=red> 26:  </font>120 220 
+<font size=-1 color=red> 27:  </font>150 250 
+<font size=-1 color=red> 28:  </font>move 120 250 
+<font size=-1 color=red> 29:  </font>120 220 
+<font size=-1 color=red> 30:  </font> 
+<font size=-1 color=red> 31:  </font>$PATH Another line 
+<font size=-1 color=red> 32:  </font>$LW 5 
+<font size=-1 color=red> 33:  </font>300 130 
+<font size=-1 color=red> 34:  </font>300 180 
+<font size=-1 color=red> 35:  </font> 
+<font size=-1 color=red> 36:  </font>$polygon 
+<font size=-1 color=red> 37:  </font>$color pink3 
+<font size=-1 color=red> 38:  </font>$outline_color black 
+<font size=-1 color=red> 39:  </font>$path A triangle 
+<font size=-1 color=red> 40:  </font>$lw 3 
+<font size=-1 color=red> 41:  </font>200 300 
+<font size=-1 color=red> 42:  </font>250 300 
+<font size=-1 color=red> 43:  </font>200 200 
+<font size=-1 color=red> 44:  </font> 
+<font size=-1 color=red> 45:  </font>$path blue text 
+<font size=-1 color=red> 46:  </font>$color blue 
+<font size=-1 color=red> 47:  </font>T 0 0 Origin 
+<font size=-1 color=red> 48:  </font> 
+<font size=-1 color=red> 49:  </font>$path magenta text 
+<font size=-1 color=red> 50:  </font>$color magenta3 
+<font size=-1 color=red> 51:  </font>$text_size 20 
+<font size=-1 color=red> 52:  </font>T 5 10 Another origin.  </pre></table>
   <table>
     <tr><td><img src="marks-view-1.png">
 	<td><img src="marks-view-2.png">

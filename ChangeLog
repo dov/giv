@@ -1,4 +1,10 @@
+2004-05-18  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
+
+	* Updated sources to reflect my new email address.
+
 2004-05-16  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* Released new version 0.3.10 .
 
 	* colormaps.[ch] : Added functionality for displaying image 
 	with false color maps.
