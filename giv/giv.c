@@ -305,9 +305,21 @@ main (int argc, char *argv[])
   if (!img_name)
   {
     while (argp<argc)
-      g_ptr_array_add(img_file_name_list, strdup(argv[argp++]));
+      {
+        gchar *filename = strdup(argv[argp++]);
+
+        /* Check if the filename ends with .marks */
+        if (g_strrstr(filename, ".marks") != NULL
+            || g_strrstr(filename, ".givm") != NULL
+            )
+          g_ptr_array_add(mark_file_name_list, filename);
+        else
+          g_ptr_array_add(img_file_name_list, filename);
+      }
+    
     if (img_file_name_list->len > 0)
       img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
+
   }
   img_idx = 0;
   
