@@ -19,6 +19,7 @@ typedef struct {
 
 typedef struct {
   GdkColor color;
+  GdkColor outline_color;
   gint line_width;
   gint line_style;
   gint mark_type;
@@ -26,6 +27,8 @@ typedef struct {
   gboolean do_scale_marks;
   gboolean do_draw_marks;
   gboolean do_draw_lines;
+  gboolean do_draw_polygon;
+  gboolean do_draw_polygon_outline;
   GArray *points;
   gchar *path_name;
   gchar *file_name;

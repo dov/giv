@@ -3,6 +3,7 @@ $NOLINE
 $MARKS circle
 $SCALE_MARKS 1
 $COLOR midnightblue
+$path circles
 110 110
 120 110
 120 120
@@ -13,16 +14,27 @@ $MARKS square
 $MARK_SIZE 12
 $LW 5
 $SCALE_MARKS 0
+$path squares
 120 120
 150 150
 120 150
 120 120
 
+$path lines
 120 220
 150 250
 move 120 250
 120 220
 
+$path a line
 $LW 5
 300 130
 300 180
+
+$polygon
+$color pink3
+$outline_color black
+$lw 3
+200 300
+250 300
+200 200

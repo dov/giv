@@ -1,3 +1,27 @@
+2003-07-28  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* Added support for drawing outlines of filled polygons.
+
+	* Added support for drawing filled polygons.
+
+	* Added scrollbars also when working with marks only.
+
+	* Added -a option to force square aspect ratio.
+
+2003-07-09  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* Made postscript complient eps.
+
+	* Added option to set user title to giv window through -title
+	  option.
+
+2003-07-06  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* Implemented marks tree window.
+
+	* Implemented $marks_file command for referencing other marks
+	files.
+
 2003-06-26    <dov@imagic.weizmann.ac.il>
 
 	* Made load image and load marks windows pop down after image load.

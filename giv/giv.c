@@ -62,6 +62,7 @@ enum {
   STRING_MOVE,
   STRING_TEXT,
   STRING_CHANGE_COLOR,
+  STRING_CHANGE_OUTLINE_COLOR,
   STRING_CHANGE_LINE_WIDTH,
   STRING_CHANGE_MARKS,
   STRING_CHANGE_NO_LINE,
@@ -69,6 +70,7 @@ enum {
   STRING_CHANGE_MARK_SIZE,
   STRING_CHANGE_LINE,
   STRING_CHANGE_NO_MARK,
+  STRING_CHANGE_POLYGON,
   STRING_IMAGE_REFERENCE,
   STRING_MARKS_REFERENCE,
   STRING_LOW_CONTRAST,
@@ -214,11 +216,13 @@ gboolean do_mono;
 gint color_component;
 gboolean do_show_marks;
 gboolean do_erase_img;
+gboolean do_square_aspect_ratio = FALSE;
 transform_t load_transformation;
 gint hist[3][256]; // Image histogram
 int histogram_height;
 gchar *giv_last_directory = NULL;
 trans_func_t giv_current_transfer_function = TRANS_FUNC_RESET;
+gchar *giv_title = NULL;
 
 struct {
   GtkWidget *filename_entry;
@@ -248,6 +252,7 @@ main (int argc, char *argv[])
 	     "\n"
 	     "Syntax:\n"
 	     "    giv [-marks marks] [-nl] [-P] [-ms ms] [-sm] [lw lw] [img] [-expand e]\n"
+             "        [-title title] img\n"
 	     "\n"
 	     "Description:\n"
 	     "    giv is a program for viewing images and vector graphics. The vector\n"
@@ -312,6 +317,8 @@ main (int argc, char *argv[])
     CASE("-vf") { load_transformation = TRANSFORM_VFLIP; continue; }
     CASE("-hflip") { load_transformation = TRANSFORM_HFLIP; continue; }
     CASE("-nodisplay") { do_no_display = TRUE; continue; };
+    CASE("-title") { giv_title = argv[argp++]; continue; };
+    CASE("-a") { do_square_aspect_ratio++; continue; };
     fprintf(stderr, "Unknown option %s!\n", S_);
     exit(0);
   }
@@ -570,6 +577,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_CHANGE_COLOR;
         }
+      NCASE("$outline_color")
+        {
+          type = STRING_CHANGE_OUTLINE_COLOR;
+        }
       NCASE("$marks")
         {
           type = STRING_CHANGE_MARKS;
@@ -601,6 +612,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
       NCASE("$image")
         {
           type = STRING_IMAGE_REFERENCE;
+        }
+      NCASE("$polygon")
+        {
+          type = STRING_CHANGE_POLYGON;
         }
       NCASE("$marks_file")
         {
@@ -779,6 +794,9 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_CHANGE_NO_LINE:
 	    marks->do_draw_lines = FALSE;
 	    break;
+	  case STRING_CHANGE_POLYGON:
+	    marks->do_draw_polygon = TRUE;
+	    break;
 	  case STRING_CHANGE_LINE:
 	    marks->do_draw_lines = TRUE;
 	    break;
@@ -794,6 +812,16 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	      GdkColor color;
 	      if (gdk_color_parse(color_name,&color))
 		marks->color = color;
+	      g_free(color_name);
+	      break;
+	    }
+	  case STRING_CHANGE_OUTLINE_COLOR:
+	    {
+	      char *color_name = string_strdup_word(S_, 1);
+	      GdkColor color;
+	      if (gdk_color_parse(color_name,&color))
+		marks->outline_color = color;
+              marks->do_draw_polygon_outline = TRUE;
 	      g_free(color_name);
 	      break;
 	    }
@@ -901,6 +929,8 @@ new_mark_set()
   marks->points = g_array_new(FALSE, FALSE, sizeof(point_t));
   marks->do_draw_marks = default_draw_marks;
   marks->do_draw_lines = default_draw_lines;
+  marks->do_draw_polygon = FALSE;
+  marks->do_draw_polygon_outline = FALSE;
   marks->do_scale_marks = default_scale_marks;
   marks->mark_type = default_mark_type;
   marks->mark_size = default_mark_size;
@@ -1447,7 +1477,8 @@ giv_load_image(const char *new_img_name)
 
   if (w_window)
     {
-      gtk_window_set_title(GTK_WINDOW(w_window), img_name);
+      if (!giv_title)
+        gtk_window_set_title(GTK_WINDOW(w_window), img_name);
       cb_reset_image();
     }
 }
@@ -1463,7 +1494,8 @@ giv_load_marks(const char *mark_file_name)
 
   if (w_window)
     {
-      gtk_window_set_title(GTK_WINDOW(w_window), img_name);
+      if (!giv_title)
+        gtk_window_set_title(GTK_WINDOW(w_window), img_name);
       cb_reset_image();
     }
 }
@@ -1506,7 +1538,8 @@ shrink_wrap()
 
 /*======================================================================
 //  create_widgets is responsible for creating the user inteface.
-//----------------------------------------------------------------------*/
+//----------------------------------------------------------------------
+*/
 int create_widgets()
 {
   GtkWidget *vbox;
@@ -1563,7 +1596,10 @@ int create_widgets()
       img_name = "marks view";
     }
   
-  gtk_window_set_title(GTK_WINDOW(w_window), img_name);
+  if (giv_title)
+    gtk_window_set_title(GTK_WINDOW(w_window), giv_title);
+  else
+    gtk_window_set_title(GTK_WINDOW(w_window), img_name);
   gtk_window_set_policy(GTK_WINDOW(w_window), TRUE, TRUE, TRUE);
     
   /* Suck the image's original width and height out of the Image structure */
@@ -1741,7 +1777,12 @@ giv_print(const char *filename)
 
   /* Print PROLOGUE */
   fprintf(PS,
-	  "%%!\n"
+	  "%%!PS-Adobe-1.0 EPSF-1.0\n"
+          "%%%%BoundingBox: %d %d %d %d\n",
+          (int)(595-canvas_width)/2,
+          (int)(842-canvas_height)/2,
+          (int)(595-canvas_width)/2+canvas_width,
+          (int)(842-canvas_height)/2+canvas_height
 	  );
 
   /* transformation matrix */
@@ -2619,13 +2660,48 @@ draw_marks(GtkImageViewer *image_viewer)
 
     if (!mark_set->is_visible)
       continue;
-    
-    segments = g_array_new(FALSE, FALSE, sizeof(GdkSegment));
-	
+
     gc_set_attribs(gc,
 		   &mark_set->color,
 		   mark_set->line_width,
 		   mark_set->line_style);
+
+    if (mark_set->do_draw_polygon)
+      {
+        GArray *points = g_array_new(FALSE, FALSE, sizeof(GdkPoint));
+        for (p_idx=0; p_idx<mark_set->points->len; p_idx++)
+          {
+            point_t p = g_array_index(mark_set->points, point_t, p_idx);
+            GdkPoint gp;
+            double x = p.data.point.x;
+            double y = p.data.point.y;
+            double cx, cy;
+            
+            gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
+                                                     x,y,
+                                                     &cx,&cy);
+            gp.x = (gint)cx;
+            gp.y = (gint)cy;
+            
+            points = g_array_append_val(points, gp);
+          }
+        gdk_draw_polygon(drawing_area, gc, TRUE, &(g_array_index(points, GdkPoint, 0)), points->len);
+        
+        if (mark_set->do_draw_polygon_outline)
+          {
+            gc_set_attribs(gc,
+                           &mark_set->outline_color,
+                           mark_set->line_width,
+                           mark_set->line_style);
+            gdk_draw_polygon(drawing_area, gc, FALSE, &(g_array_index(points, GdkPoint, 0)), points->len);
+            
+          }
+        g_array_free(points, TRUE);
+        
+        continue;
+      }
+    segments = g_array_new(FALSE, FALSE, sizeof(GdkSegment));
+	
     mark_size_x = mark_size_y = mark_set->mark_size;
     mark_type = mark_set->mark_type;
     if (mark_set->do_scale_marks) {
@@ -2711,8 +2787,8 @@ draw_image_in_postscript(GtkWidget *widget,
   int pix_idx;
   int row_stride;
   int img_width, img_height;
-  double scale_x = current_scale_x;
-  double scale_y = current_scale_y;
+  double scale_x;
+  double scale_y;
   guint8 *buf;
   int row_idx, clm_idx;
   int copy_w = GTK_IMAGE_VIEWER(image_viewer)->canvas_width;
@@ -2721,6 +2797,10 @@ draw_image_in_postscript(GtkWidget *widget,
   int offs_y = -GTK_IMAGE_VIEWER(image_viewer)->current_y0;
 
   GdkPixbuf *img_scaled;
+
+  gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer),
+			     &scale_x, &scale_y
+			     );
   
   img_scaled = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
                               FALSE,
@@ -2835,7 +2915,7 @@ draw_marks_in_postscript(GtkWidget *widget,
 	  "      marksize_x neg 0 rlineto\n"
 	  "      0 marksize_y neg rlineto\n"
 	  "      fill stroke } bind def\n"
-          "%d %d\n"
+          "/mark_size_x %f def /mark_size_y %f def\n"
 	  "1 setlinejoin %% round endings and caps\n"
 	  "1 setlinecap\n"
 	  "newpath\n",
@@ -3018,10 +3098,16 @@ fit_marks_in_window()
   if (y_scale < scale)
     scale = y_scale;
 
+  if (do_square_aspect_ratio)
+    y_scale = x_scale;
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
                                            global_mark_min_x,
                                            global_mark_min_y,
                                            0,0);
+  gtk_image_viewer_set_scroll_width(GTK_IMAGE_VIEWER(image_viewer),
+                                    global_mark_max_x*1.3);
+  gtk_image_viewer_set_scroll_height(GTK_IMAGE_VIEWER(image_viewer),
+                                     global_mark_max_y*1.3);
 }
