@@ -153,6 +153,7 @@ static void		cb_equalize_image();
 static void		cb_low_contrast_image();
 static void		cb_show_histogram();
 static void		cb_color_image();
+static void             set_square_aspect_ratio();
 static void		cb_red_only_image();
 static void		cb_green_only_image();
 static void		cb_blue_only_image();
@@ -1177,6 +1178,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     cb_toggle_marks_window();
   else if (k == 'h')
     cb_equalize_image();
+  else if (k == 'a')
+    set_square_aspect_ratio();
   else if (k == 'o')
     cb_toggle_marks();
   else if (k == 'l')
@@ -2207,6 +2210,20 @@ cb_color_image()
       gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(image_viewer), img_display);
     }
 
+}
+
+static void
+set_square_aspect_ratio()
+{
+  gint w = gtk_image_viewer_get_canvas_width(GTK_IMAGE_VIEWER(image_viewer));
+  gint h = gtk_image_viewer_get_canvas_height(GTK_IMAGE_VIEWER(image_viewer));
+  double scale_x, scale_y;
+  
+  gtk_image_viewer_get_scale(image_viewer, &scale_x, &scale_y);
+  gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
+					   scale_x,
+					   scale_x,
+					   w/2,h/2,w/2,h/2);
 }
 
 static void

@@ -54,7 +54,9 @@ cb_toggled (GtkCellRendererToggle *cell,
 	 dataset name... If we are opening up a node with subnodes, then
 	 we should loop over the subnotes and set up the visible datasets.
       */
-      if (strstr(mark_set->tree_path_string, path_string) == mark_set->tree_path_string)
+      if (strstr(mark_set->tree_path_string, path_string) == mark_set->tree_path_string && (
+          mark_set->tree_path_string[strlen(path_string)] == '\0'
+          || mark_set->tree_path_string[strlen(path_string)] == ':'))
 	{
 	  mark_set->is_visible = value;
 	}
@@ -75,6 +77,7 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
   gchar *str;
   GSList *parent_array;
   GtkTreeIter iter;
+  gchar *last_filename = NULL;
 
   w_tree_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size (GTK_WINDOW (w_tree_window), 400, 350);
@@ -99,13 +102,16 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
   gtk_tree_view_column_set_attributes (column, cell,
 				       "active", 0,
 				       NULL);
-  
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_column_set_min_width(column, 70);
   gtk_tree_view_column_set_title (column, "Visible");
   gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view), column);
   
   /* First text column */
   column = gtk_tree_view_column_new();
   cell = gtk_cell_renderer_text_new ();
+  gtk_tree_view_column_set_resizable(column, TRUE);
+  gtk_tree_view_column_set_min_width(column, 150);
   gtk_tree_view_column_pack_start (column, cell, TRUE);
   gtk_tree_view_column_set_attributes (column, cell,
 				       "text", 1,
@@ -115,8 +121,13 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
 
   /* Second column */
   column = gtk_tree_view_column_new();
+  gtk_tree_view_column_set_resizable(column, TRUE);
   cell = gtk_cell_renderer_text_new ();
+  g_object_set (G_OBJECT (cell),
+		"xalign", 1.0,
+		NULL);
   gtk_tree_view_column_pack_start (column, cell, TRUE);
+  gtk_tree_view_column_set_fixed_width (column, 50);
   gtk_tree_view_column_set_attributes (column, cell,
 				       "text", 2,
 				       NULL);
@@ -125,7 +136,6 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
 
   /* Make a stack for poping back parents when building the tree */
   parent_array = NULL;
-  gchar *last_filename = NULL;
 
   for(i=0; i<mark_set_list->len; i++)
     {
@@ -133,6 +143,11 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
       GtkTreePath *tree_path;
       GtkTreeIter *iter;
       char num_points_string[20];
+
+#if 0
+      get_iter_from_mark_set(mark_set, model,
+                             &iter);
+#endif
       
       if (!parent_array || strcmp(last_filename, mark_set->file_name) != 0)
 	{
@@ -180,3 +195,43 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
 
   return w_tree_window;
 }
+
+#if 0
+void get_iter_from_mark_set(mark_set_t *mark_set,
+                            GtkTreeStore *model,
+                            /* output */
+                            GtkTreeIter **iter)
+{
+    char *key = sprintf("%s/%s", mark_set->filename, mark_set->path_name);
+    
+    if (g_hash_get_key(tree_hash, key, &iter))
+        return;
+    else {
+        
+    }
+        
+}
+
+void get_iter_from_string_path(const char *string_path,
+                               GtkTreeStore *model,
+                               /* output */
+                               GtkTreeIter **iter)
+{
+    *iter = g_hashtable_lookup(path_hash, string_path);
+    gchar *string_path_no_last_leaf;
+    gchar *string_last_leaf;
+    
+    if (*iter) 
+        return;
+
+    strip_last_leaf(string_path,
+                    // output
+                    &string_path_no_last_leaf,
+                    &string_last_leaf);
+    get_iter_from_string_path(string_path_no_last_leaf,
+                              model,
+                              // output 
+                              parent);
+    gtk_tree_store_append(model, iter, parent);
+}
+#endif
