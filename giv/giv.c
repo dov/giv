@@ -1414,7 +1414,6 @@ int create_widgets()
 
   /* My image drawing widget */
   image_viewer = GTK_IMAGE_VIEWER(gtk_image_viewer_new(img_display));
-  gtk_widget_set_usize(GTK_WIDGET(image_viewer), w, h);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,
 					   current_scale_y,
@@ -1428,6 +1427,7 @@ int create_widgets()
     GtkAdjustment *hadjust, *vadjust;
 
     table = gtk_table_new(2,2,0);
+    gtk_widget_set_usize(GTK_WIDGET(table), w+20, h+20); 
     
     gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(table),
 			TRUE, TRUE, 0);

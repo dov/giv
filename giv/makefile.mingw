@@ -2,7 +2,7 @@ PATH = /usr/local/bin:/usr/local/lib:/usr/bin:/usr/lib:/bin:/lib
 COPT = -fnative-struct -mno-cygwin
 DEBUG = -g -Wall
 INCLUDE = `pkg-config --cflags gtk+-2.0`
-CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) -I/usr/local/include
+CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) -I/usr/local/include -I/usr/local/include/gtk_image_viewer
 LDFLAGS = -lgtk_image_viewer `pkg-config --libs gtk+-2.0` -mwindows
 SRC = giv.c
 OBJ = $(SRC:.c=.o)
@@ -20,7 +20,7 @@ clean :
 
 nsi :
 	mkdir -p nsi
-	bunzip2 -c ../../gtkwinbase.tar.bz2 | tar -C./nsi -xf -
+	tar -C./nsi -zxf /home/dov/base/gtkwinbase.tar.gz
 	perl -pe 's/\n/\r\n/' ../COPYING > COPYING.dos
 	/cygdrive/c/Program\ Files/NSIS/makensis giv.nsi
 	rm -rf nsi COPYING.dos
