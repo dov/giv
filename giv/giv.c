@@ -273,11 +273,11 @@ main (int argc, char *argv[])
 	     "Options:\n"
 	     "    -marks markfile  Specify a marks file.\n"
 	     "    -nl		 Don't draw lines by default.\n"
-	     "    -ms ms		 Specify default mark size.\n"
-	     "	-sm		 Marks should scale by default.\n"
-	     "	-P		 Draw marks by default.\n"
-	     "	-lw lw		 Default line width.\n"
-	     "	-expand e	 Initial expansion.\n"
+	     "    -ms ms         Specify default mark size.\n"
+	     "	  -sm            Marks should scale by default.\n"
+	     "	  -P             Draw marks by default.\n"
+	     "	  -lw lw         Default line width.\n"
+	     "	  -expand e	 Initial expansion.\n"
 	     "\n"
 	     "Example:\n"
 	     "    Here is an example of a marks file:\n"
@@ -329,7 +329,7 @@ main (int argc, char *argv[])
     sprintf(rc_file, "%s/.giv/gtkrc", getenv("HOME"));
     gtk_rc_parse (rc_file);
   }
-  
+
   if (!img_name)
     {
       while (argp<argc)
@@ -1459,8 +1459,10 @@ int create_widgets()
 	h=gdk_pixbuf_get_height(img_display)*current_scale_y;
 
         /* Add some margin to get around windows bug */
+#if 0
 	w+= 40;
 	h+= 40;
+#endif
       }
     else
       w = h = 100;
@@ -1504,11 +1506,11 @@ int create_widgets()
     gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
 
   gtk_widget_set_size_request(GTK_WIDGET(image_viewer), w, h);
+
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,
 					   current_scale_y,
 					   w/2,h/2,w/2,h/2);
-  shrink_wrap();
 
   /* Put image viewer in a scrolled window */
   {
@@ -1591,6 +1593,12 @@ int create_widgets()
   if (img_display)
      set_transfer_function(giv_current_transfer_function);
     
+  gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
+					   current_scale_x,
+					   current_scale_y,
+					   w/2,h/2,w/2,h/2);
+  shrink_wrap();
+  
   return 0;
 }
 
