@@ -713,17 +713,6 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
                   free(image_filename);
                   break;
               }
-	  case STRING_IMAGE_REFERENCE:
-              {
-                  char *image_filename = string_strdup_word(S_, 1);
-                  
-                  // Todo: Make image relative to the marks list
-                  add_filename_to_image_list(image_filename,
-                                             image_file_name_list);
-                  
-                  free(image_filename);
-                  break;
-              }
 	  case STRING_LOW_CONTRAST:
               {
 		giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
