@@ -750,7 +750,7 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  if (is_new_set)
 	    {
 	      marks = new_mark_set();
-	      marks->color = set_colors[num_sets];
+	      marks->color = set_colors[num_sets % nmarks_colors];
 	      marks->file_name = strdup(fn);
 	      g_ptr_array_add(mark_set_list, marks);
 	      is_new_set = FALSE;

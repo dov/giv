@@ -42,9 +42,11 @@ $lw 3
 250 300
 200 200
 
+$path blue text
 $color blue
 T 0 0 Origin
 
+$path magenta text
 $color magenta3
 $text_size 20
 T 5 10 Another origin. 

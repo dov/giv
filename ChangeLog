@@ -1,3 +1,10 @@
+2004-03-14  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* giv.c: Fixed array out of bound when using too many colors.
+
+	* giv_mark_tree.c: Fixed annoying problem with resizing of 
+	horizontal size	of visible column when it was toggled.
+
 2003-11-06  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 
 	* Added -gotoxyz and -invert options from command line.

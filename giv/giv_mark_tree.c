@@ -53,6 +53,7 @@ cb_toggled (GtkCellRendererToggle *cell,
   gtk_tree_model_get (model, &iter, 1, &value, -1);
 
   value = !value;
+
   gtk_tree_store_set (GTK_TREE_STORE (model), &iter, 1, value, -1);
   
 #if 0
@@ -127,10 +128,11 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
   column = gtk_tree_view_column_new();
   cell = gtk_cell_renderer_toggle_new ();
   g_object_set(cell, "xpad", 0, 0);
+
   g_signal_connect (cell, "toggled",
 		    G_CALLBACK (cb_toggled), model);
+
   gtk_tree_view_column_pack_start (column, cell, TRUE);
-  gtk_tree_view_column_set_sizing (column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
   gtk_tree_view_column_set_attributes (column, cell,
 				       "active", 1,
 				       NULL);
