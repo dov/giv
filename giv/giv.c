@@ -162,6 +162,7 @@ static void             draw_marks_in_postscript(GtkImageViewer *image_viewer,
 						 FILE *PS);
 /* Private floor in order to work with Cygwin! */
 static double           giv_floor(double x);
+static void             set_last_directory_from_filename(const gchar *filename);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
@@ -203,6 +204,7 @@ gboolean do_erase_img;
 transform_t load_transformation;
 gint hist[3][256]; // Image histogram
 int histogram_height;
+gchar *giv_last_directory = NULL;
 
 struct {
   GtkWidget *filename_entry;
@@ -310,13 +312,6 @@ main (int argc, char *argv[])
   img_idx = 0;
   
   /* The image name is the first image */
-    
-    
-  if (mark_file_name_list->len == 0 && img_name == NULL)
-  {
-    printf("No filename or mark file given. Exiting...\n");
-  }
-    
   mark_set_list = read_mark_set_list(mark_file_name_list);
 	
   create_widgets();
@@ -760,7 +755,6 @@ GtkWidget *w_marks_window = NULL;
 static void
 cb_toggle_marks_window()
 {
-  printf("Toggle marks window...\n");
   if (marks_window_is_shown) {
     gtk_widget_destroy(w_marks_window);
     w_marks_window = NULL;
@@ -782,7 +776,6 @@ GtkWidget *w_print_window = NULL;
 static void
 cb_toggle_print_window()
 {
-  printf("Toggle print window...\n");
   if (print_window_is_shown) {
     gtk_widget_destroy(w_print_window);
     w_print_window = NULL;
@@ -853,6 +846,7 @@ gint cb_load_image_ok(gpointer dummy1,
   GString *info_label = g_string_new("");
   
   g_string_sprintf(info_label, "Loading file %s", fn);
+  set_last_directory_from_filename(fn);
   gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
   g_string_free(info_label, TRUE);
   
@@ -868,6 +862,9 @@ cb_load_image()
   GtkFileSelection *window = GTK_FILE_SELECTION(gtk_file_selection_new("giv: load image"));
 
   gtk_file_selection_hide_fileop_buttons(window);
+  if (giv_last_directory)
+      gtk_file_selection_set_filename(window, giv_last_directory);
+  
   gtk_signal_connect (GTK_OBJECT (window->ok_button),
 		      "clicked", GTK_SIGNAL_FUNC(cb_load_image_ok),
 		      window);
@@ -889,7 +886,8 @@ gint cb_load_marks_ok(gpointer dummy1,
   const gchar *fn = gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selection_window));
     
   giv_load_marks(fn);
-
+  set_last_directory_from_filename(fn);
+  
   /*    redraw(drawing_area); */
   
   return 1;
@@ -901,6 +899,9 @@ cb_load_marks()
   GtkFileSelection *window = GTK_FILE_SELECTION(gtk_file_selection_new("giv: load marks"));
 
   gtk_file_selection_hide_fileop_buttons(window);
+  if (giv_last_directory)
+      gtk_file_selection_set_filename(window, giv_last_directory);
+
   gtk_signal_connect (GTK_OBJECT (window->ok_button),
 		      "clicked", GTK_SIGNAL_FUNC(cb_load_marks_ok),
 		      window);
@@ -918,8 +919,6 @@ cb_load_marks()
 static gint
 cb_configure_event (GtkWidget *widget, GdkEventConfigure *event)
 {
-  fprintf(stderr, "configure event.\n"); 
-
   canvas_width = widget->allocation.width;
   canvas_height = widget->allocation.height;
     
@@ -929,12 +928,10 @@ cb_configure_event (GtkWidget *widget, GdkEventConfigure *event)
 static gint
 cb_configure_histogram_event (GtkWidget *widget, GdkEventConfigure *event)
 {
-  printf("configuring histogram...\n");
   if (histogram_drawing_pixmap)
     gdk_pixmap_unref(histogram_drawing_pixmap);
 
   histogram_height = widget->allocation.height;
-  printf("histogram_height = %d\n", histogram_height);
 
   histogram_drawing_pixmap = gdk_pixmap_new(widget->window,
 					    256, histogram_height, -1);
@@ -1380,7 +1377,7 @@ int create_widgets()
 		      GTK_EXPAND|GTK_FILL,                  GTK_EXPAND|GTK_FILL,
 		      0,                         0);
     
-    hadjust = gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5);
+    hadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_hadjustment(GTK_IMAGE_VIEWER(image_viewer),
 				     hadjust);
     hscroll = gtk_hscrollbar_new(hadjust);
@@ -1391,7 +1388,7 @@ int create_widgets()
 		      GTK_EXPAND|GTK_FILL,                   0,
 		      0,                         0);
     
-    vadjust = gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5);
+    vadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_vadjustment(GTK_IMAGE_VIEWER(image_viewer),
 				   vadjust);
     vscroll = gtk_vscrollbar_new(vadjust);
@@ -2601,3 +2598,16 @@ static double giv_floor(double x)
   else
     return (int)x;
 }
+
+static void
+set_last_directory_from_filename(const gchar *filename)
+{
+    gchar *dir_name;
+    
+    if (giv_last_directory)
+        free(giv_last_directory);
+    dir_name = g_path_get_dirname(filename);
+    giv_last_directory = g_strdup_printf("%s/", dir_name);
+    free(dir_name);
+}
+
