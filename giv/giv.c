@@ -178,6 +178,7 @@ static void             add_filename_to_image_list(gchar *image_file_name,
                                                    GPtrArray *image_file_name_list);
 static void             fit_marks_in_window(gboolean do_calc_scale);
 static void             giv_print(const char *filename);
+static void             giv_goto_xy(double x0, double y0, double zoom);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
@@ -243,6 +244,7 @@ main (int argc, char *argv[])
   int argp = 1;
   char *print_filename = NULL;
   gboolean do_set_manual_scale = FALSE;
+  double goto_x = -1, goto_y = -1, goto_zoom = -1;
   
   init_globals();
   
@@ -278,6 +280,8 @@ main (int argc, char *argv[])
 	     "	  -P             Draw marks by default.\n"
 	     "	  -lw lw         Default line width.\n"
 	     "	  -expand e	 Initial expansion.\n"
+             "    -invert inv    Invert image.\n"
+             "    -gotoxyz x y zoom  Start display at given x, y and zoom.\n"
 	     "\n"
 	     "Example:\n"
 	     "    Here is an example of a marks file:\n"
@@ -301,6 +305,12 @@ main (int argc, char *argv[])
       do_set_manual_scale = TRUE;
       continue;
     }
+    CASE("-gotoxyz") {
+        goto_x = atof(argv[argp++]);
+        goto_y = atof(argv[argp++]);
+        goto_zoom = atof(argv[argp++]);
+        continue;
+    }
     CASE("-marks") {
       g_ptr_array_add(mark_file_name_list, strdup(argv[argp++]));
       continue;
@@ -308,6 +318,7 @@ main (int argc, char *argv[])
     CASE("-nl") { default_draw_lines = FALSE; continue; }
     CASE("-ms") { default_mark_size = atof(argv[argp++]); continue; }
     CASE("-sm") { default_scale_marks = TRUE; continue; }
+    CASE("-invert") { giv_current_transfer_function = TRANS_FUNC_INVERT; continue; }
     CASE("-lc") { giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST; continue; }
     CASE("-P")  { default_draw_marks = TRUE;  continue; }
     CASE("-print") {
@@ -399,6 +410,10 @@ main (int argc, char *argv[])
   }
 #endif
 #endif
+
+  if (goto_x >= 0) 
+      giv_goto_xy(goto_x, goto_y, goto_zoom);
+  
   if (!do_no_display)
     gtk_main ();
   else
@@ -1961,13 +1976,8 @@ create_print_window()
 }
 
 static void
-giv_goto_point(GtkWidget *this)
+giv_goto_xy(double x0, double y0, double zoom)
 {
-  double x0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "0"))))+0.5;
-  double y0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "1"))))+0.5;
-  double zoom = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "2"))));
-
-
   double old_canvas_x, old_canvas_y;
   double h = gtk_image_viewer_get_canvas_height(GTK_IMAGE_VIEWER(image_viewer));
   double w = gtk_image_viewer_get_canvas_width(GTK_IMAGE_VIEWER(image_viewer));
@@ -1982,6 +1992,16 @@ giv_goto_point(GtkWidget *this)
 					   zoom,
 					   old_canvas_x, old_canvas_y,
                                            w/2,h/2);
+}
+
+static void
+giv_goto_point(GtkWidget *this)
+{
+  double x0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "0"))))+0.5;
+  double y0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "1"))))+0.5;
+  double zoom = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "2"))));
+
+  giv_goto_xy(x0, y0, zoom);
 }
 
 static void

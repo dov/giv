@@ -41,3 +41,10 @@ $lw 3
 200 300
 250 300
 200 200
+
+$color blue
+T 0 0 Origin
+
+$color magenta3
+$text_size 20
+T 5 10 Another origin
