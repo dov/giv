@@ -1123,6 +1123,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     shrink_wrap();
   else if (k == 'q')
     cb_quit();
+  else if (k == 'g')
+    cb_toggle_goto_point_window();
   else if (k == ' ')
     cb_nextprev_image(FALSE);
   else if (k == GDK_BackSpace)
@@ -1407,7 +1409,6 @@ shrink_wrap()
   if (!w_window || !img_display)
     return;
 
-  /* fprintf(stderr, "shrink wrap...\n"); */
   s_width = gdk_screen_width ();
   s_height = gdk_screen_height ();
     
@@ -1419,6 +1420,7 @@ shrink_wrap()
   if (new_height > 0.75*s_height)
     new_height = 0.75*s_height;
 
+  gtk_widget_set_size_request(GTK_WIDGET(image_viewer), new_width, new_height);
   /*  gtk_widget_set_usize (GTK_WIDGET(image_viewer), new_width, new_height); */
 }
 
@@ -1492,14 +1494,15 @@ int create_widgets()
 
   /* My image drawing widget */
   image_viewer = GTK_IMAGE_VIEWER(gtk_image_viewer_new(img_display));
+  gtk_widget_set_double_buffered(GTK_WIDGET(image_viewer), FALSE);
   if (!img_display)
     gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
 
-  gtk_widget_set_usize(GTK_WIDGET(image_viewer), w, h);
+  gtk_widget_set_size_request(GTK_WIDGET(image_viewer), w, h);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,
 					   current_scale_y,
-					   w/2,w/2,h/2,h/2);
+					   w/2,h/2,w/2,h/2);
   shrink_wrap();
 
   /* Put image viewer in a scrolled window */
@@ -1767,10 +1770,27 @@ create_print_window()
 }
 
 static void
-giv_goto_point(double zoom,
-               double x0, double y0)
+giv_goto_point(GtkWidget *this)
 {
-    
+  double x0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "0"))))+0.5;
+  double y0 = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "1"))))+0.5;
+  double zoom = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(G_OBJECT(this), "2"))));
+
+
+  double old_canvas_x, old_canvas_y;
+  double h = gtk_image_viewer_get_canvas_height(GTK_IMAGE_VIEWER(image_viewer));
+  double w = gtk_image_viewer_get_canvas_width(GTK_IMAGE_VIEWER(image_viewer));
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           x0,  y0,
+                                           /* output */
+                                           &old_canvas_x,
+                                           &old_canvas_y);
+                                                              
+  gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
+					   zoom,
+					   zoom,
+					   old_canvas_x, old_canvas_y,
+                                           w/2,h/2);
 }
 
 static void
@@ -1800,10 +1820,13 @@ create_goto_point_window()
 
   gtk_widget_show (table1);
   gtk_box_pack_start (GTK_BOX (vbox), table1, TRUE, TRUE, 0);
-
+  
+  button_goto = gtk_button_new_with_label("Goto");
+  
   for (field_idx=0; field_idx<3; field_idx++) {
       GtkWidget *label = gtk_label_new(fields[field_idx]);
       GtkWidget *entry = gtk_entry_new();
+      char field_name[16];
       
       gtk_table_attach (GTK_TABLE (table1), label, 0, 1, field_idx, field_idx+1,
                         (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
@@ -1812,8 +1835,12 @@ create_goto_point_window()
                         (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                         (GtkAttachOptions) (0), 0, 0);
       
-      /* Attch the entry to the button widget so that it may be retrieved
+      /* Attach the entry to the button widget so that it may be retrieved
          when the goto button is pressed. */
+      sprintf(field_name, "%d", field_idx);
+      g_object_set_data(G_OBJECT(button_goto),
+                        field_name,
+                        entry);
   }
   
   /* goto and quit buttons */
@@ -1821,7 +1848,6 @@ create_goto_point_window()
   gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
   gtk_widget_show(hbox);
     
-  button_goto = gtk_button_new_with_label("Goto");
   gtk_box_pack_start (GTK_BOX (hbox), button_goto, TRUE, TRUE, 0);
   gtk_widget_show(button_goto);
   gtk_signal_connect (GTK_OBJECT (button_goto),
