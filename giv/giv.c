@@ -61,7 +61,8 @@
 #define STRING_CHANGE_LINE 11
 #define STRING_CHANGE_NO_MARK 12
 #define STRING_IMAGE_REFERENCE 13
-#define STRING_LOW_CONTRAST 14
+#define STRING_MARKS_REFERENCE 14
+#define STRING_LOW_CONTRAST 15
 
 #define MARK_TYPE_CIRCLE 1
 #define MARK_TYPE_SQUARE 2
@@ -553,6 +554,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_IMAGE_REFERENCE;
         }
+      NCASE("$mark_file")
+        {
+          type = STRING_MARKS_REFERENCE;
+        }
       NCASE("$low_contrast")
         {
           type = STRING_LOW_CONTRAST;
@@ -697,6 +702,17 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_CHANGE_LINE_WIDTH:
 	    marks->line_width = string_to_atoi(S_, 1);
 	    break;
+	  case STRING_IMAGE_REFERENCE:
+              {
+                  char *image_filename = string_strdup_word(S_, 1);
+                  
+                  // Todo: Make image relative to the marks list
+                  add_filename_to_image_list(image_filename,
+                                             image_file_name_list);
+                  
+                  free(image_filename);
+                  break;
+              }
 	  case STRING_IMAGE_REFERENCE:
               {
                   char *image_filename = string_strdup_word(S_, 1);
