@@ -1,3 +1,13 @@
+2002-12-13  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* giv.c: Support for low contrast display, suitable for 
+	binary images with marks.
+
+	* giv.c: Added place holder for text mark support.
+
+	* giv.c: Fixed critical bug that made readings of marks fail.
+	
+
 2002-05-29  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 
 	* giv.c: Added scrollbars.

@@ -46,10 +46,12 @@
 
 #define OP_MOVE 0
 #define OP_DRAW 1
+#define OP_TEXT 2
 
 #define STRING_DRAW 0
 #define STRING_COMMENT 1
 #define STRING_MOVE 2
+#define STRING_TEXT 3
 #define STRING_CHANGE_COLOR 5
 #define STRING_CHANGE_LINE_WIDTH 6
 #define STRING_CHANGE_MARKS 7
@@ -59,6 +61,7 @@
 #define STRING_CHANGE_LINE 11
 #define STRING_CHANGE_NO_MARK 12
 #define STRING_IMAGE_REFERENCE 13
+#define STRING_LOW_CONTRAST 14
 
 #define MARK_TYPE_CIRCLE 1
 #define MARK_TYPE_SQUARE 2
@@ -66,9 +69,23 @@
 #define MARK_TYPE_FSQUARE 4
 #define MARK_TYPE_PIXEL 5
 
+#define LOW_CONTRAST_LOW (128-32)
+#define LOW_CONTRAST_HIGH (128+32)
+
 typedef struct {
-  gint op;   /* For alignment */
-  gdouble x,y;
+  char *string;
+  double x, y;
+  double size;
+} text_mark_t;
+
+typedef struct {
+  gint op;
+  union {
+    struct {
+      gdouble x,y;
+    } point;
+    text_mark_t *text_object;
+  } data;
 } point_t;
 
 typedef struct {
@@ -96,12 +113,13 @@ gint nmarks_colors = 6;
 GdkColor histogram_color = { 0, 0, 0, 0};
 
 typedef enum {
-  HIST_RESET,
-  HIST_INVERT,
-  HIST_NORM,
-  HIST_EQ,
-  HIST_CURVE
-} hist_t;
+  TRANS_FUNC_RESET,
+  TRANS_FUNC_INVERT,
+  TRANS_FUNC_NORM,
+  TRANS_FUNC_EQ,
+  TRANS_FUNC_CURVE,
+  TRANS_FUNC_LOW_CONTRAST
+} trans_func_t;
 
 typedef enum {
   TRANSFORM_NONE,
@@ -143,11 +161,12 @@ static void             giv_load_marks(const char *mark_file_name);
 #ifndef G_PLATFORM_WIN32
 static void		cb_sigint(int dummy);
 #endif
-static void		set_histogram(hist_t which_histogram);
+static void		set_transfer_function(trans_func_t which_trans_func);
 static void		cb_reset_image();
 static void		cb_invert_image();
 static void		cb_normalize_image();
 static void		cb_equalize_image();
+static void		cb_low_contrast_image();
 static void		cb_show_histogram();
 static void		cb_color_image();
 static void		cb_red_only_image();
@@ -211,6 +230,7 @@ transform_t load_transformation;
 gint hist[3][256]; // Image histogram
 int histogram_height;
 gchar *giv_last_directory = NULL;
+trans_func_t giv_current_transfer_function = TRANS_FUNC_RESET;
 
 struct {
   GtkWidget *filename_entry;
@@ -282,6 +302,7 @@ main (int argc, char *argv[])
     CASE("-nl") { default_draw_lines = FALSE; continue; }
     CASE("-ms") { default_mark_size = atof(argv[argp++]); continue; }
     CASE("-sm") { default_scale_marks = TRUE; continue; }
+    CASE("-lc") { giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST; continue; }
     CASE("-P")  { default_draw_marks = TRUE;  continue; }
     CASE("-pix")
       {
@@ -488,7 +509,7 @@ gint parse_string(const char *string, char *fn, gint linenum)
   gchar first_char = string[0];
 
   /* Shortcut for speeding up drawing */
-  if (first_char >= '0' || first_char <= '9')
+  if (first_char >= '0' && first_char <= '9')
     return STRING_DRAW;
 
   if (first_char == '#') 
@@ -532,6 +553,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_IMAGE_REFERENCE;
         }
+      NCASE("$low_contrast")
+        {
+          type = STRING_LOW_CONTRAST;
+        }
       if (type == -1)
         {
           fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
@@ -541,6 +566,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
   else if (first_char == 'M' || first_char=='m')
     {
       type = STRING_MOVE;
+    }
+  else if (first_char == 'T' || first_char=='t')
+    {
+      type = STRING_TEXT;
     }
   else
     {
@@ -634,26 +663,36 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_MOVE:
 	    if (type == STRING_DRAW)
               {
-                sscanf(S_, "%lf %lf", &p.x, &p.y);
+                sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y);
                 p.op = OP_DRAW;
               }
 	    else
               {
-                sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
+                sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y);
                 p.op = OP_MOVE;
               }
 	    
 	    /* Find marks bounding box */
-	    if (p.x < min_x)
-	      min_x = p.x;
-	    else if (p.x > max_x)
-	      max_x = p.x;
-	    if (p.y < min_y)
-	      min_y = p.y;
-	    else if (p.y > max_y)
-	      max_y = p.y;
+	    if (p.data.point.x < min_x)
+	      min_x = p.data.point.x;
+	    else if (p.data.point.x > max_x)
+	      max_x = p.data.point.x;
+	    if (p.data.point.y < min_y)
+	      min_y = p.data.point.y;
+	    else if (p.data.point.y > max_y)
+	      max_y = p.data.point.y;
 	    
 	    g_array_append_val(marks->points, p);
+	    break;
+	  case STRING_TEXT:
+	    {
+	      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
+	      tm->string = (char*)g_new(char, 64);
+	      sscanf(S_, "%s %lf %lf %s", dummy, &tm->x, &tm->y, &tm->string);
+	      p.op = OP_TEXT;
+	      p.data.text_object = tm;
+	      g_array_append_val(marks->points, p);
+	    }
 	    break;
 	  case STRING_CHANGE_LINE_WIDTH:
 	    marks->line_width = string_to_atoi(S_, 1);
@@ -668,6 +707,11 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
                   
                   free(image_filename);
                   break;
+              }
+	  case STRING_LOW_CONTRAST:
+              {
+		giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
+		break;
               }
 	  case STRING_CHANGE_NO_LINE:
 	    marks->do_draw_lines = FALSE;
@@ -953,13 +997,13 @@ cb_load_image()
   if (giv_last_directory)
       gtk_file_selection_set_filename(window, giv_last_directory);
   
-  gtk_signal_connect (GTK_OBJECT (window->ok_button),
-		      "clicked", GTK_SIGNAL_FUNC(cb_load_image_ok),
-		      window);
+  g_signal_connect (G_OBJECT (window->ok_button),
+		    "clicked", GTK_SIGNAL_FUNC(cb_load_image_ok),
+		    window);
 
-  gtk_signal_connect (GTK_OBJECT (window->cancel_button),
-		      "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
-		      window);
+  g_signal_connect (G_OBJECT (window->cancel_button),
+		    "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
+		    window);
 
   gtk_widget_show (GTK_WIDGET(window));
 
@@ -1067,6 +1111,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     cb_toggle_marks_window();
   else if (k == 'h')
     cb_equalize_image();
+  else if (k == 'l')
+    cb_low_contrast_image();
   else if (k == 'r')
     cb_reset_image();
   else if (k == 'i')
@@ -1530,7 +1576,7 @@ int create_widgets()
 
   /* Misc setup */
   if (img_display)
-  set_histogram(HIST_RESET);
+     set_transfer_function(giv_current_transfer_function);
     
   return 0;
 }
@@ -1879,25 +1925,31 @@ create_control_window()
 //----------------------------------------------------------------------*/
 
 static void
-set_histogram(hist_t which_histogram)
+set_transfer_function(trans_func_t which_trans_func)
 {
   int hist_idx, col_idx, pix_idx;
   guint8 *buf = gdk_pixbuf_get_pixels(img_display);
   gint width = gdk_pixbuf_get_width(img_display);
   gint height = gdk_pixbuf_get_height(img_display);
     
-  switch(which_histogram) {
-  case HIST_RESET:
+  switch(which_trans_func) {
+  case TRANS_FUNC_RESET:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
 	current_maps[col_idx][hist_idx] = hist_idx;
     break;
-  case HIST_INVERT:
+  case TRANS_FUNC_INVERT:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
 	current_maps[col_idx][hist_idx] = 255-current_maps[col_idx][hist_idx];
     break;
-  case HIST_NORM:
+  case TRANS_FUNC_LOW_CONTRAST:
+    for (col_idx = 0; col_idx<3; col_idx++) 
+      for (hist_idx = 0; hist_idx < 256; hist_idx++)
+	current_maps[col_idx][hist_idx] = LOW_CONTRAST_LOW +
+	  (LOW_CONTRAST_HIGH-LOW_CONTRAST_LOW)*hist_idx/256;
+    break;
+  case TRANS_FUNC_NORM:
     {
       guint8 min[3], max[3];
 	    
@@ -1926,7 +1978,7 @@ set_histogram(hist_t which_histogram)
       }
     }
     break;
-  case HIST_EQ:
+  case TRANS_FUNC_EQ:
     {
       gint hist[3][256];
 	    
@@ -1948,7 +2000,7 @@ set_histogram(hist_t which_histogram)
       }
     }
     break;
-  case HIST_CURVE:
+  case TRANS_FUNC_CURVE:
     break;
   }
 
@@ -1965,7 +2017,7 @@ cb_reset_image()
   if (!img_display)
     return;
   cb_color_image();
-  set_histogram(HIST_RESET);
+  set_transfer_function(TRANS_FUNC_RESET);
 }
 
 static void
@@ -1973,7 +2025,7 @@ cb_invert_image()
 {
   if (!img_display)
     return;
-  set_histogram(HIST_INVERT);
+  set_transfer_function(TRANS_FUNC_INVERT);
 }
 
 static void
@@ -1981,7 +2033,7 @@ cb_normalize_image()
 {
   if (!img_display)
     return;
-  set_histogram(HIST_NORM);
+  set_transfer_function(TRANS_FUNC_NORM);
 }
 
 static void
@@ -1989,7 +2041,15 @@ cb_equalize_image()
 {
   if (!img_display)
     return;
-  set_histogram(HIST_EQ);
+  set_transfer_function(TRANS_FUNC_EQ);
+}
+
+static void
+cb_low_contrast_image()
+{
+  if (!img_display)
+    return;
+  set_transfer_function(TRANS_FUNC_LOW_CONTRAST);
 }
 
 static void
@@ -2412,8 +2472,8 @@ draw_marks(GtkImageViewer *image_viewer)
     is_first_point = TRUE;
     for (p_idx=0; p_idx<mark_set->points->len; p_idx++) {
       point_t p = g_array_index(mark_set->points, point_t, p_idx);
-      double x = p.x;
-      double y = p.y;
+      double x = p.data.point.x;
+      double y = p.data.point.y;
       double cx, cy;
       int op = p.op;
 
@@ -2580,8 +2640,8 @@ draw_marks_in_postscript(GtkImageViewer *widget,
     is_first_point = TRUE;
     for (p_idx=0; p_idx<mark_set->points->len; p_idx++) {
       point_t p = g_array_index(mark_set->points, point_t, p_idx);
-      double x = p.x;
-      double y = p.y;
+      double x = p.data.point.x;
+      double y = p.data.point.y;
       double cx, cy;
       int op = p.op;
       in_path = FALSE;
