@@ -578,32 +578,38 @@ static char* string_strdup_rest(const char *string, int idx)
   const char *word_start = string;
 
   /* printf("p = 0x%x\n", p); */
-  while(*p) {
-    /* printf("%c\n", *p); fflush(stdout); */
-    if (!in_word) {
-      if (*p != ' ' && *p != '\n' && *p != '\t') {
-	in_word = 1;
-	word_count++;
-	nchr = 1;
-	word_start = p;
-      }
+  while(*p)
+    {
+      /* printf("%c\n", *p); fflush(stdout); */
+      if (!in_word)
+        {
+          if (*p != ' ' && *p != '\n' && *p != '\t')
+            {
+              in_word = 1;
+              word_count++;
+              nchr = 1;
+              word_start = p;
+            }
+        }
+      else if (in_word)
+        {
+          if (*p == ' ' || *p == '\n' || *p == '\t') {
+            if (idx == word_count)
+              break;
+            in_word = 0;
+          }
+        }
+      nchr++;
+      p++;
     }
-    else if (in_word) {
-      if (*p == ' ' || *p == '\n' || *p == '\t') {
-	if (idx == word_count)
-	  break;
-	in_word = 0;
-      }
+  
+  if (in_word)
+    {
+      nchr = strlen(word_start);
+      word = g_new(char, nchr+1);
+      strncpy(word, word_start, nchr);
+      word[nchr]=0;
     }
-    nchr++;
-    p++;
-  }
-  if (in_word) {
-    nchr = strlen(word_start);
-    word = g_new(char, nchr);
-    strncpy(word, word_start, nchr-1);
-    word[nchr-1]=0;
-  }
   return word;
 }
 
