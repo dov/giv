@@ -1,3 +1,11 @@
+2002-05-29  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
+
+	* giv.c: Added scrollbars.
+
+	* giv.c: Disabled shrink wrap which doesn't work.
+
+	* giv.c: Turned mark sizes into double.
+
 2001-03-05  Dov Grobgeld  <dov@imagic.weizmann.ac.il>
 
 	* Release of version 0.1.

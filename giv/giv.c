@@ -75,7 +75,7 @@ typedef struct {
   gint line_width;
   gint line_style;
   gint mark_type;
-  gint mark_size;
+  gdouble mark_size;
   gboolean do_scale_marks;
   gboolean do_draw_marks;
   gboolean do_draw_lines;
@@ -187,7 +187,7 @@ gboolean default_draw_lines;
 gboolean default_draw_marks;
 gboolean default_scale_marks;
 gint default_mark_type;
-gint default_mark_size;
+gdouble default_mark_size;
 gint default_line_width;
 double global_mark_max_x;
 double global_mark_max_y;
@@ -271,7 +271,7 @@ main (int argc, char *argv[])
       continue;
     }
     CASE("-nl") { default_draw_lines = FALSE; continue; }
-    CASE("-ms") { default_mark_size = atoi(argv[argp++]); continue; }
+    CASE("-ms") { default_mark_size = atof(argv[argp++]); continue; }
     CASE("-sm") { default_scale_marks = TRUE; continue; }
     CASE("-P")  { default_draw_marks = TRUE;  continue; }
     CASE("-pix")
@@ -450,6 +450,15 @@ static int string_to_atoi(char *string, int idx)
   return value;
 }
 
+static gdouble string_to_atof(char *string, int idx)
+{
+  char *word = string_strdup_word(string, idx);
+  gdouble value = atof(word);
+  g_free(word);
+
+  return value;
+}
+
 /*======================================================================
 //  Classify a string.
 //----------------------------------------------------------------------*/
@@ -607,7 +616,7 @@ read_mark_set_list(GPtrArray *mark_file_name_list)
 	    marks->do_draw_marks = FALSE;
 	    break;
 	  case STRING_CHANGE_MARK_SIZE:
-	    marks->mark_size = string_to_atoi(S_, 1);
+	    marks->mark_size = string_to_atof(S_, 1);
 	    break;
 	  case STRING_CHANGE_COLOR:
 	    {
@@ -1223,6 +1232,9 @@ giv_load_marks(const char *mark_file_name)
     }
 }
 
+/*======================================================================
+//  Make the giv window exactly big enough for the contents.
+//----------------------------------------------------------------------*/
 static void
 shrink_wrap()
 {
@@ -1252,8 +1264,8 @@ shrink_wrap()
     new_width = 0.75*s_width;
   if (new_height > 0.75*s_height)
     new_height = 0.75*s_height;
-    
-  gtk_widget_set_usize (GTK_WIDGET(image_viewer), new_width, new_height);
+
+  /*  gtk_widget_set_usize (GTK_WIDGET(image_viewer), new_width, new_height); */
 }
 
 /*======================================================================
@@ -1311,10 +1323,10 @@ int create_widgets()
   gtk_window_set_policy(GTK_WINDOW(w_window), TRUE, TRUE, TRUE);
     
   /* Suck the image's original width and height out of the Image structure */
-  if (w>500)
-    w=500;
-  if (h>500)
-    h=500;
+  if (w>gdk_screen_width() * 0.75)
+    w=gdk_screen_width() * 0.75;
+  if (h>gdk_screen_width() * 0.75)
+    h=gdk_screen_width() * 0.75;
 
   /* A vbox for the rest of the widgets */
   vbox = gtk_vbox_new(FALSE, 5);
@@ -1328,8 +1340,47 @@ int create_widgets()
 					   current_scale_y,
 					   w/2,w/2,h/2,h/2);
   shrink_wrap();
-  gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(image_viewer),
-		      TRUE, TRUE, 0);
+
+  /* A table for scroll bars */
+  {
+    GtkWidget *table;
+    GtkWidget *hscroll, *vscroll;
+    GtkAdjustment *hadjust, *vadjust;
+
+    table = gtk_table_new(2,2,0);
+    
+    gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(table),
+			TRUE, TRUE, 0);
+    
+    gtk_table_attach (GTK_TABLE (table),
+		      GTK_WIDGET(image_viewer),
+		      /* X direction */          /* Y direction */
+		      0, 1,                      0, 1,
+		      GTK_EXPAND|GTK_FILL,                  GTK_EXPAND|GTK_FILL,
+		      0,                         0);
+    
+    hadjust = gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5);
+    gtk_image_viewer_set_hadjustment(GTK_IMAGE_VIEWER(image_viewer),
+				     hadjust);
+    hscroll = gtk_hscrollbar_new(hadjust);
+    gtk_table_attach (GTK_TABLE (table),
+		      hscroll,
+		      /* X direction */          /* Y direction */
+		      0, 1,                      1, 2,
+		      GTK_EXPAND|GTK_FILL,                   0,
+		      0,                         0);
+    
+    vadjust = gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5);
+    gtk_image_viewer_set_vadjustment(GTK_IMAGE_VIEWER(image_viewer),
+				   vadjust);
+    vscroll = gtk_vscrollbar_new(vadjust);
+    gtk_table_attach (GTK_TABLE (table),
+		      vscroll,
+		      /* X direction */          /* Y direction */
+		      1, 2,                      0, 1,
+		      0,                         GTK_EXPAND|GTK_FILL,
+		      0,                         0);
+  }
     
   /* events */
   gtk_signal_connect (GTK_OBJECT(image_viewer),     "key_press_event",
