@@ -2219,7 +2219,7 @@ set_square_aspect_ratio()
   gint h = gtk_image_viewer_get_canvas_height(GTK_IMAGE_VIEWER(image_viewer));
   double scale_x, scale_y;
   
-  gtk_image_viewer_get_scale(image_viewer, &scale_x, &scale_y);
+  gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer), &scale_x, &scale_y);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   scale_x,
 					   scale_x,

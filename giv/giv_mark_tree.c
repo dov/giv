@@ -20,6 +20,22 @@
 #include "giv_types.h"
 
 GtkWidget *w_tree_view;
+GHashTable *hash_giv_path_to_iter = NULL;
+
+static void get_iter_from_mark_set(mark_set_t *mark_set,
+				   GtkTreeStore *model,
+				   /* output */
+				   GtkTreeIter **iter);
+
+static void get_iter_from_string_path(const char *filename,
+				      const char *string_path,
+				      GtkTreeStore *model,
+				      /* output */
+				      GtkTreeIter **iter);
+static void strip_last_leaf(const char *string_path,
+			    /* output */
+			    char **string_path_no_last_leaf,
+			    char **string_last_leaf);
 
 static void
 cb_toggled (GtkCellRendererToggle *cell,
@@ -38,10 +54,12 @@ cb_toggled (GtkCellRendererToggle *cell,
   value = !value;
   gtk_tree_store_set (GTK_TREE_STORE (model), &iter, 0, value, -1);
   
+#if 0
   if (value)
       gtk_tree_view_expand_row(GTK_TREE_VIEW(w_tree_view), path, FALSE);
   else
       gtk_tree_view_collapse_row(GTK_TREE_VIEW(w_tree_view), path);
+#endif
       
   gtk_tree_path_free (path);
 
@@ -137,6 +155,16 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
   /* Make a stack for poping back parents when building the tree */
   parent_array = NULL;
 
+  /* Create the hash table that maps between giv paths and the
+     iters of the tree.
+  */
+  if (hash_giv_path_to_iter)
+      g_hash_table_destroy(hash_giv_path_to_iter);
+  hash_giv_path_to_iter = g_hash_table_new_full(g_str_hash,
+						g_str_equal,
+						g_free,
+						NULL);
+  
   for(i=0; i<mark_set_list->len; i++)
     {
       mark_set_t *mark_set = g_ptr_array_index (mark_set_list, i);
@@ -144,11 +172,11 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
       GtkTreeIter *iter;
       char num_points_string[20];
 
-#if 0
       get_iter_from_mark_set(mark_set, model,
                              &iter);
-#endif
-      
+
+#if 0
+      /* Is there really anything I need to do with the iterator... */
       if (!parent_array || strcmp(last_filename, mark_set->file_name) != 0)
 	{
 	  GtkTreeIter *iter = g_new0(GtkTreeIter, 1);
@@ -181,12 +209,14 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
 			 1, mark_set->path_name,
 			 2, mark_set->points->len,
 			 -1);
-      tree_path = gtk_tree_model_get_path(model, iter);
+#endif
+      
+      tree_path = gtk_tree_model_get_path(GTK_TREE_MODEL(model), iter);
       if (mark_set->tree_path_string)
 	g_free(mark_set->tree_path_string);
       mark_set->tree_path_string = gtk_tree_path_to_string(tree_path);
       gtk_tree_path_free(tree_path);
-      g_free(iter);
+      /* g_free(&iter); */
 
     }
   gtk_tree_view_expand_all(GTK_TREE_VIEW(tree_view));
@@ -196,42 +226,102 @@ GtkWidget *create_giv_mark_tree(GPtrArray *mark_set_list)
   return w_tree_window;
 }
 
-#if 0
-void get_iter_from_mark_set(mark_set_t *mark_set,
-                            GtkTreeStore *model,
-                            /* output */
-                            GtkTreeIter **iter)
+/*======================================================================
+//  Given a mark set, extract the corresponding iter that belongs to
+//  it. This is jupst a front end to the recursive
+//  get_iter_from_string_path().
+//----------------------------------------------------------------------
+*/
+static void get_iter_from_mark_set(mark_set_t *mark_set,
+				   GtkTreeStore *model,
+				   /* output */
+				   GtkTreeIter **iter)
 {
-    char *key = sprintf("%s/%s", mark_set->filename, mark_set->path_name);
-    
-    if (g_hash_get_key(tree_hash, key, &iter))
-        return;
-    else {
-        
-    }
-        
+    get_iter_from_string_path(mark_set->file_name,
+			      mark_set->path_name,
+			      model,
+			      iter);
 }
 
-void get_iter_from_string_path(const char *string_path,
-                               GtkTreeStore *model,
-                               /* output */
-                               GtkTreeIter **iter)
+/*======================================================================
+//  Returns an iterator from the hash table. If it doesn't exist,
+//  then a new key is created.
+//----------------------------------------------------------------------
+*/
+static void get_iter_from_string_path(const char *filename,
+				      const char *string_path,
+				      GtkTreeStore *model,
+				      /* output */
+				      GtkTreeIter **iter)
 {
-    *iter = g_hashtable_lookup(path_hash, string_path);
     gchar *string_path_no_last_leaf;
     gchar *string_last_leaf;
+    GtkTreeIter *parent, *new_iter;
+    gchar *key;
     
-    if (*iter) 
-        return;
+    if (string_path == NULL)
+      key = g_strdup_printf("%s", filename);
+    else
+      key = g_strdup_printf("%s///%s", filename, string_path);
 
-    strip_last_leaf(string_path,
-                    // output
-                    &string_path_no_last_leaf,
-                    &string_last_leaf);
-    get_iter_from_string_path(string_path_no_last_leaf,
-                              model,
-                              // output 
-                              parent);
-    gtk_tree_store_append(model, iter, parent);
+    *iter = (GtkTreeIter*)g_hash_table_lookup(hash_giv_path_to_iter, key);
+    
+    if (*iter)
+      {
+	g_free(key);
+        return;
+      }
+
+    if (string_path)
+      {
+	strip_last_leaf(string_path,
+			// output
+			&string_path_no_last_leaf,
+			&string_last_leaf);
+
+	get_iter_from_string_path(filename,
+				  string_path_no_last_leaf,
+				  model,
+				  // output 
+				  &parent);
+      }
+    else
+      {
+        string_last_leaf = g_strdup(filename);
+	parent = NULL;
+      }
+    
+    new_iter = g_new0(GtkTreeIter, 1);
+    gtk_tree_store_append(model, new_iter, parent);
+    gtk_tree_store_set (model, new_iter,
+			0, 1,
+			1, string_last_leaf,
+			2, 0,
+			-1);
+
+    g_hash_table_insert(hash_giv_path_to_iter,
+			(gpointer)(key),
+			(gpointer)(new_iter));
+    *iter = new_iter;
 }
-#endif
+
+static void strip_last_leaf(const char *string_path,
+			    /* output */
+			    char **string_path_no_last_leaf,
+			    char **string_last_leaf)
+{
+  gchar *split_pos;
+  
+  split_pos = g_strrstr(string_path, "/");
+
+  if (split_pos)
+    {
+      *string_last_leaf = g_strdup(split_pos+1);
+      *string_path_no_last_leaf = g_strndup(string_path, split_pos - string_path);
+    }
+  else
+    {
+      *string_path_no_last_leaf = NULL;
+      *string_last_leaf = g_strdup(string_path);
+    }
+}
