@@ -480,52 +480,72 @@ static gdouble string_to_atof(char *string, int idx)
 
 /*======================================================================
 //  Classify a string.
-//----------------------------------------------------------------------*/
-gint parse_string(char *string, char *fn, gint linenum)
+//----------------------------------------------------------------------
+*/
+gint parse_string(const char *string, char *fn, gint linenum)
 {
   gint type = -1;
-    
-  if (string[0] == '#') 
-  type = STRING_COMMENT;
-  else if (string[0] == '$') {
-    char *S_ = string_strdup_word(string, 0);
-    NCASE("$lw") {
-      type = STRING_CHANGE_LINE_WIDTH;
+  gchar first_char = string[0];
+
+  /* Shortcut for speeding up drawing */
+  if (first_char >= '0' || first_char <= '9')
+    return STRING_DRAW;
+
+  if (first_char == '#') 
+    type = STRING_COMMENT;
+  else if (first_char == '$')
+    {
+      char *S_ = string_strdup_word(string, 0);
+      NCASE("$lw")
+        {
+          type = STRING_CHANGE_LINE_WIDTH;
+        }
+      NCASE("$color")
+        {
+          type = STRING_CHANGE_COLOR;
+        }
+      NCASE("$marks")
+        {
+          type = STRING_CHANGE_MARKS;
+        }
+      NCASE("$noline")
+        {
+          type = STRING_CHANGE_NO_LINE;
+        }
+      NCASE("$scale_marks")
+        {
+          type = STRING_CHANGE_SCALE_MARKS;
+        }
+      NCASE("$mark_size")
+        {
+          type = STRING_CHANGE_MARK_SIZE;
+        }
+      NCASE("$nomark")
+        {
+          type = STRING_CHANGE_NO_MARK;
+        }
+      NCASE("$line")
+        {
+          type = STRING_CHANGE_LINE;
+        }
+      NCASE("$image")
+        {
+          type = STRING_IMAGE_REFERENCE;
+        }
+      if (type == -1)
+        {
+          fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
+        }
+      g_free(S_);
     }
-    NCASE("$color") {
-      type = STRING_CHANGE_COLOR;
+  else if (first_char == 'M' || first_char=='m')
+    {
+      type = STRING_MOVE;
     }
-    NCASE("$marks") {
-      type = STRING_CHANGE_MARKS;
+  else
+    {
+      type = STRING_DRAW;
     }
-    NCASE("$noline") {
-      type = STRING_CHANGE_NO_LINE;
-    }
-    NCASE("$scale_marks") {
-      type = STRING_CHANGE_SCALE_MARKS;
-    }
-    NCASE("$mark_size") {
-      type = STRING_CHANGE_MARK_SIZE;
-    }
-    NCASE("$nomark") {
-      type = STRING_CHANGE_NO_MARK;
-    }
-    NCASE("$line") {
-      type = STRING_CHANGE_LINE;
-    }
-    NCASE("$image") {
-      type = STRING_IMAGE_REFERENCE;
-    }
-    if (type == -1) {
-      fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
-    }
-    g_free(S_);
-  }
-  else if (string[0] == 'M' || string[0]=='m') {
-    type = STRING_MOVE;
-  } else {
-    type = STRING_DRAW;
-  }
   return type;
 }
 
@@ -612,14 +632,16 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    break;
 	  case STRING_DRAW:
 	  case STRING_MOVE:
-	    if (type == STRING_DRAW) {
-	      sscanf(S_, "%lf %lf", &p.x, &p.y);
-	      p.op = OP_DRAW;
-	    }
-	    else {
-	      sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
-	      p.op = OP_MOVE;
-	    }
+	    if (type == STRING_DRAW)
+              {
+                sscanf(S_, "%lf %lf", &p.x, &p.y);
+                p.op = OP_DRAW;
+              }
+	    else
+              {
+                sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
+                p.op = OP_MOVE;
+              }
 	    
 	    /* Find marks bounding box */
 	    if (p.x < min_x)
@@ -686,6 +708,8 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    break;
 	  }
 	}
+
+      /* Get rid of empty data sets */
       if (marks && marks->points->len == 0)
 	{
 	  g_ptr_array_remove_index(mark_set_list, mark_set_list->len-1);
