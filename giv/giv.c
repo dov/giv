@@ -422,14 +422,14 @@ static int string_count_words(char *string)
   return nwords;
 }
 
-static char* string_strdup_word(char *string, int idx)
+static char* string_strdup_word(const char *string, int idx)
 {
-  char *p = string;
+  const char *p = string;
   int in_word = 0;
   int word_count = -1;
   int nchr = 1;
   char *word = NULL;
-  char *word_start = string;
+  const char *word_start = string;
 
   /* printf("p = 0x%x\n", p); */
   while(*p) {
@@ -1301,6 +1301,7 @@ giv_load_image(const char *new_img_name)
     img_flip_horizontal(img_display);
     break;
   default:
+    break;
     /* Ignore other transforms */
   }
     
@@ -1450,46 +1451,27 @@ int create_widgets()
 					   w/2,w/2,h/2,h/2);
   shrink_wrap();
 
-  /* A table for scroll bars */
+  /* Put image viewer in a scrolled window */
   {
-    GtkWidget *table;
-    GtkWidget *hscroll, *vscroll;
+    GtkWidget *scrolled_win;
     GtkAdjustment *hadjust, *vadjust;
 
-    table = gtk_table_new(2,2,0);
-    gtk_widget_set_usize(GTK_WIDGET(table), w+20, h+20); 
-    
-    gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(table),
-			TRUE, TRUE, 0);
-    
-    gtk_table_attach (GTK_TABLE (table),
-		      GTK_WIDGET(image_viewer),
-		      /* X direction */          /* Y direction */
-		      0, 1,                      0, 1,
-		      GTK_EXPAND|GTK_FILL,                  GTK_EXPAND|GTK_FILL,
-		      0,                         0);
-    
     hadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_hadjustment(GTK_IMAGE_VIEWER(image_viewer),
 				     hadjust);
-    hscroll = gtk_hscrollbar_new(hadjust);
-    gtk_table_attach (GTK_TABLE (table),
-		      hscroll,
-		      /* X direction */          /* Y direction */
-		      0, 1,                      1, 2,
-		      GTK_EXPAND|GTK_FILL,                   0,
-		      0,                         0);
     
     vadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_vadjustment(GTK_IMAGE_VIEWER(image_viewer),
-				   vadjust);
-    vscroll = gtk_vscrollbar_new(vadjust);
-    gtk_table_attach (GTK_TABLE (table),
-		      vscroll,
-		      /* X direction */          /* Y direction */
-		      1, 2,                      0, 1,
-		      0,                         GTK_EXPAND|GTK_FILL,
-		      0,                         0);
+				     vadjust);
+
+    scrolled_win = gtk_scrolled_window_new(hadjust, vadjust);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_win),
+				   GTK_POLICY_AUTOMATIC,
+				   GTK_POLICY_AUTOMATIC);
+    
+    gtk_container_add (GTK_CONTAINER (scrolled_win), GTK_WIDGET(image_viewer));
+    gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(scrolled_win),
+			TRUE, TRUE, 0);
   }
     
   /* events */
