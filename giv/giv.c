@@ -187,6 +187,7 @@ static void		draw_histogram();
 static void		calc_histogram();
 static gboolean         color_eq(GdkColor *color1, GdkColor *color2);
 static void             init_globals();
+static void             draw_image_in_postscript(GtkImageViewer *widget, FILE *PS);
 static void             draw_marks_in_postscript(GtkImageViewer *image_viewer,
 						 FILE *PS);
 /* Private floor in order to work with Cygwin! */
@@ -195,12 +196,14 @@ static void             set_last_directory_from_filename(const gchar *filename);
 static void             add_filename_to_image_list(gchar *image_file_name,
                                                    GPtrArray *image_file_name_list);
 static void             fit_marks_in_window();
+static void             giv_print(const char *filename);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
 //----------------------------------------------------------------------*/
 gchar *img_name, *marks_name;
 gboolean img_is_mono;
+gboolean do_no_display = FALSE;
 GtkWidget *w_window;
 GtkImageViewer *image_viewer = NULL;
 GtkWidget *w_info_label;
@@ -250,6 +253,7 @@ int
 main (int argc, char *argv[])
 {
   int argp = 1;
+  char *print_filename = NULL;
   
   init_globals();
   
@@ -311,6 +315,11 @@ main (int argc, char *argv[])
     CASE("-sm") { default_scale_marks = TRUE; continue; }
     CASE("-lc") { giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST; continue; }
     CASE("-P")  { default_draw_marks = TRUE;  continue; }
+    CASE("-print") {
+      print_filename = argv[argp++];
+      do_no_display= TRUE;
+      continue;
+    }
     CASE("-pix")
       {
 	default_draw_marks = TRUE;
@@ -324,6 +333,7 @@ main (int argc, char *argv[])
     CASE("-vflip") { load_transformation = TRANSFORM_VFLIP; continue; }
     CASE("-vf") { load_transformation = TRANSFORM_VFLIP; continue; }
     CASE("-hflip") { load_transformation = TRANSFORM_HFLIP; continue; }
+    CASE("-nodisplay") { do_no_display = TRUE; continue; };
     fprintf(stderr, "Unknown option %s!\n", S_);
     exit(0);
   }
@@ -381,7 +391,14 @@ main (int argc, char *argv[])
 #endif
   }
 #endif
-  gtk_main ();
+  if (!do_no_display)
+    gtk_main ();
+  else
+    while (gtk_events_pending ())
+       gtk_main_iteration ();
+
+  if (print_filename)
+    giv_print(print_filename);
 
   return 0;
 }
@@ -389,7 +406,8 @@ main (int argc, char *argv[])
 /*======================================================================
 //  init_globals initializes the global variables as gcc doesn't like
 //  doing this in the declarations.
-//----------------------------------------------------------------------*/
+//----------------------------------------------------------------------
+*/
 static void init_globals()
 {
   img_name = NULL;
@@ -1504,6 +1522,7 @@ int create_widgets()
 
   /* A vbox for the rest of the widgets */
   vbox = gtk_vbox_new(FALSE, 5);
+  gtk_widget_show(vbox);
   gtk_container_add (GTK_CONTAINER (w_window), vbox);
 
   /* My image drawing widget */
@@ -1540,7 +1559,9 @@ int create_widgets()
     gtk_container_add (GTK_CONTAINER (scrolled_win), GTK_WIDGET(image_viewer));
     gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(scrolled_win),
 			TRUE, TRUE, 0);
+    gtk_widget_show(scrolled_win);
   }
+  gtk_widget_show(GTK_WIDGET(image_viewer));
     
   /* events */
   gtk_signal_connect (GTK_OBJECT(image_viewer),     "key_press_event",
@@ -1590,8 +1611,7 @@ int create_widgets()
   w_info_label = gtk_label_new("");
   gtk_box_pack_start (GTK_BOX (button_box), w_info_label, FALSE, FALSE, 0);
 
-  /* Show all the widgets */
-  gtk_widget_show_all (w_window);
+  gtk_widget_show_all(button_box);
 
   /* Create widgets that are not shown */
   create_control_window();
@@ -1604,6 +1624,14 @@ int create_widgets()
 					   current_scale_x,
 					   current_scale_y,
 					   w/2,h/2,w/2,h/2);
+
+  /* Show all the widgets */
+  if (!do_no_display)
+     gtk_widget_show_all(w_window);
+  else {
+     gtk_widget_show(w_window);
+     gtk_widget_hide(w_window);
+  }
   shrink_wrap();
   
   return 0;
@@ -1642,10 +1670,15 @@ create_marks_window()
 }
 
 static void
-giv_print()
+cb_giv_print()
 {
-  /* Get name of file */
   const char *filename = gtk_entry_get_text(GTK_ENTRY(print_dialog.filename_entry));
+  giv_print(filename);
+}
+
+static void
+giv_print(const char *filename)
+{
   FILE *PS;
 
   if (!filename)
@@ -1673,6 +1706,8 @@ giv_print()
   fprintf(PS, "closepath clip stroke\n");
 
   /* Print IMAGE */
+  draw_image_in_postscript(image_viewer,
+                           PS);
 
   /* Print MARKS */
   draw_marks_in_postscript(image_viewer,
@@ -1775,7 +1810,7 @@ create_print_window()
   gtk_box_pack_start (GTK_BOX (hbox), button_print, TRUE, TRUE, 0);
   gtk_widget_show(button_print);
   gtk_signal_connect (GTK_OBJECT (button_print),
-		      "clicked", GTK_SIGNAL_FUNC(giv_print),
+		      "clicked", GTK_SIGNAL_FUNC(cb_giv_print),
 		      NULL);
     
   button_cancel = gtk_button_new_with_label("Cancel");
@@ -2585,10 +2620,99 @@ draw_marks(GtkImageViewer *image_viewer)
 }
 
 /*======================================================================
-//  The draw_marks_in_postscript is getting its clipping and scaling
-//  info straight from the widget. Probably this info should be
-//  translated through some proxy...
+//  The draw_image_in_postscript and draw_marks_in_postscript get
+//  their clipping and scaling info straight from the widget. Probably
+//  this info should be translated through some proxy...
 //----------------------------------------------------------------------*/
+static void
+draw_image_in_postscript(GtkImageViewer *widget,
+			 FILE *PS)
+{
+  double cx, cy;
+  int bpp = 3;
+  int pix_idx;
+  int row_stride;
+  int img_width, img_height;
+  double scale_x = current_scale_x;
+  double scale_y = current_scale_y;
+  guint8 *buf;
+  int row_idx, clm_idx;
+  int copy_w = image_viewer->canvas_width;
+  int copy_h = image_viewer->canvas_height;
+  int offs_x = -image_viewer->current_x0;
+  int offs_y = -image_viewer->current_y0;
+
+  GdkPixbuf *img_scaled;
+  
+  img_scaled = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
+                              FALSE,
+                              gdk_pixbuf_get_bits_per_sample(img_display),
+                              copy_w, copy_h);
+
+  /* Copy and scale the image just like in gtk_image_viewer */
+  gdk_pixbuf_scale(img_display,
+                   img_scaled,
+                   0,0,
+                   copy_w,
+                   copy_h,
+                   offs_x,
+                   offs_y,
+                   scale_x, scale_y,
+                   image_viewer->interp_type);
+  
+  img_width = gdk_pixbuf_get_width(img_scaled);  
+  img_height = gdk_pixbuf_get_height(img_scaled);
+  buf = gdk_pixbuf_get_pixels(img_scaled);
+  row_stride = gdk_pixbuf_get_rowstride(img_scaled);
+
+  /* Get upper corner of image */
+  fprintf(PS,
+          "%% Draw image\n"
+          "gsave\n"
+          "50 dict begin\n"
+          "%% The width of the zoomed image\n"
+          "/line %d string def\n"
+          "%% Go to lower left corner\n"
+          "0 0 translate\n"
+          "%% image size\n"
+          "%d %d scale\n"
+          "%% dim of data\n"
+          "%d %d %d\n"
+          "[%d 0 0 %d 0 0]\n"
+          "{currentfile line readhexstring pop}\n"
+          "false 3 colorimage\n",
+          img_width * bpp,
+          img_width,
+          img_height,
+          img_width, img_height, 8,
+          img_width,
+          img_height);
+  {
+    int hex_count = 0;
+    for (row_idx=0; row_idx < img_height; row_idx++)
+      {
+      for (clm_idx=0; clm_idx < img_width; clm_idx++)
+        {
+          guint8 *rgb = &buf[row_idx*row_stride+(clm_idx*bpp)];
+          int col_idx;
+          
+          for (col_idx=0; col_idx<3; col_idx++)
+            {
+              if ((hex_count++ % 36) == 0)
+                fprintf(PS, "\n");
+              fprintf(PS, "%02X", current_maps[col_idx][rgb[col_idx]]);
+            }
+        }
+      }
+  }
+  fprintf(PS,"\n");
+  fprintf(PS,
+          "grestore\n"
+          "end\n");
+
+  gdk_pixbuf_unref(img_scaled);
+}
+
 static void
 draw_marks_in_postscript(GtkImageViewer *widget,
 			 FILE *PS)
@@ -2610,7 +2734,7 @@ draw_marks_in_postscript(GtkImageViewer *widget,
 	  "/L { lineto } bind def\n"
 	  "/S { stroke } bind def\n"
 	  "/M /moveto load def\n"
-	  "/ms { /marksize_y exch def marksize_x exch def } def\n"
+	  "/ms { /marksize_y exch def /marksize_x exch def } def\n"
 	  "/mC { /y exch def /x exch def\n"
 	  "       x marksize_x 2 div add y moveto\n"
 	  "       x y marksize_x 2 div 0 360 arc stroke\n"
@@ -2633,9 +2757,11 @@ draw_marks_in_postscript(GtkImageViewer *widget,
 	  "      marksize_x neg 0 rlineto\n"
 	  "      0 marksize_y neg rlineto\n"
 	  "      fill stroke } bind def\n"
+          "%d %d\n"
 	  "1 setlinejoin %% round endings and caps\n"
 	  "1 setlinecap\n"
-	  "newpath\n"
+	  "newpath\n",
+          default_mark_size, default_mark_size
 	  );
     
   if (!mark_set_list)
@@ -2748,14 +2874,14 @@ draw_marks_in_postscript(GtkImageViewer *widget,
 	       && cy-mark_size_y < canvas_height) {
 	  if (mark_type == MARK_TYPE_CIRCLE)
 	    fprintf(PS, "%.4g %.4g mC\n", cx, cy);
-	  if (mark_type == MARK_TYPE_FCIRCLE)
+	  else if (mark_type == MARK_TYPE_FCIRCLE)
 	    fprintf(PS, "%.4g %.4g mFC\n", cx, cy);
 	  else if (mark_type == MARK_TYPE_SQUARE)
 	    fprintf(PS, "%.4g %.4g mS\n", cx, cy);
 	  else if (mark_type == MARK_TYPE_FSQUARE)
 	    fprintf(PS, "%.4g %.4g mFS\n", cx, cy);
 	  else
-	    g_message("Unknown mark type!\n");
+	    g_message("Unknown mark type %d!\n", (int)mark_type);
 	}
       }
       is_first_point = FALSE;
