@@ -602,7 +602,7 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_IMAGE_REFERENCE;
         }
-      NCASE("$mark_file")
+      NCASE("$marks_file")
         {
           type = STRING_MARKS_REFERENCE;
         }
@@ -760,6 +760,15 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
                                              image_file_name_list);
                   
                   free(image_filename);
+                  break;
+              }
+	  case STRING_MARKS_REFERENCE:
+              {
+                  char *marks_filename = string_strdup_word(S_, 1);
+                  
+                  // Todo: Make image relative to the marks list
+                  g_ptr_array_add(mark_file_name_list, marks_filename);
+                  
                   break;
               }
 	  case STRING_LOW_CONTRAST:
