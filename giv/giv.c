@@ -1495,6 +1495,7 @@ static void
 giv_load_image(const char *new_img_name)
 {
   GError *error = NULL;
+  const gchar *img_name_to_load = new_img_name;
 
 #ifndef G_PLATFORM_WIN32  
   gchar *temp_name = NULL;
@@ -1512,15 +1513,17 @@ giv_load_image(const char *new_img_name)
       fwrite(buf, 1, size, IMG);
 	
     fclose(IMG);
+    img_name_to_load = temp_name;
   }
 #endif
   
-  img_org=gdk_pixbuf_new_from_file (new_img_name,
+  img_org=gdk_pixbuf_new_from_file (img_name_to_load,
 				    &error
 				    );
 #ifndef G_PLATFORM_WIN32
   if (temp_name)
     unlink(temp_name);
+  free(temp_name);
 #endif
   
   if (!img_org && error != NULL)
