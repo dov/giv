@@ -23,6 +23,7 @@ typedef struct {
   gint line_width;
   gint line_style;
   gint mark_type;
+  gint text_size;
   gdouble mark_size;
   gboolean do_scale_marks;
   gboolean do_draw_marks;

@@ -68,6 +68,7 @@ enum {
   STRING_CHANGE_NO_LINE,
   STRING_CHANGE_SCALE_MARKS,
   STRING_CHANGE_MARK_SIZE,
+  STRING_CHANGE_TEXT_SIZE,
   STRING_CHANGE_LINE,
   STRING_CHANGE_NO_MARK,
   STRING_CHANGE_POLYGON,
@@ -620,6 +621,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_CHANGE_MARK_SIZE;
         }
+      NCASE("$text_size")
+        {
+          type = STRING_CHANGE_TEXT_SIZE;
+        }
       NCASE("$nomark")
         {
           type = STRING_CHANGE_NO_MARK;
@@ -827,6 +832,9 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_CHANGE_MARK_SIZE:
 	    marks->mark_size = string_to_atof(S_, 1);
 	    break;
+	  case STRING_CHANGE_TEXT_SIZE:
+	    marks->text_size = string_to_atof(S_, 1);
+	    break;
 	  case STRING_CHANGE_COLOR:
 	    {
 	      char *color_name = string_strdup_word(S_, 1);
@@ -957,6 +965,7 @@ new_mark_set()
   marks->mark_size = default_mark_size;
   marks->line_width = default_line_width;
   marks->line_style = GDK_LINE_SOLID;
+  marks->text_size = 12;
   marks->path_name = g_strdup_printf("Dataset %d", mark_global_count);
   marks->tree_path_string = NULL;
   marks->is_visible = TRUE;
@@ -1658,9 +1667,7 @@ int create_widgets()
   pango_font_description_set_variant (font_description, PANGO_VARIANT_NORMAL);
   pango_font_description_set_weight (font_description, PANGO_WEIGHT_NORMAL);
   pango_font_description_set_stretch (font_description, PANGO_STRETCH_NORMAL);
-  pango_font_description_set_size (font_description, font_scale * PANGO_SCALE);
 
-  pango_context_set_font_description (context, font_description);
   
   
   /* Put image viewer in a scrolled window */
@@ -2702,6 +2709,8 @@ draw_marks(GtkImageViewer *image_viewer)
 		   &mark_set->color,
 		   mark_set->line_width,
 		   mark_set->line_style);
+    pango_font_description_set_size (font_description, (int)(mark_set->text_size * PANGO_SCALE));
+    pango_context_set_font_description (context, font_description);
 
     if (mark_set->do_draw_polygon)
       {
