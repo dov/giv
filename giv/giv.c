@@ -37,6 +37,8 @@
 #include <gtk/gtk.h>
 #include <strings.h>
 #include <gtk_image_viewer/gtk_image_viewer.h>
+#include "giv_types.h"
+#include "giv_mark_tree.h"
 
 #ifdef G_OS_WIN32
 #define SEP "\\"
@@ -54,21 +56,24 @@
 #define OP_DRAW 1
 #define OP_TEXT 2
 
-#define STRING_DRAW 0
-#define STRING_COMMENT 1
-#define STRING_MOVE 2
-#define STRING_TEXT 3
-#define STRING_CHANGE_COLOR 5
-#define STRING_CHANGE_LINE_WIDTH 6
-#define STRING_CHANGE_MARKS 7
-#define STRING_CHANGE_NO_LINE 8
-#define STRING_CHANGE_SCALE_MARKS 9
-#define STRING_CHANGE_MARK_SIZE 10
-#define STRING_CHANGE_LINE 11
-#define STRING_CHANGE_NO_MARK 12
-#define STRING_IMAGE_REFERENCE 13
-#define STRING_MARKS_REFERENCE 14
-#define STRING_LOW_CONTRAST 15
+enum {
+  STRING_DRAW,
+  STRING_COMMENT,
+  STRING_MOVE,
+  STRING_TEXT,
+  STRING_CHANGE_COLOR,
+  STRING_CHANGE_LINE_WIDTH,
+  STRING_CHANGE_MARKS,
+  STRING_CHANGE_NO_LINE,
+  STRING_CHANGE_SCALE_MARKS,
+  STRING_CHANGE_MARK_SIZE,
+  STRING_CHANGE_LINE,
+  STRING_CHANGE_NO_MARK,
+  STRING_IMAGE_REFERENCE,
+  STRING_MARKS_REFERENCE,
+  STRING_LOW_CONTRAST,
+  STRING_PATH_NAME
+};
 
 #define MARK_TYPE_CIRCLE 1
 #define MARK_TYPE_SQUARE 2
@@ -78,34 +83,6 @@
 
 #define LOW_CONTRAST_LOW (128-32)
 #define LOW_CONTRAST_HIGH (128+32)
-
-typedef struct {
-  char *string;
-  double x, y;
-  double size;
-} text_mark_t;
-
-typedef struct {
-  gint op;
-  union {
-    struct {
-      gdouble x,y;
-    } point;
-    text_mark_t *text_object;
-  } data;
-} point_t;
-
-typedef struct {
-  GdkColor color;
-  gint line_width;
-  gint line_style;
-  gint mark_type;
-  gdouble mark_size;
-  gboolean do_scale_marks;
-  gboolean do_draw_marks;
-  gboolean do_draw_lines;
-  GArray *points;
-} mark_set_t;
 
 /* Some static configuration */
 GdkColor set_colors[] =
@@ -187,8 +164,8 @@ static void		draw_histogram();
 static void		calc_histogram();
 static gboolean         color_eq(GdkColor *color1, GdkColor *color2);
 static void             init_globals();
-static void             draw_image_in_postscript(GtkImageViewer *widget, FILE *PS);
-static void             draw_marks_in_postscript(GtkImageViewer *image_viewer,
+static void             draw_image_in_postscript(GtkWidget *widget, FILE *PS);
+static void             draw_marks_in_postscript(GtkWidget *image_viewer,
 						 FILE *PS);
 /* Private floor in order to work with Cygwin! */
 static double           giv_floor(double x);
@@ -205,7 +182,7 @@ gchar *img_name, *marks_name;
 gboolean img_is_mono;
 gboolean do_no_display = FALSE;
 GtkWidget *w_window;
-GtkImageViewer *image_viewer = NULL;
+GtkWidget *image_viewer = NULL;
 GtkWidget *w_info_label;
 GtkWidget *w_control_window;
 GdkPixbuf *img_org, *img_display;
@@ -377,6 +354,8 @@ main (int argc, char *argv[])
   if (img_file_name_list->len == 0)
     fit_marks_in_window();
 
+#if 0
+  // Using ctrl-c for reloading was a bad idea to begin with...
 #ifndef G_PLATFORM_WIN32
   {
     struct sigaction action;
@@ -390,6 +369,7 @@ main (int argc, char *argv[])
     sigset(SIGINT, cb_sigint);
 #endif
   }
+#endif
 #endif
   if (!do_no_display)
     gtk_main ();
@@ -506,6 +486,45 @@ static char* string_strdup_word(const char *string, int idx)
   return word;
 }
 
+static char* string_strdup_rest(const char *string, int idx)
+{
+  const char *p = string;
+  int in_word = 0;
+  int word_count = -1;
+  int nchr = 1;
+  char *word = NULL;
+  const char *word_start = string;
+
+  /* printf("p = 0x%x\n", p); */
+  while(*p) {
+    /* printf("%c\n", *p); fflush(stdout); */
+    if (!in_word) {
+      if (*p != ' ' && *p != '\n' && *p != '\t') {
+	in_word = 1;
+	word_count++;
+	nchr = 1;
+	word_start = p;
+      }
+    }
+    else if (in_word) {
+      if (*p == ' ' || *p == '\n' || *p == '\t') {
+	if (idx == word_count)
+	  break;
+	in_word = 0;
+      }
+    }
+    nchr++;
+    p++;
+  }
+  if (in_word) {
+    nchr = strlen(word_start);
+    word = g_new(char, nchr);
+    strncpy(word, word_start, nchr-1);
+    word[nchr-1]=0;
+  }
+  return word;
+}
+
 static int string_to_atoi(char *string, int idx)
 {
   char *word = string_strdup_word(string, idx);
@@ -561,6 +580,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
       NCASE("$scale_marks")
         {
           type = STRING_CHANGE_SCALE_MARKS;
+        }
+      NCASE("$path")
+        {
+          type = STRING_PATH_NAME;
         }
       NCASE("$mark_size")
         {
@@ -673,6 +696,7 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    {
 	      marks = new_mark_set();
 	      marks->color = set_colors[num_sets];
+	      marks->file_name = strdup(fn);
 	      g_ptr_array_add(mark_set_list, marks);
 	      is_new_set = FALSE;
 	      num_sets++;
@@ -779,6 +803,11 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    else
 	      marks->do_scale_marks = string_to_atoi(S_, 1);
 	    break;
+	  case STRING_PATH_NAME:
+	    if (marks->path_name)
+	      g_free(marks->path_name);
+	    marks->path_name = string_strdup_rest(S_, 1);
+	    break;
 	  }
 	}
 
@@ -849,11 +878,15 @@ free_mark_set_list(GPtrArray *mark_set_list)
   }
 }
 
+int mark_global_count = 0;
+
 static mark_set_t*
 new_mark_set()
 {
   mark_set_t *marks;
 
+  mark_global_count++;
+  
   marks = g_new(mark_set_t, 1);
   marks->points = g_array_new(FALSE, FALSE, sizeof(point_t));
   marks->do_draw_marks = default_draw_marks;
@@ -863,7 +896,10 @@ new_mark_set()
   marks->mark_size = default_mark_size;
   marks->line_width = default_line_width;
   marks->line_style = GDK_LINE_SOLID;
-    
+  marks->path_name = g_strdup_printf("Dataset %d", mark_global_count);
+  marks->tree_path_string = NULL;
+  marks->is_visible = TRUE;
+  
   return marks;
 }
 
@@ -1141,6 +1177,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     cb_toggle_marks_window();
   else if (k == 'h')
     cb_equalize_image();
+  else if (k == 'o')
+    cb_toggle_marks();
   else if (k == 'l')
     cb_low_contrast_image();
   else if (k == 'r')
@@ -1431,7 +1469,7 @@ shrink_wrap()
   if (!image_viewer)
     return;
     
-  gtk_image_viewer_get_scale(image_viewer,
+  gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer),
 			     &scale_x, &scale_y
 			     );
 
@@ -1498,10 +1536,12 @@ int create_widgets()
       int width = 500;
       int height = 500;
       
+#if 0
       if (global_mark_max_x < width && global_mark_max_x > 100)
         width = (int)global_mark_max_x;
       if (global_mark_max_y < height && global_mark_max_y > 100)
         height = (int)global_mark_max_y;
+#endif
 
       w = width*current_scale_x; h = height*current_scale_y;
       data = g_new(guchar, w * h*3);
@@ -1526,12 +1566,12 @@ int create_widgets()
   gtk_container_add (GTK_CONTAINER (w_window), vbox);
 
   /* My image drawing widget */
-  image_viewer = GTK_IMAGE_VIEWER(gtk_image_viewer_new(img_display));
-  gtk_widget_set_double_buffered(GTK_WIDGET(image_viewer), FALSE);
+  image_viewer = gtk_image_viewer_new(img_display);
+  gtk_widget_set_double_buffered(image_viewer, FALSE);
   if (!img_display)
     gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
 
-  gtk_widget_set_size_request(GTK_WIDGET(image_viewer), w, h);
+  gtk_widget_set_size_request(image_viewer, w, h);
 
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
 					   current_scale_x,
@@ -1652,7 +1692,6 @@ create_marks_window()
   vbox = gtk_vbox_new(FALSE, 5);
   gtk_container_add (GTK_CONTAINER (w_marks_window), vbox);
   gtk_widget_show(vbox);
-
 
   /* Toggle marks button */
   button = gtk_button_new_with_label("Toggle marks");
@@ -2091,7 +2130,7 @@ set_transfer_function(trans_func_t which_trans_func)
   }
 
   if (image_viewer)
-  gtk_image_viewer_set_transfer_map(image_viewer,
+  gtk_image_viewer_set_transfer_map(GTK_IMAGE_VIEWER(image_viewer),
 				    current_maps[0],
 				    current_maps[1],
 				    current_maps[2] );
@@ -2165,7 +2204,7 @@ cb_color_image()
     {
       gdk_pixbuf_unref(img_display);
       img_display = img_org;
-      gtk_image_viewer_set_image(image_viewer, img_display);
+      gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(image_viewer), img_display);
     }
 
 }
@@ -2200,7 +2239,7 @@ mono_only_image(int col_idx)
       p+= 3;
       
     }
-  gtk_image_viewer_set_image(image_viewer, img_display);
+  gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(image_viewer), img_display);
 }
 
 static void
@@ -2221,11 +2260,21 @@ cb_blue_only_image()
   mono_only_image(2);
 }
      
+gboolean marks_tree_window_is_shown = FALSE;
+GtkWidget *w_marks_tree_window = NULL;
+
 static void
 cb_toggle_marks()
 {
-  do_show_marks = !do_show_marks;
-  gtk_image_viewer_redraw(GTK_WIDGET(image_viewer));
+  if (marks_tree_window_is_shown) {
+    gtk_widget_destroy(w_marks_tree_window);
+    w_marks_tree_window = NULL;
+  }
+  else {
+    w_marks_tree_window = create_giv_mark_tree(mark_set_list);
+    gtk_widget_show(w_marks_tree_window);
+  }
+  marks_tree_window_is_shown = !marks_tree_window_is_shown;
 }
 
 /*======================================================================
@@ -2542,6 +2591,9 @@ draw_marks(GtkImageViewer *image_viewer)
     gint mark_type;
     GArray *segments;
 
+    if (!mark_set->is_visible)
+      continue;
+    
     segments = g_array_new(FALSE, FALSE, sizeof(GdkSegment));
 	
     gc_set_attribs(gc,
@@ -2625,7 +2677,7 @@ draw_marks(GtkImageViewer *image_viewer)
 //  this info should be translated through some proxy...
 //----------------------------------------------------------------------*/
 static void
-draw_image_in_postscript(GtkImageViewer *widget,
+draw_image_in_postscript(GtkWidget *widget,
 			 FILE *PS)
 {
   double cx, cy;
@@ -2637,10 +2689,10 @@ draw_image_in_postscript(GtkImageViewer *widget,
   double scale_y = current_scale_y;
   guint8 *buf;
   int row_idx, clm_idx;
-  int copy_w = image_viewer->canvas_width;
-  int copy_h = image_viewer->canvas_height;
-  int offs_x = -image_viewer->current_x0;
-  int offs_y = -image_viewer->current_y0;
+  int copy_w = GTK_IMAGE_VIEWER(image_viewer)->canvas_width;
+  int copy_h = GTK_IMAGE_VIEWER(image_viewer)->canvas_height;
+  int offs_x = -GTK_IMAGE_VIEWER(image_viewer)->current_x0;
+  int offs_y = -GTK_IMAGE_VIEWER(image_viewer)->current_y0;
 
   GdkPixbuf *img_scaled;
   
@@ -2658,7 +2710,7 @@ draw_image_in_postscript(GtkImageViewer *widget,
                    offs_x,
                    offs_y,
                    scale_x, scale_y,
-                   image_viewer->interp_type);
+                   GTK_IMAGE_VIEWER(image_viewer)->interp_type);
   
   img_width = gdk_pixbuf_get_width(img_scaled);  
   img_height = gdk_pixbuf_get_height(img_scaled);
@@ -2714,7 +2766,7 @@ draw_image_in_postscript(GtkImageViewer *widget,
 }
 
 static void
-draw_marks_in_postscript(GtkImageViewer *widget,
+draw_marks_in_postscript(GtkWidget *widget,
 			 FILE *PS)
 {
   int set_idx;
@@ -2765,9 +2817,9 @@ draw_marks_in_postscript(GtkImageViewer *widget,
 	  );
     
   if (!mark_set_list)
-  return;
+    return;
   if (!do_show_marks)
-  return;
+    return;
 
   for (set_idx=0; set_idx < mark_set_list->len; set_idx++) {
     mark_set_t *mark_set = g_ptr_array_index (mark_set_list, set_idx);
@@ -2778,6 +2830,9 @@ draw_marks_in_postscript(GtkImageViewer *widget,
     gint mark_type;
     gboolean in_path;
 
+    if (!mark_set->is_visible)
+      continue;
+    
     /* Choose the color and line widths, etc*/
     if (set_idx == 0
 	|| !color_eq(&current_color, &mark_set->color))
@@ -2937,7 +2992,7 @@ fit_marks_in_window()
   if (y_scale < scale)
     scale = y_scale;
 
-  gtk_image_viewer_zoom_around_fixed_point(image_viewer,
+  gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
                                            global_mark_min_x,
