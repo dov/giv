@@ -783,9 +783,19 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  char dummy[256];
 	  gint type;
 	  point_t p;
+          int len;
 	  
 	  linenum++;
 	  fgets(S_, sizeof(S_), IN);
+          len = strlen(S_);
+          
+          // Get rid of CR and LF at end of line
+          while (S_[len-1] == '\r' || S_[len-1] == '\n') 
+            {
+              S_[len-1] = 0;
+              len--;
+            }
+
 	  if (is_new_set)
 	    {
 	      marks = new_mark_set();
@@ -795,7 +805,8 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	      is_new_set = FALSE;
 	      num_sets++;
 	    }
-	  if (strlen(S_) == 1) {
+          
+	  if (len == 0) {
 	    if (marks && ((GArray*)marks->points)->len > 0)
 	      is_new_set++;
 	    continue;

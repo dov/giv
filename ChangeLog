@@ -1,5 +1,7 @@
 2004-09-19  Dov Grobgeld  <dov@orbotech.com>
 
+	* giv/giv.c: Made parser ignore carage return characters.
+
 	* Bumped version to 0.3.11.
 
 	* giv/giv.c: Fixed warning when setting zoom range.
