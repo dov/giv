@@ -122,7 +122,7 @@ typedef enum {
 /*======================================================================
 //  Forward declarations.
 //----------------------------------------------------------------------*/
-int			create_widgets    ();
+int			create_widgets    (const gchar *init_img_filename);
 static void		create_control_window    ();
 static void		create_marks_window    ();
 static void		create_print_window    ();
@@ -145,7 +145,7 @@ static gint             cb_histogram_zoom (GtkWidget *widget,
 					   GdkEventButton *event);
 static gint             cb_histogram_expose_event   (GtkWidget *widget,
 						     GdkEventExpose *event);
-static void             giv_load_image(const char *img_name);
+static void             giv_load_image(const char *new_img_name);
 static void             giv_load_marks(const char *mark_file_name);
 #ifndef G_PLATFORM_WIN32
 static void		cb_sigint(int dummy);
@@ -188,7 +188,7 @@ static void             giv_goto_xy(double x0, double y0, double zoom);
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
 //----------------------------------------------------------------------*/
-gchar *img_name, *marks_name;
+gchar *img_name=NULL, *marks_name=NULL;
 gboolean img_is_mono;
 gboolean do_no_display = FALSE;
 GtkWidget *w_window;
@@ -283,6 +283,7 @@ main (int argc, char *argv[])
   char *print_filename = NULL;
   gboolean do_set_manual_scale = FALSE;
   double goto_x = -1, goto_y = -1, goto_zoom = -1;
+  char *init_image_filename = NULL;
   
   init_globals();
   
@@ -331,7 +332,7 @@ main (int argc, char *argv[])
 	     );
       exit(0);
     }
-    CASE("-") { img_name = "-"; continue; }
+    CASE("-") { init_image_filename = "-"; continue; }
     CASE("-expand") {
       current_scale_x = current_scale_y = atof(argv[argp++]);
       do_set_manual_scale = TRUE;
@@ -393,7 +394,7 @@ main (int argc, char *argv[])
     gtk_rc_parse (rc_file);
   }
 
-  if (!img_name)
+  if (!init_image_filename)
     {
       while (argp<argc)
         {
@@ -417,9 +418,9 @@ main (int argc, char *argv[])
                                      );
 	
   if (img_file_name_list->len > 0)
-    img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
+    init_image_filename = (gchar*)g_ptr_array_index (img_file_name_list, 0);
 
-  create_widgets();
+  create_widgets(init_image_filename);
 
   if (img_file_name_list->len == 0)
     fit_marks_in_window(!do_set_manual_scale);
@@ -1330,6 +1331,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
 static gint
 cb_nextprev_image(gboolean do_prev)
 {
+  gchar *next_image;
+  
   /* printf("nextprev.\n"); */
   if (do_prev)
     {
@@ -1344,8 +1347,8 @@ cb_nextprev_image(gboolean do_prev)
       img_idx++;
     }
 
-  img_name = (gchar*)g_ptr_array_index (img_file_name_list, img_idx);
-  giv_load_image(img_name);
+  next_image = (gchar*)g_ptr_array_index (img_file_name_list, img_idx);
+  giv_load_image(next_image);
   cb_reset_image();
 
   return 0;
@@ -1523,7 +1526,7 @@ giv_load_image(const char *new_img_name)
 #ifndef G_PLATFORM_WIN32
   if (temp_name)
     unlink(temp_name);
-  free(temp_name);
+  g_free(temp_name);
 #endif
   
   if (!img_org && error != NULL)
@@ -1554,8 +1557,8 @@ giv_load_image(const char *new_img_name)
   if (new_img_name != img_name)
     {
       if (img_name)
-	free(img_name);
-      img_name = strdup(new_img_name);
+	g_free(img_name);
+      img_name = g_strdup(new_img_name);
     }
   calc_histogram();
 
@@ -1569,6 +1572,8 @@ giv_load_image(const char *new_img_name)
         gtk_window_set_title(GTK_WINDOW(w_window), img_name);
       cb_reset_image();
     }
+  gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0/8.0,128.0);
+
 }
 
 static void
@@ -1628,7 +1633,7 @@ shrink_wrap()
 //  create_widgets is responsible for creating the user inteface.
 //----------------------------------------------------------------------
 */
-int create_widgets()
+int create_widgets(const gchar *init_img_filename)
 {
   GtkWidget *vbox;
   GtkWidget *button;
@@ -1647,8 +1652,9 @@ int create_widgets()
 
   /* Load the image specified as the first argument or create a grey
      image. */
-  if (img_name) {
-    giv_load_image(img_name);
+  if (init_img_filename) {
+    giv_load_image(init_img_filename);
+    
     if (img_display)
       {
 	w=gdk_pixbuf_get_width(img_display)*current_scale_x;
@@ -1665,7 +1671,6 @@ int create_widgets()
   }
   else
     {
-      guchar *data;
       int width = 500;
       int height = 500;
       
@@ -1677,17 +1682,15 @@ int create_widgets()
 #endif
 
       w = width*current_scale_x; h = height*current_scale_y;
-      data = g_new(guchar, w * h*3);
-      memset(data, 190, width * height*3);
-      g_free(data);
-      
-      img_name = "marks view";
     }
   
   if (giv_title)
     gtk_window_set_title(GTK_WINDOW(w_window), giv_title);
-  else
+  else if (img_name)
     gtk_window_set_title(GTK_WINDOW(w_window), img_name);
+  else
+    gtk_window_set_title(GTK_WINDOW(w_window), "giv");
+      
   gtk_window_set_policy(GTK_WINDOW(w_window), TRUE, TRUE, TRUE);
     
   /* Suck the image's original width and height out of the Image structure */
