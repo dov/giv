@@ -1,3 +1,7 @@
+2005-02-17  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
+
+	* Bumped to version 0.3.12 
+
 2005-02-16  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
 
 	* giv/giv.c: Added support for $def_style and $style statements

@@ -4,7 +4,7 @@ DEBUG = -g -Wall
 INCLUDE = `pkg-config --cflags gtk+-2.0 gtkimageviewer`
 CFLAGS = $(COPT) $(DEBUG) $(INCLUDE) 
 LDFLAGS = `pkg-config --libs gtk+-2.0 gtkimageviewer` -mwindows
-SRC = giv.c giv_mark_tree.c
+SRC = giv.c giv_mark_tree.c colormaps.c
 OBJ = $(SRC:.c=.o)
 NSI_TOP = /usr/local
 

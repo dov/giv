@@ -1,5 +1,5 @@
 Name "Giv"
-OutFile "InstallGiv-0.3.9.exe"
+OutFile "InstallGiv-0.3.12.exe"
 
 SetCompress force ; (can be off or force)
 CRCCheck on ; (can be off)
@@ -11,6 +11,13 @@ InstallDir "$PROGRAMFILES\Giv"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Giv" ""
 ; DirShow ; (make this hide to not let the user change it)
 DirText "Select the directory to install Giv in:"
+
+; optional section
+Section "Start Menu Shortcuts"
+  CreateDirectory "$SMPROGRAMS\Giv"
+  CreateShortCut "$SMPROGRAMS\Giv\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
+  CreateShortCut "$SMPROGRAMS\Giv\Giv.lnk" "$INSTDIR\giv.exe" "" "$INSTDIR\Ggiv.exe" 0
+SectionEnd
 
 Section "" ; (default section)
 SetOutPath "$INSTDIR"
