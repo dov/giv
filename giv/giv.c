@@ -38,6 +38,12 @@
 #include <strings.h>
 #include <gtk_image_viewer/gtk_image_viewer.h>
 
+#ifdef G_OS_WIN32
+#define SEP "\\"
+#else
+#define SEP "/"
+#endif
+
 // #define DEBUG_CLIP 1
 #define CASE(s) if (!strcmp(s, S_))
 #define NCASE(s) if (!g_strcasecmp(s, S_))
@@ -989,6 +995,7 @@ gint cb_load_image_ok(gpointer dummy1,
   
   giv_load_image(fn);
   cb_reset_image();
+  gtk_widget_destroy(dialog_window);
   
   return 1;
 }
@@ -1025,8 +1032,8 @@ gint cb_load_marks_ok(gpointer dummy1,
   giv_load_marks(fn);
   set_last_directory_from_filename(fn);
   
-  /*    redraw(drawing_area); */
-  
+  gtk_widget_destroy(dialog_window);
+
   return 1;
 }
 
@@ -2785,7 +2792,7 @@ set_last_directory_from_filename(const gchar *filename)
     if (giv_last_directory)
         free(giv_last_directory);
     dir_name = g_path_get_dirname(filename);
-    giv_last_directory = g_strdup_printf("%s/", dir_name);
+    giv_last_directory = g_strdup_printf("%s%s", dir_name, SEP);
     free(dir_name);
 }
 
