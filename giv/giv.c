@@ -223,6 +223,11 @@ int histogram_height;
 gchar *giv_last_directory = NULL;
 trans_func_t giv_current_transfer_function = TRANS_FUNC_RESET;
 gchar *giv_title = NULL;
+PangoContext *context;
+PangoLayout *layout;
+PangoFontDescription *font_description;
+const char *font_family = "Sans";
+const int font_scale = 12;
 
 struct {
   GtkWidget *filename_entry;
@@ -330,6 +335,7 @@ main (int argc, char *argv[])
   }
 
   gtk_init (&argc, &argv);
+  
   {
     gchar rc_file[255];
     
@@ -769,9 +775,11 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	  case STRING_TEXT:
 	    {
 	      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
-	      tm->string = (char*)g_new(char, 64);
-	      sscanf(S_, "%s %lf %lf %s", dummy, &tm->x, &tm->y, &tm->string);
+	      sscanf(S_, "%s %lf %lf %s", dummy, &tm->x, &tm->y);
+	      tm->string = string_strdup_rest(S_, 3);
 	      p.op = OP_TEXT;
+	      p.data.point.x = tm->x;
+	      p.data.point.y = tm->y;
 	      p.data.text_object = tm;
 	      g_array_append_val(marks->points, p);
 	    }
@@ -1641,6 +1649,20 @@ int create_widgets()
 					   current_scale_y,
 					   w/2,h/2,w/2,h/2);
 
+  /* Set up text */
+  context = gtk_widget_get_pango_context (image_viewer);
+  layout = pango_layout_new(context);
+  font_description = pango_font_description_new ();
+  pango_font_description_set_family (font_description, g_strdup (font_family));
+  pango_font_description_set_style (font_description, PANGO_STYLE_NORMAL);
+  pango_font_description_set_variant (font_description, PANGO_VARIANT_NORMAL);
+  pango_font_description_set_weight (font_description, PANGO_WEIGHT_NORMAL);
+  pango_font_description_set_stretch (font_description, PANGO_STRETCH_NORMAL);
+  pango_font_description_set_size (font_description, font_scale * PANGO_SCALE);
+
+  pango_context_set_font_description (context, font_description);
+  
+  
   /* Put image viewer in a scrolled window */
   {
     GtkWidget *scrolled_win;
@@ -2735,6 +2757,14 @@ draw_marks(GtkImageViewer *image_viewer)
       gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
 					       x,y,
 					       &cx,&cy);
+
+      if (op == OP_TEXT) {
+	  pango_layout_set_text(layout, p.data.text_object->string, -1);
+	  
+	  gdk_draw_layout (drawing_area, gc, cx, cy, layout);
+	  
+	  continue;
+      }
 #ifdef DEBUG_CLIP
       printf("scale = %.0f  x y = %g %g   cx cy = %.2f %.2f\n", current_scale, x,y, cx, cy);
 #endif
@@ -3124,7 +3154,6 @@ fit_marks_in_window(gboolean do_calc_scale)
         y_scale = x_scale;
     }
 
-  printf("max = %f %f\n", global_mark_max_x, global_mark_max_y);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
