@@ -118,6 +118,7 @@ int			create_widgets    ();
 static void		create_control_window    ();
 static void		create_marks_window    ();
 static void		create_print_window    ();
+static void		create_goto_point_window    ();
 static void		cb_quit		  (void);
 static gint             cb_nextprev_image(gboolean do_prev);
 static GPtrArray *	read_mark_set_list(GPtrArray *mark_file_name_list);
@@ -793,6 +794,26 @@ cb_toggle_print_window()
   print_window_is_shown = !print_window_is_shown;
 }
 
+
+/*======================================================================
+//  Goto point window.
+//----------------------------------------------------------------------*/
+gboolean goto_point_window_is_shown = FALSE;
+GtkWidget *w_goto_point_window = NULL;
+
+static void
+cb_toggle_goto_point_window()
+{
+  if (goto_point_window_is_shown) {
+    gtk_widget_destroy(w_goto_point_window);
+    w_goto_point_window = NULL;
+  }
+  else {
+    create_goto_point_window();
+    gtk_widget_show(w_goto_point_window);
+  }
+  goto_point_window_is_shown = !goto_point_window_is_shown;
+}
 
 /*======================================================================
 //  Event callbacks.
@@ -1624,6 +1645,79 @@ create_print_window()
 }
 
 static void
+giv_goto_point(double zoom,
+               double x0, double y0)
+{
+    
+}
+
+static void
+create_goto_point_window()
+{
+  GtkWidget *vbox, *hbox;
+  GtkWidget *table1;
+  GtkWidget *button_goto, *button_cancel;
+  gchar *fields[] = { "x:", "y:", "zoom:" };
+  int num_fields = 3;
+  int field_idx;
+
+  if (w_goto_point_window)
+    gtk_widget_destroy(w_goto_point_window);
+
+  w_goto_point_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_container_border_width (GTK_CONTAINER (w_goto_point_window), 3);
+
+  vbox = gtk_vbox_new(FALSE, 5);
+  gtk_container_add (GTK_CONTAINER (w_goto_point_window), vbox);
+  gtk_widget_show(vbox);
+    
+  table1 = gtk_table_new (2, 3, FALSE);
+  gtk_widget_ref (table1);
+  gtk_object_set_data_full (GTK_OBJECT (w_goto_point_window), "table1", table1,
+			    (GtkDestroyNotify) gtk_widget_unref);
+
+  gtk_widget_show (table1);
+  gtk_box_pack_start (GTK_BOX (vbox), table1, TRUE, TRUE, 0);
+
+  for (field_idx=0; field_idx<3; field_idx++) {
+      GtkWidget *label = gtk_label_new(fields[field_idx]);
+      GtkWidget *entry = gtk_entry_new();
+      
+      gtk_table_attach (GTK_TABLE (table1), label, 0, 1, field_idx, field_idx+1,
+                        (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                        (GtkAttachOptions) (0), 0, 0);
+      gtk_table_attach (GTK_TABLE (table1), entry, 1, 2, field_idx, field_idx+1,
+                        (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                        (GtkAttachOptions) (0), 0, 0);
+      
+      /* Attch the entry to the button widget so that it may be retrieved
+         when the goto button is pressed. */
+  }
+  
+  /* goto and quit buttons */
+  hbox = gtk_hbox_new(FALSE,5);
+  gtk_box_pack_start (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
+  gtk_widget_show(hbox);
+    
+  button_goto = gtk_button_new_with_label("Goto");
+  gtk_box_pack_start (GTK_BOX (hbox), button_goto, TRUE, TRUE, 0);
+  gtk_widget_show(button_goto);
+  gtk_signal_connect (GTK_OBJECT (button_goto),
+		      "clicked", GTK_SIGNAL_FUNC(giv_goto_point),
+		      NULL);
+    
+  button_cancel = gtk_button_new_with_label("Cancel");
+  gtk_box_pack_start (GTK_BOX (hbox), button_cancel, TRUE, TRUE, 0);
+  gtk_widget_show(button_cancel);
+  gtk_signal_connect (GTK_OBJECT (button_cancel),
+		      "clicked", GTK_SIGNAL_FUNC(cb_toggle_goto_point_window),
+		      NULL);
+
+  gtk_widget_show_all(w_goto_point_window);
+
+}
+
+static void
 create_button(GtkWidget *vbox,
 	      const gchar *label,
 	      gpointer func)
@@ -1706,6 +1800,7 @@ create_control_window()
   create_button(vbox, "Load image", cb_load_image);
   create_button(vbox, "Marks", cb_toggle_marks_window);
   create_button(vbox, "Print", cb_toggle_print_window);
+  create_button(vbox, "Goto Point", cb_toggle_goto_point_window);
 }
 
 /*======================================================================
