@@ -168,6 +168,7 @@ static double           giv_floor(double x);
 static void             set_last_directory_from_filename(const gchar *filename);
 static void             add_filename_to_image_list(gchar *image_file_name,
                                                    GPtrArray *image_file_name_list);
+static void             fit_marks_in_window();
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
@@ -315,7 +316,7 @@ main (int argc, char *argv[])
           
           /* Check if the filename ends with .marks */
           if (g_strrstr(filename, ".marks") != NULL
-              || g_strrstr(filename, ".givm") != NULL
+              || g_strrstr(filename, ".giv") != NULL
               )
             g_ptr_array_add(mark_file_name_list, filename);
           else
@@ -334,6 +335,9 @@ main (int argc, char *argv[])
     img_name = (gchar*)g_ptr_array_index (img_file_name_list, 0);
 
   create_widgets();
+
+  if (img_file_name_list->len == 0)
+    fit_marks_in_window();
 
 #ifndef G_PLATFORM_WIN32
   {
@@ -2675,3 +2679,25 @@ set_last_directory_from_filename(const gchar *filename)
     free(dir_name);
 }
 
+/*======================================================================
+//  Make the window exactly fit the marks.
+//----------------------------------------------------------------------*/
+static void
+fit_marks_in_window()
+{
+  // 500 is the default window width and height. It should be changed
+  // to a parameter...
+  double x_scale = 500 / (global_mark_max_x - global_mark_min_x)*0.7;
+  double y_scale = 500 / (global_mark_max_y - global_mark_min_y)*0.7;
+  double scale = x_scale;
+
+  if (y_scale < scale)
+    scale = y_scale;
+
+  gtk_image_viewer_zoom_around_fixed_point(image_viewer,
+                                           x_scale,
+                                           y_scale,
+                                           global_mark_min_x,
+                                           global_mark_min_y,
+                                           0,0);
+}
