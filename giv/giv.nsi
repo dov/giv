@@ -1,5 +1,5 @@
 Name "Giv"
-OutFile "InstallGiv-0.3.8.exe"
+OutFile "InstallGiv-0.3.9.exe"
 
 SetCompress force ; (can be off or force)
 CRCCheck on ; (can be off)
@@ -9,7 +9,7 @@ LicenseData "COPYING.dos"
 
 InstallDir "$PROGRAMFILES\Giv"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Giv" ""
-DirShow show ; (make this hide to not let the user change it)
+; DirShow ; (make this hide to not let the user change it)
 DirText "Select the directory to install Giv in:"
 
 Section "" ; (default section)
@@ -20,7 +20,6 @@ File ..\COPYING
 File ..\README
 File ..\AUTHORS
 File giv.exe
-File /r nsi\*.*
 File /r ..\doc
 
 WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\giv" "" "$INSTDIR"

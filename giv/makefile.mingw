@@ -15,10 +15,8 @@ clean :
 	rm giv.exe $(OBJ)
 
 nsi :
-	mkdir -p nsi
-	tar -C./nsi -zxf /home/dov/base/gtkwinbase.tar.gz
 	perl -pe 's/\n/\r\n/' ../COPYING > COPYING.dos
 	/cygdrive/c/Program\ Files/NSIS/makensis giv.nsi
-	rm -rf nsi COPYING.dos
+	rm -rf COPYING.dos
 
 
