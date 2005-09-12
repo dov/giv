@@ -1,3 +1,19 @@
+$MARKS arc
+$lw 2
+250 50
+300 50
+180 0
+
+$line
+200 50
+200 100
+
+$MARKS arc
+$lw 5
+150 100
+200 100
+-180 0
+
 $PATH circles
 $LW 3
 $NOLINE
@@ -29,9 +45,22 @@ move 120 250
 120 220
 
 $PATH Another line
-$LW 5
+$LW 2
+$ls 0
 300 130
 300 180
+
+$PATH Another line
+$LW 2
+$ls 1
+350 130
+350 180
+
+$PATH Another line
+$LW 2
+$ls 2
+400 130
+400 180
 
 $polygon
 $color pink3

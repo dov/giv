@@ -41,6 +41,39 @@
 #include "giv_mark_tree.h"
 #include "colormaps.h"
 
+/** I am using cursor_plus to measure */
+GdkCursor *cursor_plus=0, *cursor_default=0;
+
+float point_distance(int x1, int y1, int x2, int y2) {
+  return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+}
+
+static
+int circle_from_3points(double a_x,
+			double a_y,
+			double b_x,
+			double b_y,
+			double c_x,
+			double c_y,
+			// output
+			double* p_x,
+			double* p_y,
+			double* radius
+			);
+static
+void givarc2gdkarc(double x0,
+		   double y0,
+		   double x1,
+		   double y1,
+		   double arc_dev,
+		   // output
+		   int* x,
+		   int* y,
+		   int* width,
+		   int* height,
+		   int* angle1,
+		   int* angle2);
+
 #ifdef G_OS_WIN32
 #define SEP "\\"
 #else
@@ -56,15 +89,18 @@
 #define OP_MOVE 0
 #define OP_DRAW 1
 #define OP_TEXT 2
+#define OP_ARC 3
 
 enum {
   STRING_DRAW,
   STRING_COMMENT,
   STRING_MOVE,
   STRING_TEXT,
+  STRING_ARC,
   STRING_CHANGE_COLOR,
   STRING_CHANGE_OUTLINE_COLOR,
   STRING_CHANGE_LINE_WIDTH,
+  STRING_CHANGE_LINE_STYLE, 
   STRING_CHANGE_MARKS,
   STRING_CHANGE_NO_LINE,
   STRING_CHANGE_SCALE_MARKS,
@@ -87,6 +123,7 @@ enum {
 #define MARK_TYPE_FCIRCLE 3
 #define MARK_TYPE_FSQUARE 4
 #define MARK_TYPE_PIXEL 5
+#define MARK_TYPE_ARC 6
 
 #define LOW_CONTRAST_LOW (128-32)
 #define LOW_CONTRAST_HIGH (128+32)
@@ -196,6 +233,8 @@ static void             set_props_from_style(mark_set_t *marks,
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
 //----------------------------------------------------------------------*/
+int start_measure, measure_point_index; // allow ON SCREEN measurements
+int last_move_x, last_move_y, measure_x1, measure_y1, measure_x2, measure_y2;
 gchar *img_name=NULL, *marks_name=NULL;
 gboolean img_is_mono;
 gboolean do_no_display = FALSE;
@@ -207,6 +246,7 @@ GdkPixbuf *img_org, *img_display;
 GdkPixmap *histogram_drawing_pixmap;
 int canvas_width, canvas_height;
 double current_scale_x = 1.0, current_scale_y = 1.0, current_x0, current_y0;
+double prefix_x = 0.0, prefix_y = 0.0;
 GPtrArray *mark_set_list = NULL;
 GPtrArray *mark_file_name_list;
 GPtrArray *img_file_name_list;
@@ -220,6 +260,7 @@ gboolean default_draw_marks;
 gboolean default_scale_marks;
 gint default_mark_type;
 gdouble default_mark_size;
+gint default_line_style;
 gint default_line_width;
 double global_mark_max_x;
 double global_mark_max_y;
@@ -296,6 +337,12 @@ main (int argc, char *argv[])
   
   init_globals();
   
+  
+
+  // init measure vars
+  start_measure = 0;
+  measure_x2 = measure_y2 = measure_x1 = measure_y1 = -1;
+
   mark_file_name_list = g_ptr_array_new ();
   img_file_name_list = g_ptr_array_new ();
 
@@ -316,7 +363,7 @@ main (int argc, char *argv[])
       printf("giv -  A gtk image viewer\n"
 	     "\n"
 	     "Syntax:\n"
-	     "    giv [-marks marks] [-nl] [-P] [-ms ms] [-sm] [lw lw] [img] [-expand e]\n"
+	     "    giv [-marks marks] [-nl] [-P] [-ms ms] [-sm] [-add x y] [-lw lw] [img] [-expand e]\n"
              "        [-title title] img\n"
 	     "\n"
 	     "Description:\n"
@@ -337,6 +384,7 @@ main (int argc, char *argv[])
 	     "	  -lw lw         Default line width.\n"
 	     "	  -expand e	 Initial expansion.\n"
              "    -invert inv    Invert image.\n"
+	     "    -add x y       Add x,y point to all the given coordinates.\n"
              "    -gotoxyz x y zoom  Start display at given x, y and zoom.\n"
 	     "\n"
 	     "Example:\n"
@@ -346,6 +394,17 @@ main (int argc, char *argv[])
 	     "       $SCALE_MARKS\n"
 	     "       10 20\n"
 	     "       20 20\n"
+	     "\n"
+	     "GUI Controls:\n"
+	     "    1. Use 'z' to enter/exit measure mode\n"
+	     "New Support\n"
+	     "    Arc drawing: $MARKS arc\n"
+	     "                 <center x>          <center y>\n"
+	     "                 <start x>           <start y>\n"
+	     "                 <angle in degrees, positive=ccw, negative=cw>  <0=not filled, 1=filled>\n"
+	     "    Line Style:  Support for 3 different line styles: 0..2\n"
+	     "                 $ls [0=SOLID, 1=ON_OFF_DASH, 2=DOUBLE_DASH]\n"
+
 	     );
       exit(0);
     }
@@ -353,6 +412,11 @@ main (int argc, char *argv[])
     CASE("-expand") {
       current_scale_x = current_scale_y = atof(argv[argp++]);
       do_set_manual_scale = TRUE;
+      continue;
+    }
+    CASE("-add") {
+      prefix_x = atof(argv[argp++]);
+      prefix_y = atof(argv[argp++]);
       continue;
     }
     CASE("-scale") {
@@ -509,6 +573,7 @@ static void init_globals()
   default_mark_type = 1;
   default_mark_size = 5;
   default_line_width = 1;
+  default_line_style = GDK_LINE_SOLID;
   default_render_type = -1;
   do_mono = FALSE;
   color_component = 0;
@@ -675,6 +740,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_CHANGE_LINE_WIDTH;
         }
+      NCASE("$ls")
+        {
+          type = STRING_CHANGE_LINE_STYLE;
+        }
       NCASE("$color")
         {
           type = STRING_CHANGE_COLOR;
@@ -753,6 +822,10 @@ gint parse_string(const char *string, char *fn, gint linenum)
     {
       type = STRING_TEXT;
     }
+  else if (first_char == 'A' || first_char=='a')
+    {
+      type = STRING_ARC;
+    }
   else
     {
       type = STRING_DRAW;
@@ -767,6 +840,8 @@ parse_mark_type(const char *S_, const char *fn, gint linenum)
     return MARK_TYPE_CIRCLE;
   NCASE("fcircle")
     return MARK_TYPE_FCIRCLE;
+  NCASE("arc")
+    return MARK_TYPE_ARC;
   NCASE("square")
     return MARK_TYPE_SQUARE;
   NCASE("fsquare")
@@ -855,17 +930,41 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    break;
 	  case STRING_DRAW:
 	  case STRING_MOVE:
+	  case STRING_ARC:
 	    if (type == STRING_DRAW)
               {
                 sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y);
+		p.data.point.x += prefix_x;
+		p.data.point.y += prefix_y;
                 p.op = OP_DRAW;
               }
-	    else
+	    else if (type == STRING_MOVE)
               {
                 sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y);
+		p.data.point.x += prefix_x;
+		p.data.point.y += prefix_y;
                 p.op = OP_MOVE;
               }
-	    
+	    else
+	      {
+		double px, py, arc_dev;
+                sscanf(S_, "%s %lf %lf %lf", dummy, &px, &py, &arc_dev);
+		
+		/* Arcs are stored in the space of two points. */
+		p.op = OP_ARC;
+		p.data.arc_dev = arc_dev;
+
+		/* push the point */
+		g_array_append_val(marks->points, p);
+
+		/* Now store x and y */
+		p.data.point.x = px + prefix_x;
+		p.data.point.y = py + prefix_y;
+	      }
+		
+	    /* push the point */
+	    g_array_append_val(marks->points, p);
+
 	    /* Find marks bounding box */
 	    if (p.data.point.x < min_x)
 	      min_x = p.data.point.x;
@@ -876,13 +975,14 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    else if (p.data.point.y > max_y)
 	      max_y = p.data.point.y;
 	    
-	    g_array_append_val(marks->points, p);
 	    break;
 	  case STRING_TEXT:
 	    {
 	      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
 	      sscanf(S_, "%s %lf %lf", dummy, &tm->x, &tm->y);
 	      tm->string = string_strdup_rest(S_, 3);
+	      tm->x += prefix_x;
+	      tm->y += prefix_y;
 	      p.op = OP_TEXT;
 	      p.data.point.x = tm->x;
 	      p.data.point.y = tm->y;
@@ -892,6 +992,10 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
 	    break;
 	  case STRING_CHANGE_LINE_WIDTH:
 	    marks->line_width = string_to_atoi(S_, 1);
+	    break;
+	  case STRING_CHANGE_LINE_STYLE:
+	    marks->line_style = string_to_atoi(S_, 1);
+	    marks->line_style = marks->line_style % 3; // we have only 3 line styles.
 	    break;
 	  case STRING_IMAGE_REFERENCE:
               {
@@ -1080,7 +1184,7 @@ new_mark_set()
   marks->mark_type = default_mark_type;
   marks->mark_size = default_mark_size;
   marks->line_width = default_line_width;
-  marks->line_style = GDK_LINE_SOLID;
+  marks->line_style = default_line_style;
   marks->text_size = 12;
   marks->path_name = g_strdup_printf("Dataset %d", mark_global_count);
   marks->tree_path_string = NULL;
@@ -1460,6 +1564,28 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     
   if (k == 'm')
     cb_toggle_marks_window();
+  else if (k == 'z') {
+    if (0 == start_measure) {
+      // start the measuring
+      start_measure = 1;
+      measure_point_index = 0;
+      if (cursor_plus == 0)
+	cursor_plus = gdk_cursor_new(GDK_TCROSS);
+      // change cursor
+      gdk_window_set_cursor(widget->window, cursor_plus);
+      gdk_flush();
+    }
+    else {
+      // end measuring this distance
+      start_measure = 0;
+      measure_x2 = measure_y2 = measure_x1 = measure_y1 = -1;
+      if (0 == cursor_default)
+	cursor_default = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
+      // change cursor
+      gdk_window_set_cursor(widget->window, cursor_default);
+      gdk_flush();
+    }
+  }
   else if (k == 'h')
     cb_equalize_image();
   else if (k == 'a')
@@ -1522,6 +1648,21 @@ cb_button_press_event(GtkWidget *widget, GdkEventButton *event)
   gboolean is_signal_caught = FALSE;
     
   if (button == 1) {
+    // check if are in measure mode ('z')
+    if (start_measure) {
+      if (0 == measure_point_index) {
+	measure_x1 = last_move_x;
+	measure_y1 = last_move_y;
+	measure_point_index = 1;
+	measure_x2 = measure_y2 = -1;
+      }
+      else {
+	measure_x2 = last_move_x;
+	measure_y2 = last_move_y;
+	measure_point_index = 0;
+      }
+      is_signal_caught= TRUE;
+    }
   }
   else if (button == 2) {
   }
@@ -1553,7 +1694,43 @@ cb_motion_event(GtkWidget *widget, GdkEventButton *event)
   gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
 					   cx, cy, &x, &y);
   
-  g_string_sprintf(info_label, " (%d, %d)", (int)giv_floor(x),(int)giv_floor(y));
+  if (start_measure) {
+    if (1 == measure_point_index) {
+      GdkWindow *drawing_area = GTK_WIDGET(widget)->window;
+      GdkGC *gc = gdk_gc_new(drawing_area);
+      gc_set_attribs(gc,
+		     &set_colors[0],
+		     1,
+		     GDK_LINE_SOLID);
+
+      double measure_x1_canvas, measure_y1_canvas;
+      // convert coords to canvas coords
+      gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+					       measure_x1, measure_y1,
+					       &measure_x1_canvas,
+					       &measure_y1_canvas);
+  
+      // use XOR mode for drawing.
+      gdk_gc_set_function(gc, GDK_XOR);
+      if (measure_x2 != -1) {
+	// erase last line.
+	gdk_draw_line(drawing_area, gc, measure_x1_canvas, measure_y1_canvas, measure_x2, measure_y2);
+      }
+      // draw new line.
+      gdk_draw_line(drawing_area, gc, measure_x1_canvas, measure_y1_canvas, cx, cy);
+
+      // show distance
+      char buf[32];
+      g_string_sprintf(info_label, " (%d, %d) Measure ON:%f", (int)giv_floor(x),(int)giv_floor(y), 
+		       point_distance(measure_x1, measure_y1, x, y));
+      g_free(gc);
+      measure_x2 = cx;
+      measure_y2 = cy;
+    }
+  }
+  else {
+    g_string_sprintf(info_label, " (%f, %f)", x, y);
+  }
   
   if (img_display)
     {
@@ -1583,6 +1760,9 @@ cb_motion_event(GtkWidget *widget, GdkEventButton *event)
   gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
   g_string_free(info_label, TRUE);
   
+  last_move_x = (int)giv_floor(x);
+  last_move_y = (int)giv_floor(y);
+
   return FALSE;
 }
 
@@ -3038,6 +3218,57 @@ draw_marks(GtkImageViewer *image_viewer)
     gint mark_type;
     GArray *segments;
 
+
+   ////////////
+    if (mark_set->mark_type == MARK_TYPE_ARC) {
+      mark_set->do_scale_marks = 1;
+      if (mark_set->points->len != 3) {
+	fprintf(stderr, "Arc mark should have 3 coordinates: center point, start point, rotation angle and style!\n");
+      }
+      else {
+	// get center point.
+	double cpx, cpy; 
+	point_t cp = g_array_index(mark_set->points, point_t, 0);
+	gtk_image_viewer_img_coord_to_canv_coord(image_viewer, cp.data.point.x, cp.data.point.y, &cpx, &cpy);
+	
+	// get start point.
+	double spx, spy; 
+	point_t sp = g_array_index(mark_set->points, point_t, 1);
+	gtk_image_viewer_img_coord_to_canv_coord(image_viewer, sp.data.point.x, sp.data.point.y, &spx, &spy);
+	
+	// get rotation angle
+	double angle;
+	point_t dp = g_array_index(mark_set->points, point_t, 2);
+	angle = dp.data.point.x;
+	
+	int x=cpx, y=cpy;
+	double size_x = spx-cpx, size_y=spy-cpy;
+	double radius = sqrt((spx-cpx)*(spx-cpx) + (spy-cpy)*(spy-cpy));
+	gboolean do_fill = (dp.data.point.y == 1) ? 1 : 0;
+	
+	// set graphic attribs
+	gc_set_attribs(gc,
+		       &mark_set->color,
+		       mark_set->line_width,
+		       mark_set->line_style);
+	
+	// draw the arc
+	gdk_draw_arc(drawing_area,
+		     gc, 
+		     do_fill, 
+		     cpx-radius, 
+		     cpy-radius, 
+		     radius*2, 
+		     radius*2,
+		     0, 
+		     angle*64);
+	
+	// process next mark
+	continue;
+      }
+    }
+    ///////////
+
     if (!mark_set->is_visible)
       continue;
 
@@ -3096,9 +3327,17 @@ draw_marks(GtkImageViewer *image_viewer)
       point_t p = g_array_index(mark_set->points, point_t, p_idx);
       double x = p.data.point.x;
       double y = p.data.point.y;
+      double arc_dev;
       double cx, cy;
       int op = p.op;
 
+      if (op == OP_ARC) {
+	  arc_dev = p.data.arc_dev;
+	  p_idx++;
+	  p = g_array_index(mark_set->points, point_t, p_idx);
+	  x = p.data.point.x;
+	  y = p.data.point.y;
+      }
       gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
 					       x,y,
 					       &cx,&cy);
@@ -3114,29 +3353,58 @@ draw_marks(GtkImageViewer *image_viewer)
       printf("scale = %.0f  x y = %g %g   cx cy = %.2f %.2f\n", current_scale, x,y, cx, cy);
 #endif
 
-      if (mark_set->do_draw_lines && !is_first_point && op == OP_DRAW) {
-	GdkSegment seg;
-	double x1,y1,x2,y2;
+      if (mark_set->do_draw_lines
+	  && !is_first_point) {
+	if (op == OP_ARC) {
+	    int x,y,width,height,angle1,angle2;
+	  
+	  // Convert the arc_dev to canvas coordinates. At the
+	  // moment assume uniform scaling in x and y so that we
+	  // get circles.
+	  arc_dev *= scale_x;
 
-	if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
-				   0, 0, canvas_width, canvas_height,
-				   &x1,&y1,&x2,&y2)) {
-		
-	  /* Must clip the area shown */
-	  seg.x1 = (gint16)x1;
-	  seg.y1 = (gint16)y1;
-	  seg.x2 = (gint16)x2;
-	  seg.y2 = (gint16)y2;
-	  segments = g_array_append_val(segments, seg);
+	  // Convert to gdk_draw_arc coordinates or should I perhaps
+	  // do polygon segments??
+	  givarc2gdkarc(old_cx,
+			old_cy,
+			cx,
+			cy,
+			arc_dev,
+			// output
+			&x,&y,&width,&height,&angle1,&angle2);
+
+	  // Draw it 
+	  gdk_draw_arc(drawing_area,
+		       gc,
+		       FALSE,
+		       x,y,
+		       width, height,
+		       angle1, angle2);
 	}
-
+	else if (op == OP_DRAW) {
+	  GdkSegment seg;
+	  double x1,y1,x2,y2;
+	  
+	  if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
+				     0, 0, canvas_width, canvas_height,
+				     &x1,&y1,&x2,&y2)) {
+	    
+	    /* Must clip the area shown */
+	    seg.x1 = (gint16)x1;
+	    seg.y1 = (gint16)y1;
+	    seg.x2 = (gint16)x2;
+	    seg.y2 = (gint16)y2;
+	    segments = g_array_append_val(segments, seg);
+	  }
+	  
 #if 0
-	draw_line(drawing_area,
-		  gc,
-		  old_cx, old_cy,
-		  cx, cy);
-
+	  draw_line(drawing_area,
+		    gc,
+		    old_cx, old_cy,
+		    cx, cy);
+	  
 #endif
+	}
       }
       if (mark_set->do_draw_marks) {
 	/* Trivial clipping for marks */
@@ -3614,4 +3882,94 @@ static void set_props_from_style(mark_set_t *marks,
         }
       g_free(S_);
     }
+}
+
+static
+int circle_from_3points(double a_x,
+			double a_y,
+			double b_x,
+			double b_y,
+			double c_x,
+			double c_y,
+			// output
+			double* p_x,
+			double* p_y,
+			double* radius
+			)
+{
+
+    double D = (a_x - c_x) * (b_y - c_y) - (b_x - c_x) * (a_y - c_y);
+
+    if (D==0)
+	return -1;
+
+    *p_x = (((a_x - c_x) * (a_x + c_x)
+	     + (a_y - c_y) * (a_y + c_y)) / 2 * (b_y - c_y) 
+	    -  ((b_x - c_x) * (b_x + c_x)
+		+ (b_y - c_y) * (b_y + c_y)) / 2 * (a_y - c_y)) 
+	/ D;
+	
+    *p_y = (((b_x - c_x) * (b_x + c_x)
+	     + (b_y - c_y) * (b_y + c_y)) / 2 * (a_x - c_x)
+	    -  ((a_x - c_x) * (a_x + c_x)
+		+ (a_y - c_y) * (a_y + c_y)) / 2 * (b_x - c_x))
+	/ D;
+
+    *radius = sqrt( (*p_x - a_x)*(*p_x-a_x) + (*p_y - a_y)*(*p_y-a_y));
+
+    return 0;
+}
+
+// This should be updated to accept scale_x and scale_y so that
+// the arcdev may be scaled properly... Currently this only works
+// for square aspect ratio.
+void givarc2gdkarc(double x0,
+		   double y0,
+		   double x1,
+		   double y1,
+		   double arc_dev,
+		   // output
+		   int* x,
+		   int* y,
+		   int* width,
+		   int* height,
+		   int* angle1,
+		   int* angle2)
+{
+    double xm,ym;  // midpoint between z0 and z1
+    double xe,ye;  // unit vector perpendicular to z0->z1
+    double ne;     // normalize factor for xe,ye
+    double x2,y2;  // Third point on arc
+    double xc,yc,r;
+
+    xm = 0.5*(x0+x1);
+    ym = 0.5*(y0+y1);
+
+    // Perpendicular (non-unit) vector
+    xe = -(y1-y0);
+    ye = (x1-x0);
+
+    // normalize
+    ne = sqrt(xe*xe + ye*ye);
+    xe/= ne;
+    ye/= ne;
+
+    // We may now calulate z2
+    x2 = xm+xe*arc_dev;
+    y2 = ym+ye*arc_dev;
+
+    // Convert to center and radius
+    circle_from_3points(x0,y0,
+			x1,y1,
+			x2,y2,
+			// output
+			&xc, &yc, &r);
+
+    // Calculate starting and ending angles and rotate to fit coordinate 
+    *angle1 = (int)((atan2(x0-xc,y0-yc)/M_PI*180-90)*64);
+    *angle2 = (int)((atan2(x1-xc,y1-yc)/M_PI*180-90)*64) - *angle1;
+
+    *width = *height = (int)r*2;
+    *x = (int)xc-r;
+    *y = (int)yc-r;
 }

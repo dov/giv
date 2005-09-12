@@ -13,6 +13,7 @@ typedef struct {
     struct {
       gdouble x,y;
     } point;
+    double arc_dev;
     text_mark_t *text_object;
   } data;
 } point_t;
