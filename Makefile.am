@@ -14,6 +14,9 @@ EXTRA_DIST = AUTHORS   \
              doc/giv-zoom-in.jpg \
              doc/marks-view-1.png \
              doc/marks-view-2.png \
-             doc/example.marks
+             doc/example.giv \
+             doc/giv-logo.svg \
+             doc/giv-logo.png
+
 
 

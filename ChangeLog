@@ -1,3 +1,48 @@
+2006-11-21  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* configure.in: Bumped versions to 0.3.16 in order to release 
+	another package.
+
+	* giv/Makefile.am: Lots of files were missing causing a broken
+	distribution.
+
+	* Forced background of canvas to be white and thus
+	ignore the style.
+
+	* Added hovering balloons that are turned on by the 'b' button
+	that show info regarding a dataset when the cursor is over it.
+
+	* Added new keyword $balloon that sets a string to be shown in 
+	balloon popups when hovering over a dataset.
+
+	* Added labeling, which will work as the bases for any interaction
+	where the user points to a pixel and wants to get information about
+	the dataset that pixel belongs to.
+
+2006-11-20  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Created scons based environment for cross compilation of 
+	windows executable on Linux.
+
+	* Bumped version to 0.3.15.
+
+	* Added new keywoard $linedash that allows declaring dash spacing.
+
+	* Added drag and drop.
+
+2006-11-19  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Improved interaction of dataset without images below.
+
+	* Reformatted the measuring distances.
+
+	* Fixed measuring under latest version of gtk.
+
+	* Bumped version to 0.3.14
+
+	* giv-backstore.[ch]: Added backstore module for drawing 
+	arrow for measuring.
+
 2005-03-14  Dov Grobgeld  <dov.grobgeld@weizmann.ac.il>
 
 	* Bumped to version 0.3.13

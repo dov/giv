@@ -1,5 +1,7 @@
                       giv - The G(reat|tk|NU) Image Viewer
-                   Dov Grobgeld <dov.grobgeld@weizmann.ac.il>
+                      Dov Grobgeld <dov.grobgeld@gmail.com>
+                             21 November 2006 
+                         http://giv.sf.net/giv
 
 giv is an image and vector viewer based on the gtk_image_viewer
 widget. It was designed especially with the scientific vision and the
@@ -13,8 +15,9 @@ Installation:
 Requirements:
 
     * gtk_image_viewer - See 
-          http://imagic.weizmann.ac.il/~dov/freesw/gtk/gtk-image-viewer/
+           http://giv.sourceforge.net/gtk-image-viewer/
 
 Documentation:
 
     * See doc/giv.html for documentation.
+

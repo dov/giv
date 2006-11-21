@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld, 18-May-2004 -->
+<!-- Changed by: Dov Grobgeld, 20-Nov-2006 -->
 </head>
 
 
@@ -11,7 +11,7 @@
 <h1 align=center>A Manual for Giv<br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1><a href="mailto:dov.grobgeld@weizmann.ac.il">dov.grobgeld@weizmann.ac.il</a></font><br>
-    <font size=-1>Last modified: 2001-03-04</font>
+    <font size=-1>Last modified: 2006-11-20</font>
 </h1>
 
 <h2><a name="SEC1">1. Name</a></h2>
@@ -106,17 +106,21 @@
         <td bgcolor=#ffeeee valign=top>$noline
         <td bgcolor=#ffeeee valign=top>Don't draw line between the coordinates.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$mark_size
-        <td bgcolor=#fbf2ee valign=top>$mark_size 15
-        <td bgcolor=#fbf2ee valign=top>Specify the size of the marks in pixels.
+    <tr><td bgcolor=#fbf2ee valign=top>$linedash
+        <td bgcolor=#fbf2ee valign=top>$linedash 10 5
+        <td bgcolor=#fbf2ee valign=top>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
 
-    <tr><td bgcolor=#ffeeee valign=top>$line
-        <td bgcolor=#ffeeee valign=top>$line
-        <td bgcolor=#ffeeee valign=top>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
+    <tr><td bgcolor=#ffeeee valign=top>$mark_size
+        <td bgcolor=#ffeeee valign=top>$mark_size 15
+        <td bgcolor=#ffeeee valign=top>Specify the size of the marks in pixels.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$lw
-        <td bgcolor=#fbf2ee valign=top>$lw 3
-        <td bgcolor=#fbf2ee valign=top>Line width.
+    <tr><td bgcolor=#fbf2ee valign=top>$line
+        <td bgcolor=#fbf2ee valign=top>$line
+        <td bgcolor=#fbf2ee valign=top>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
+
+    <tr><td bgcolor=#ffeeee valign=top>$lw
+        <td bgcolor=#ffeeee valign=top>$lw 3
+        <td bgcolor=#ffeeee valign=top>Line width.
   </table>
   
 </blockquote>
@@ -154,28 +158,50 @@
 <font size=-1 color=red> 28:  </font>move 120 250 
 <font size=-1 color=red> 29:  </font>120 220 
 <font size=-1 color=red> 30:  </font> 
-<font size=-1 color=red> 31:  </font>$PATH Another line 
-<font size=-1 color=red> 32:  </font>$LW 5 
-<font size=-1 color=red> 33:  </font>300 130 
-<font size=-1 color=red> 34:  </font>300 180 
-<font size=-1 color=red> 35:  </font> 
-<font size=-1 color=red> 36:  </font>$polygon 
-<font size=-1 color=red> 37:  </font>$color pink3 
-<font size=-1 color=red> 38:  </font>$outline_color black 
-<font size=-1 color=red> 39:  </font>$path A triangle 
-<font size=-1 color=red> 40:  </font>$lw 3 
-<font size=-1 color=red> 41:  </font>200 300 
-<font size=-1 color=red> 42:  </font>250 300 
-<font size=-1 color=red> 43:  </font>200 200 
-<font size=-1 color=red> 44:  </font> 
-<font size=-1 color=red> 45:  </font>$path blue text 
-<font size=-1 color=red> 46:  </font>$color blue 
-<font size=-1 color=red> 47:  </font>T 0 0 Origin 
+<font size=-1 color=red> 31:  </font>$PATH Another line ls=0 
+<font size=-1 color=red> 32:  </font>$LW 2 
+<font size=-1 color=red> 33:  </font>$ls 0 
+<font size=-1 color=red> 34:  </font>300 130 
+<font size=-1 color=red> 35:  </font>300 180 
+<font size=-1 color=red> 36:  </font> 
+<font size=-1 color=red> 37:  </font>$PATH Another line ls=1 
+<font size=-1 color=red> 38:  </font>$LW 2 
+<font size=-1 color=red> 39:  </font>$ls 1 
+<font size=-1 color=red> 40:  </font>350 130 
+<font size=-1 color=red> 41:  </font>350 180 
+<font size=-1 color=red> 42:  </font> 
+<font size=-1 color=red> 43:  </font>$PATH Another line ls=2 
+<font size=-1 color=red> 44:  </font>$LW 2 
+<font size=-1 color=red> 45:  </font>$ls 2 
+<font size=-1 color=red> 46:  </font>400 130 
+<font size=-1 color=red> 47:  </font>400 180 
 <font size=-1 color=red> 48:  </font> 
-<font size=-1 color=red> 49:  </font>$path magenta text 
-<font size=-1 color=red> 50:  </font>$color magenta3 
-<font size=-1 color=red> 51:  </font>$text_size 20 
-<font size=-1 color=red> 52:  </font>T 5 10 Another origin.  </pre></table>
+<font size=-1 color=red> 49:  </font>$path an arc 
+<font size=-1 color=red> 50:  </font>$lw 2 
+<font size=-1 color=red> 51:  </font>450 130 
+<font size=-1 color=red> 52:  </font>500 250 
+<font size=-1 color=red> 53:  </font>m 450 130 
+<font size=-1 color=red> 54:  </font>arc 500 250 25 
+<font size=-1 color=red> 55:  </font>arc 450 130 25 
+<font size=-1 color=red> 56:  </font> 
+<font size=-1 color=red> 57:  </font> 
+<font size=-1 color=red> 58:  </font>$polygon 
+<font size=-1 color=red> 59:  </font>$color pink3 
+<font size=-1 color=red> 60:  </font>$outline_color black 
+<font size=-1 color=red> 61:  </font>$path A triangle 
+<font size=-1 color=red> 62:  </font>$lw 3 
+<font size=-1 color=red> 63:  </font>200 300 
+<font size=-1 color=red> 64:  </font>250 300 
+<font size=-1 color=red> 65:  </font>200 200 
+<font size=-1 color=red> 66:  </font> 
+<font size=-1 color=red> 67:  </font>$path blue text 
+<font size=-1 color=red> 68:  </font>$color blue 
+<font size=-1 color=red> 69:  </font>T 0 0 Origin 
+<font size=-1 color=red> 70:  </font> 
+<font size=-1 color=red> 71:  </font>$path magenta text 
+<font size=-1 color=red> 72:  </font>$color magenta3 
+<font size=-1 color=red> 73:  </font>$text_size 20 
+<font size=-1 color=red> 74:  </font>T 5 10 Another origin.  </pre></table>
   <table>
     <tr><td><img src="marks-view-1.png">
 	<td><img src="marks-view-2.png">

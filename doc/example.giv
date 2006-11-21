@@ -1,3 +1,4 @@
+$balloon Circles are great!
 $PATH circles
 $LW 3
 $NOLINE
@@ -29,18 +30,18 @@ move 120 250
 120 220
 
 $PATH Another line ls=0
-$LW 2
-$ls 0
 300 130
 300 180
 
 $PATH Another line ls=1
+$LINEDASH 10,5
 $LW 2
 $ls 1
 350 130
 350 180
 
 $PATH Another line ls=2
+$LINEDASH 5,3
 $LW 2
 $ls 2
 400 130

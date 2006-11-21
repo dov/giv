@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2000 by Dov Grobgeld <dov.grobgeld@weizmann.ac.il>
+ * Copyright (c) 2000-2006 by Dov Grobgeld <dov.grobgeld@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+ *
+ * Notes:
+ *    * If I decide to add bezier curves and want to label these, code
+ *      for subdivisions of bezier curves may be found in the dia sources
+ *      in dia/lib/diarenderer.c:bezier_add_lines().
  */
 
-/*======================================================================
-//  This is an advanced and currently very messy example of the use
-//  of the gtk_image_viewer widget. 
-//
-//  Dov Grobgeld
-//  5 Mar 2001
-//----------------------------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,43 +34,41 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <strings.h>
-#include <gtk_image_viewer/gtk_image_viewer.h>
+#include <gtk_image_viewer.h>
+#include "giv.h"
 #include "giv_types.h"
 #include "giv_mark_tree.h"
 #include "colormaps.h"
+#include "giv-backstore.h"
+#include "giv-logo.i"
 
-/** I am using cursor_plus to measure */
-GdkCursor *cursor_plus=0, *cursor_default=0;
-
-float point_distance(int x1, int y1, int x2, int y2) {
-  return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
-}
+static double sqr(double x);
 
 static
 int circle_from_3points(double a_x,
-			double a_y,
-			double b_x,
-			double b_y,
-			double c_x,
-			double c_y,
-			// output
-			double* p_x,
-			double* p_y,
-			double* radius
-			);
+                        double a_y,
+                        double b_x,
+                        double b_y,
+                        double c_x,
+                        double c_y,
+                        // output
+                        double* p_x,
+                        double* p_y,
+                        double* radius
+                        );
 static
 void givarc2gdkarc(double x0,
-		   double y0,
-		   double x1,
-		   double y1,
-		   double arc_dev,
-		   // output
-		   int* x,
-		   int* y,
-		   int* width,
-		   int* height,
-		   int* angle1,
-		   int* angle2);
+                   double y0,
+                   double x1,
+                   double y1,
+                   double arc_dev,
+                   // output
+                   int* x,
+                   int* y,
+                   int* width,
+                   int* height,
+                   int* angle1,
+                   int* angle2);
 
 #ifdef G_OS_WIN32
 #define SEP "\\"
@@ -85,11 +81,6 @@ void givarc2gdkarc(double x0,
 #define NCASE(s) if (!g_strcasecmp(s, S_))
 
 #define STR_EQUAL 0
-
-#define OP_MOVE 0
-#define OP_DRAW 1
-#define OP_TEXT 2
-#define OP_ARC 3
 
 enum {
   STRING_DRAW,
@@ -109,21 +100,17 @@ enum {
   STRING_CHANGE_LINE,
   STRING_CHANGE_NO_MARK,
   STRING_CHANGE_POLYGON,
+  STRING_BALLOON,
   STRING_IMAGE_REFERENCE,
   STRING_MARKS_REFERENCE,
   STRING_LOW_CONTRAST,
+  STRING_DASH,
   STRING_PATH_NAME,
   STRING_STYLE,
   STRING_DEF_STYLE,
   STRING_IGNORE
 };
 
-#define MARK_TYPE_CIRCLE 1
-#define MARK_TYPE_SQUARE 2
-#define MARK_TYPE_FCIRCLE 3
-#define MARK_TYPE_FSQUARE 4
-#define MARK_TYPE_PIXEL 5
-#define MARK_TYPE_ARC 6
 
 #define LOW_CONTRAST_LOW (128-32)
 #define LOW_CONTRAST_HIGH (128+32)
@@ -162,86 +149,125 @@ typedef enum {
 /*======================================================================
 //  Forward declarations.
 //----------------------------------------------------------------------*/
-int			create_widgets    (const gchar *init_img_filename);
-static void		create_control_window    ();
-static void		create_marks_window    ();
-static void		create_print_window    ();
-static void		create_goto_point_window    ();
-static void		cb_quit		  (void);
+int                     create_widgets    (const gchar *init_img_filename);
+static void             create_control_window    ();
+static void             create_marks_window    ();
+static void             create_print_window    ();
+static void             create_goto_point_window    ();
+static void             cb_quit           (void);
 static gint             cb_nextprev_image(gboolean do_prev);
 static GPtrArray        *read_mark_set_list(GPtrArray *mark_file_name_list,
                                             /* output */
                                             GPtrArray *image_file_name_list);
-/* static void		print_mark_set_list(GPtrArray *mark_set_list); */
-static void		free_mark_set_list(GPtrArray *mark_set_list);
-static mark_set_t*	new_mark_set      ();
+/* static void          print_mark_set_list(GPtrArray *mark_set_list); */
+static void             free_mark_set_list(GPtrArray *mark_set_list);
+static mark_set_t*      new_mark_set      ();
 static void             free_mark_set     (mark_set_t *mark_set);
-static void		draw_marks	  (GtkImageViewer *drawing_area);
-static void		gc_set_attribs	  (GdkGC *gc,
-					   GdkColor *color,
-					   gint line_width,
-					   gint line_style);
+static void             draw_marks        (GtkImageViewer *drawing_area);
+static void             gc_set_attribs(GdkGC *gc,
+                                       GdkColor *color,
+                                       gint line_width,
+                                       gint line_style,
+                                       gint num_dashes,
+                                       gint8 *dash_list
+                                       );
 static gint             cb_histogram_zoom (GtkWidget *widget,
-					   GdkEventButton *event);
+                                           GdkEventButton *event);
 static gint             cb_histogram_expose_event   (GtkWidget *widget,
-						     GdkEventExpose *event);
+                                                     GdkEventExpose *event);
 static void             giv_load_image(const char *new_img_name);
 static void             giv_load_marks(const char *mark_file_name);
 #ifndef G_PLATFORM_WIN32
-static void		cb_sigint(int dummy);
+static void             cb_sigint(int dummy);
 #endif
-static void		set_transfer_function(trans_func_t which_trans_func);
-static void		cb_reset_image();
-static void		cb_invert_image();
-static void		cb_normalize_image();
-static void		cb_open_false_color_window();
-static void		cb_equalize_image();
-static void		cb_low_contrast_image();
-static void		cb_show_histogram();
-static void		cb_color_image();
+static void             set_transfer_function(trans_func_t which_trans_func);
+static void             cb_reset_image();
+static void             cb_invert_image();
+static void             cb_normalize_image();
+static void             cb_open_false_color_window();
+static void             cb_equalize_image();
+static void             cb_low_contrast_image();
+static void             cb_show_histogram();
+static void             cb_color_image();
 static void             set_square_aspect_ratio();
-static void		cb_red_only_image();
-static void		cb_green_only_image();
-static void		cb_blue_only_image();
-static void		cb_toggle_marks();
-static gint		cb_load_image();
-static gint		cb_load_marks();
-static gint		cb_set_color_map(GtkWidget *widget,
-					 gpointer userdata);
+static void             cb_red_only_image();
+static void             cb_green_only_image();
+static void             cb_blue_only_image();
+static void             cb_toggle_marks();
+static gint             cb_load_image();
+static gint             cb_load_marks();
+static gint             cb_set_color_map(GtkWidget *widget,
+                                         gpointer userdata);
 static void             shrink_wrap();
-static void		draw_histogram();
-static void		calc_histogram();
-static gboolean         color_eq(GdkColor *color1, GdkColor *color2);
+static void             draw_histogram();
+static void             calc_histogram();
+gboolean         color_eq(GdkColor *color1, GdkColor *color2);
 static void             init_globals();
 static void             draw_image_in_postscript(GtkWidget *widget, FILE *PS);
 static void             draw_marks_in_postscript(GtkWidget *image_viewer,
-						 FILE *PS);
+                                                 FILE *PS);
 /* Private floor in order to work with Cygwin! */
 static double           giv_floor(double x);
 static void             set_last_directory_from_filename(const gchar *filename);
 static void             add_filename_to_image_list(gchar *image_file_name,
                                                    GPtrArray *image_file_name_list);
 static void             fit_marks_in_window(gboolean do_calc_scale);
-static void             giv_print(const char *filename);
+static void             toggle_track_labels();
+static void             giv_print_postscript(const char *filename);
 static void             giv_goto_xy(double x0, double y0, double zoom);
 static void             giv_free_style_array(gpointer data);
 static void             giv_style_add_string(const char *style_name,
-					     const char *style_string);
+                                             const char *style_string);
 static void             set_props_from_style(mark_set_t *marks,
-					     const char *style_name);
+                                             const char *style_name);
+static void             draw_measure_line(giv_backstore_t *backstore,
+                                          GtkWidget *image_viewer,
+                                          double x0, double y0,
+                                          double x1, double y1);
+static void show_balloon(int cx, int cy);
+
+static gint create_backstore(GtkWidget *image_viewer);
+GdkColor label_to_color(int label);
+
+// We get the color back in a different unit due to the way things work...
+int color_to_label(int color);
 
 /*======================================================================
 //  Global variables. These really should be packed in a data structure.
 //----------------------------------------------------------------------*/
-int start_measure, measure_point_index; // allow ON SCREEN measurements
-int last_move_x, last_move_y, measure_x1, measure_y1, measure_x2, measure_y2;
+enum
+{
+  DND_TEXT_PLAIN,
+  DND_TEXT_URI_LIST
+};
+
+/* Target types for dropping into the file list */
+static const GtkTargetEntry file_list_dest_targets[] = {
+  { "text/uri-list", 0, DND_TEXT_URI_LIST }
+};
+
+static const int num_file_list_dest_targets = (sizeof (file_list_dest_targets)
+                                               / sizeof (file_list_dest_targets[0]));
+
+gboolean is_measuring_distance= 0;
+gint measure_point_index=-1; // allow ON SCREEN measurements
+double last_move_x=-1, last_move_y=-1;
+int last_cx, last_cy;
+double measure_x1=-1, measure_y1=-1, measure_x2=-1, measure_y2=-1;
 gchar *img_name=NULL, *marks_name=NULL;
 gboolean img_is_mono;
 gboolean do_no_display = FALSE;
 GtkWidget *w_window;
 GtkWidget *image_viewer = NULL;
+
+// The following image viewer is never shown, but just kept in memory 
+// and used for labeling of the info shown.
+GdkPixmap *w_label_pixmap = NULL;
+
 GtkWidget *w_info_label;
 GtkWidget *w_control_window;
+GtkWidget *w_balloon_window = NULL;
+GtkWidget *w_balloon_label = NULL;
 GdkPixbuf *img_org, *img_display;
 GdkPixmap *histogram_drawing_pixmap;
 int canvas_width, canvas_height;
@@ -269,6 +295,7 @@ double global_mark_min_y;
 double default_render_type;
 guint8 current_maps[3][256];
 gboolean do_mono;
+gboolean do_track_label = FALSE;
 gint color_component;
 gboolean do_show_marks;
 gboolean do_erase_img;
@@ -287,6 +314,9 @@ const int font_scale = 12;
 int current_color_map = 0;
 const int num_maps = 6;
 GHashTable *style_hash = NULL;
+giv_backstore_t *back_store = NULL;
+GdkCursor *cursor_plus=0, *cursor_default=0;
+
 
 /* Color maps */
 struct color_maps_struct {
@@ -335,23 +365,19 @@ main (int argc, char *argv[])
   double goto_x = -1, goto_y = -1, goto_zoom = -1;
   char *init_image_filename = NULL;
   
+  gtk_init (&argc, &argv);
+
   init_globals();
   
-  
-
-  // init measure vars
-  start_measure = 0;
-  measure_x2 = measure_y2 = measure_x1 = measure_y1 = -1;
-
   mark_file_name_list = g_ptr_array_new ();
   img_file_name_list = g_ptr_array_new ();
 
   /* The style hash has a key=string, and value=array of values */
   style_hash = g_hash_table_new_full(g_str_hash,
-				     g_str_equal,
-				     g_free,
-				     giv_free_style_array
-				     );
+                                     g_str_equal,
+                                     g_free,
+                                     giv_free_style_array
+                                     );
 
   
   /* Parse arguments */
@@ -361,51 +387,51 @@ main (int argc, char *argv[])
     
     CASE("-help") {
       printf("giv -  A gtk image viewer\n"
-	     "\n"
-	     "Syntax:\n"
-	     "    giv [-marks marks] [-nl] [-P] [-ms ms] [-sm] [-add x y] [-lw lw] [img] [-expand e]\n"
+             "\n"
+             "Syntax:\n"
+             "    giv [-marks marks] [-nl] [-P] [-ms ms] [-sm] [-add x y] [-lw lw] [img] [-expand e]\n"
              "        [-title title] img\n"
-	     "\n"
-	     "Description:\n"
-	     "    giv is a program for viewing images and vector graphics. The vector\n"
-	     "    graphics come in the form of marks and are stored in a marks \n"
-	     "    file. The format is quite similar to xgraph in that you have\n"
-	     "    datasets separated by newlines.\n"
-	     "\n"
-	     "    The major difference to xgraph is that you may chage the properties of these\n"
-	     "    marks by lots of modifiers that are put in the beginning of the dataset\n"
-	     "\n"
-	     "Options:\n"
-	     "    -marks markfile  Specify a marks file.\n"
-	     "    -nl		 Don't draw lines by default.\n"
-	     "    -ms ms         Specify default mark size.\n"
-	     "	  -sm            Marks should scale by default.\n"
-	     "	  -P             Draw marks by default.\n"
-	     "	  -lw lw         Default line width.\n"
-	     "	  -expand e	 Initial expansion.\n"
+             "\n"
+             "Description:\n"
+             "    giv is a program for viewing images and vector graphics. The vector\n"
+             "    graphics come in the form of marks and are stored in a marks \n"
+             "    file. The format is quite similar to xgraph in that you have\n"
+             "    datasets separated by newlines.\n"
+             "\n"
+             "    The major difference to xgraph is that you may chage the properties of these\n"
+             "    marks by lots of modifiers that are put in the beginning of the dataset\n"
+             "\n"
+             "Options:\n"
+             "    -marks markfile  Specify a marks file.\n"
+             "    -nl            Don't draw lines by default.\n"
+             "    -ms ms         Specify default mark size.\n"
+             "    -sm            Marks should scale by default.\n"
+             "    -P             Draw marks by default.\n"
+             "    -lw lw         Default line width.\n"
+             "    -expand e      Initial expansion.\n"
              "    -invert inv    Invert image.\n"
-	     "    -add x y       Add x,y point to all the given coordinates.\n"
+             "    -add x y       Add x,y point to all the given coordinates.\n"
              "    -gotoxyz x y zoom  Start display at given x, y and zoom.\n"
-	     "\n"
-	     "Example:\n"
-	     "    Here is an example of a marks file:\n"
-	     "       $COLOR pink3\n"
-	     "       $NOLINE\n"
-	     "       $SCALE_MARKS\n"
-	     "       10 20\n"
-	     "       20 20\n"
-	     "\n"
-	     "GUI Controls:\n"
-	     "    1. Use 'z' to enter/exit measure mode\n"
-	     "New Support\n"
-	     "    Arc drawing: $MARKS arc\n"
-	     "                 <center x>          <center y>\n"
-	     "                 <start x>           <start y>\n"
-	     "                 <angle in degrees, positive=ccw, negative=cw>  <0=not filled, 1=filled>\n"
-	     "    Line Style:  Support for 3 different line styles: 0..2\n"
-	     "                 $ls [0=SOLID, 1=ON_OFF_DASH, 2=DOUBLE_DASH]\n"
+             "\n"
+             "Example:\n"
+             "    Here is an example of a marks file:\n"
+             "       $COLOR pink3\n"
+             "       $NOLINE\n"
+             "       $SCALE_MARKS\n"
+             "       10 20\n"
+             "       20 20\n"
+             "\n"
+             "GUI Controls:\n"
+             "    1. Use 'z' to enter/exit measure mode\n"
+             "New Support\n"
+             "    Arc drawing: $MARKS arc\n"
+             "                 <center x>          <center y>\n"
+             "                 <start x>           <start y>\n"
+             "                 <angle in degrees, positive=ccw, negative=cw>  <0=not filled, 1=filled>\n"
+             "    Line Style:  Support for 3 different line styles: 0..2\n"
+             "                 $ls [0=SOLID, 1=ON_OFF_DASH, 2=DOUBLE_DASH]\n"
 
-	     );
+             );
       exit(0);
     }
     CASE("-") { init_image_filename = "-"; continue; }
@@ -448,10 +474,10 @@ main (int argc, char *argv[])
     }
     CASE("-pix")
       {
-	default_draw_marks = TRUE;
-	default_mark_type = MARK_TYPE_PIXEL;
-	default_draw_lines = 0;
-	continue;
+        default_draw_marks = TRUE;
+        default_mark_type = MARK_TYPE_PIXEL;
+        default_draw_lines = 0;
+        continue;
       }
     CASE("-lw") { default_line_width = atoi(argv[argp++]); continue; }
     CASE("-rt") { default_render_type = atoi(argv[argp++]); continue; }
@@ -462,12 +488,10 @@ main (int argc, char *argv[])
     CASE("-nodisplay") { do_no_display = TRUE; continue; };
     CASE("-title") { giv_title = argv[argp++]; continue; };
     CASE("-a") { do_square_aspect_ratio++; continue; };
-    fprintf(stderr, "Unknown option %s!\n", S_);
+    //fprintf(stderr, "Unknown option %s!\n", S_);
     exit(0);
   }
 
-  gtk_init (&argc, &argv);
-  
   {
     gchar rc_file[255];
     
@@ -497,7 +521,7 @@ main (int argc, char *argv[])
   mark_set_list = read_mark_set_list(mark_file_name_list,
                                      img_file_name_list
                                      );
-	
+        
   if (img_file_name_list->len > 0)
     init_image_filename = (gchar*)g_ptr_array_index (img_file_name_list, 0);
 
@@ -541,7 +565,7 @@ main (int argc, char *argv[])
        gtk_main_iteration ();
 
   if (print_filename)
-    giv_print(print_filename);
+    giv_print_postscript(print_filename);
 
   return 0;
 }
@@ -597,12 +621,12 @@ static int string_count_words(const char *string)
   while(*p) {
     if (!in_word) {
       if ((*p != ' ') && (*p != '\n') && (*p != '\t'))
-	in_word = 1;
+        in_word = 1;
     }
     else if (in_word) {
       if ((*p == ' ') || (*p == '\n') || (*p != '\t')) {
-	in_word = 0;
-	nwords++;
+        in_word = 0;
+        nwords++;
       }
     }
     p++;
@@ -626,17 +650,17 @@ static char* string_strdup_word(const char *string, int idx)
     /* printf("%c\n", *p); fflush(stdout); */
     if (!in_word) {
       if (*p != ' ' && *p != '\n' && *p != '\t') {
-	in_word = 1;
-	word_count++;
-	nchr = 1;
-	word_start = p;
+        in_word = 1;
+        word_count++;
+        nchr = 1;
+        word_start = p;
       }
     }
     else if (in_word) {
       if (*p == ' ' || *p == '\n' || *p == '\t') {
-	if (idx == word_count)
-	  break;
-	in_word = 0;
+        if (idx == word_count)
+          break;
+        in_word = 0;
       }
     }
     nchr++;
@@ -732,13 +756,17 @@ gint parse_string(const char *string, char *fn, gint linenum)
     {
       char *S_ = string_strdup_word(string, 0);
       NCASE("$tag")
-	{
-	  // This is ignored
-	  type = STRING_IGNORE;
-	}
+        {
+          // This is ignored
+          type = STRING_IGNORE;
+        }
       NCASE("$lw")
         {
           type = STRING_CHANGE_LINE_WIDTH;
+        }
+      NCASE("$balloon")
+        {
+          type = STRING_BALLOON;
         }
       NCASE("$ls")
         {
@@ -800,14 +828,18 @@ gint parse_string(const char *string, char *fn, gint linenum)
         {
           type = STRING_LOW_CONTRAST;
         }
+      NCASE("$linedash")
+        {
+          type = STRING_DASH;
+        }   
       NCASE("$def_style")
-	{
-	  type = STRING_DEF_STYLE;
-	}
+        {
+          type = STRING_DEF_STYLE;
+        }
       NCASE("$style")
-	{
-	  type = STRING_STYLE;
-	}
+        {
+          type = STRING_STYLE;
+        }
       if (type == -1)
         {
           fprintf(stderr, "Unknown parameter %s in file %s line %d!\n", S_, fn, linenum);
@@ -882,22 +914,22 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
       gchar *fn = (gchar*)g_ptr_array_index (mark_file_name_list, name_idx);
       
       if (fn == NULL)
-	continue;
+        continue;
       IN = fopen(fn, "r");
       if (!IN)
-	return NULL;
+        return NULL;
       
       is_new_set = TRUE;
       while(!feof(IN))
-	{
-	  char S_[256];
-	  char dummy[256];
-	  gint type;
-	  point_t p;
+        {
+          char S_[256];
+          char dummy[256];
+          gint type;
+          point_t p;
           int len;
-	  
-	  linenum++;
-	  fgets(S_, sizeof(S_), IN);
+          
+          linenum++;
+          fgets(S_, sizeof(S_), IN);
           len = strlen(S_);
           
           // Get rid of CR and LF at end of line
@@ -907,97 +939,100 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
               len--;
             }
 
-	  if (is_new_set)
-	    {
-	      marks = new_mark_set();
-	      marks->color = set_colors[num_sets % nmarks_colors];
-	      marks->file_name = strdup(fn);
-	      g_ptr_array_add(mark_set_list, marks);
-	      is_new_set = FALSE;
-	      num_sets++;
-	    }
+          if (is_new_set)
+            {
+              marks = new_mark_set();
+              marks->color = set_colors[num_sets % nmarks_colors];
+              marks->file_name = strdup(fn);
+              g_ptr_array_add(mark_set_list, marks);
+              is_new_set = FALSE;
+              num_sets++;
+            }
           
-	  if (len == 0) {
-	    if (marks && ((GArray*)marks->points)->len > 0)
-	      is_new_set++;
-	    continue;
-	  }
-	  
-	  /* Parse the line */
-	  type = parse_string(S_, fn, linenum);
-	  switch (type) {
-	  case STRING_COMMENT:
-	    break;
-	  case STRING_DRAW:
-	  case STRING_MOVE:
-	  case STRING_ARC:
-	    if (type == STRING_DRAW)
+          if (len == 0) {
+            if (marks && ((GArray*)marks->points)->len > 0)
+              is_new_set++;
+            continue;
+          }
+          
+          /* Parse the line */
+          type = parse_string(S_, fn, linenum);
+          switch (type) {
+          case STRING_COMMENT:
+            break;
+          case STRING_DRAW:
+          case STRING_MOVE:
+          case STRING_ARC:
+            if (type == STRING_DRAW)
               {
                 sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y);
-		p.data.point.x += prefix_x;
-		p.data.point.y += prefix_y;
+                p.data.point.x += prefix_x;
+                p.data.point.y += prefix_y;
                 p.op = OP_DRAW;
               }
-	    else if (type == STRING_MOVE)
+            else if (type == STRING_MOVE)
               {
                 sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y);
-		p.data.point.x += prefix_x;
-		p.data.point.y += prefix_y;
+                p.data.point.x += prefix_x;
+                p.data.point.y += prefix_y;
                 p.op = OP_MOVE;
               }
-	    else
-	      {
-		double px, py, arc_dev;
+            else
+              {
+                double px, py, arc_dev;
                 sscanf(S_, "%s %lf %lf %lf", dummy, &px, &py, &arc_dev);
-		
-		/* Arcs are stored in the space of two points. */
-		p.op = OP_ARC;
-		p.data.arc_dev = arc_dev;
+                
+                /* Arcs are stored in the space of two points. */
+                p.op = OP_ARC;
+                p.data.arc_dev = arc_dev;
 
-		/* push the point */
-		g_array_append_val(marks->points, p);
+                /* push the point */
+                g_array_append_val(marks->points, p);
 
-		/* Now store x and y */
-		p.data.point.x = px + prefix_x;
-		p.data.point.y = py + prefix_y;
-	      }
-		
-	    /* push the point */
-	    g_array_append_val(marks->points, p);
+                /* Now store x and y */
+                p.data.point.x = px + prefix_x;
+                p.data.point.y = py + prefix_y;
+              }
+                
+            /* push the point */
+            g_array_append_val(marks->points, p);
 
-	    /* Find marks bounding box */
-	    if (p.data.point.x < min_x)
-	      min_x = p.data.point.x;
-	    else if (p.data.point.x > max_x)
-	      max_x = p.data.point.x;
-	    if (p.data.point.y < min_y)
-	      min_y = p.data.point.y;
-	    else if (p.data.point.y > max_y)
-	      max_y = p.data.point.y;
-	    
-	    break;
-	  case STRING_TEXT:
-	    {
-	      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
-	      sscanf(S_, "%s %lf %lf", dummy, &tm->x, &tm->y);
-	      tm->string = string_strdup_rest(S_, 3);
-	      tm->x += prefix_x;
-	      tm->y += prefix_y;
-	      p.op = OP_TEXT;
-	      p.data.point.x = tm->x;
-	      p.data.point.y = tm->y;
-	      p.data.text_object = tm;
-	      g_array_append_val(marks->points, p);
-	    }
-	    break;
-	  case STRING_CHANGE_LINE_WIDTH:
-	    marks->line_width = string_to_atoi(S_, 1);
-	    break;
-	  case STRING_CHANGE_LINE_STYLE:
-	    marks->line_style = string_to_atoi(S_, 1);
-	    marks->line_style = marks->line_style % 3; // we have only 3 line styles.
-	    break;
-	  case STRING_IMAGE_REFERENCE:
+            /* Find marks bounding box */
+            if (p.data.point.x < min_x)
+              min_x = p.data.point.x;
+            else if (p.data.point.x > max_x)
+              max_x = p.data.point.x;
+            if (p.data.point.y < min_y)
+              min_y = p.data.point.y;
+            else if (p.data.point.y > max_y)
+              max_y = p.data.point.y;
+            
+            break;
+          case STRING_TEXT:
+            {
+              text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
+              sscanf(S_, "%s %lf %lf", dummy, &tm->x, &tm->y);
+              tm->string = string_strdup_rest(S_, 3);
+              tm->x += prefix_x;
+              tm->y += prefix_y;
+              p.op = OP_TEXT;
+              p.data.point.x = tm->x;
+              p.data.point.y = tm->y;
+              p.data.text_object = tm;
+              g_array_append_val(marks->points, p);
+            }
+            break;
+          case STRING_CHANGE_LINE_WIDTH:
+            marks->line_width = string_to_atoi(S_, 1);
+            break;
+          case STRING_BALLOON:
+            marks->balloon_string = string_strdup_rest(S_,1);
+            break;
+          case STRING_CHANGE_LINE_STYLE:
+            marks->line_style = string_to_atoi(S_, 1);
+            marks->line_style = marks->line_style % 3; // we have only 3 line styles.
+            break;
+          case STRING_IMAGE_REFERENCE:
               {
                   char *image_filename = string_strdup_word(S_, 1);
                   
@@ -1008,7 +1043,7 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
                   free(image_filename);
                   break;
               }
-	  case STRING_MARKS_REFERENCE:
+          case STRING_MARKS_REFERENCE:
               {
                   char *marks_filename = string_strdup_word(S_, 1);
                   
@@ -1017,93 +1052,114 @@ read_mark_set_list(GPtrArray *mark_file_name_list,
                   
                   break;
               }
-	  case STRING_LOW_CONTRAST:
+          case STRING_LOW_CONTRAST:
               {
-		giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
-		break;
+                giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
+                break;
               }
-	  case STRING_CHANGE_NO_LINE:
-	    marks->do_draw_lines = FALSE;
-	    break;
-	  case STRING_CHANGE_POLYGON:
-	    marks->do_draw_polygon = TRUE;
-	    break;
-	  case STRING_CHANGE_LINE:
-	    marks->do_draw_lines = TRUE;
-	    break;
-	  case STRING_CHANGE_NO_MARK:
-	    marks->do_draw_marks = FALSE;
-	    break;
-	  case STRING_CHANGE_MARK_SIZE:
-	    marks->mark_size = string_to_atof(S_, 1);
-	    break;
-	  case STRING_CHANGE_TEXT_SIZE:
-	    marks->text_size = string_to_atof(S_, 1);
-	    break;
-	  case STRING_CHANGE_COLOR:
-	    {
-	      char *color_name = string_strdup_word(S_, 1);
-	      GdkColor color;
-	      if (gdk_color_parse(color_name,&color))
-		marks->color = color;
-	      g_free(color_name);
-	      break;
-	    }
-	  case STRING_CHANGE_OUTLINE_COLOR:
-	    {
-	      char *color_name = string_strdup_word(S_, 1);
-	      GdkColor color;
-	      if (gdk_color_parse(color_name,&color))
-		marks->outline_color = color;
+          case STRING_DASH:
+            {
+              // Get string and split it on commas
+              char *p;
+              char *dash_string = string_strdup_word(S_,1);
+              int i, num_dashes;
+
+              // Replace comma with spaces for easier parsing
+              p = dash_string;
+              while((p=g_strstr_len(p, strlen(dash_string), ","))) 
+                *p = ' ';
+
+              num_dashes = string_count_words(dash_string);
+              marks->num_dashes = num_dashes;
+              marks->dash_list = g_new0(gint8, num_dashes);
+              for (i=0; i<num_dashes; i++)
+                marks->dash_list[i] = string_to_atoi(dash_string, i);
+              free(dash_string);
+              
+              break;
+            }
+          case STRING_CHANGE_NO_LINE:
+            marks->do_draw_lines = FALSE;
+            break;
+          case STRING_CHANGE_POLYGON:
+            marks->do_draw_polygon = TRUE;
+            break;
+          case STRING_CHANGE_LINE:
+            marks->do_draw_lines = TRUE;
+            break;
+          case STRING_CHANGE_NO_MARK:
+            marks->do_draw_marks = FALSE;
+            break;
+          case STRING_CHANGE_MARK_SIZE:
+            marks->mark_size = string_to_atof(S_, 1);
+            break;
+          case STRING_CHANGE_TEXT_SIZE:
+            marks->text_size = string_to_atof(S_, 1);
+            break;
+          case STRING_CHANGE_COLOR:
+            {
+              char *color_name = string_strdup_word(S_, 1);
+              GdkColor color;
+              if (gdk_color_parse(color_name,&color))
+                marks->color = color;
+              g_free(color_name);
+              break;
+            }
+          case STRING_CHANGE_OUTLINE_COLOR:
+            {
+              char *color_name = string_strdup_word(S_, 1);
+              GdkColor color;
+              if (gdk_color_parse(color_name,&color))
+                marks->outline_color = color;
               marks->do_draw_polygon_outline = TRUE;
-	      g_free(color_name);
-	      break;
-	    }
-	  case STRING_CHANGE_MARKS:
-	    {
-	      char *mark_name = string_strdup_word(S_, 1);
-	      marks->do_draw_marks = TRUE;
-	      
-	      marks->mark_type = parse_mark_type(mark_name, fn, linenum);
-	      
-	      g_free(mark_name);
-	      break;
-	    }
-	  case STRING_CHANGE_SCALE_MARKS:
-	    if (string_count_words(S_) == 1)
-	      marks->do_scale_marks = 1;
-	    else
-	      marks->do_scale_marks = string_to_atoi(S_, 1);
-	    break;
-	  case STRING_PATH_NAME:
-	    if (marks->path_name)
-	      g_free(marks->path_name);
-	    marks->path_name = string_strdup_rest(S_, 1);
-	    break;
-	  case STRING_DEF_STYLE:
-	    {
-	      char *style_name = string_strdup_word(S_, 1);
-	      char *style_string = string_strdup_rest(S_, 2);
-	      giv_style_add_string(style_name, style_string);
-	      g_free(style_name);
-	      g_free(style_string);
-	    }
-	    break;
-	  case STRING_STYLE:
-	    {
-	      char *style_name = string_strdup_word(S_, 1);
-	      set_props_from_style(marks, style_name);
-	      g_free(style_name);
-	    }
-	  }
-	}
+              g_free(color_name);
+              break;
+            }
+          case STRING_CHANGE_MARKS:
+            {
+              char *mark_name = string_strdup_word(S_, 1);
+              marks->do_draw_marks = TRUE;
+              
+              marks->mark_type = parse_mark_type(mark_name, fn, linenum);
+              
+              g_free(mark_name);
+              break;
+            }
+          case STRING_CHANGE_SCALE_MARKS:
+            if (string_count_words(S_) == 1)
+              marks->do_scale_marks = 1;
+            else
+              marks->do_scale_marks = string_to_atoi(S_, 1);
+            break;
+          case STRING_PATH_NAME:
+            if (marks->path_name)
+              g_free(marks->path_name);
+            marks->path_name = string_strdup_rest(S_, 1);
+            break;
+          case STRING_DEF_STYLE:
+            {
+              char *style_name = string_strdup_word(S_, 1);
+              char *style_string = string_strdup_rest(S_, 2);
+              giv_style_add_string(style_name, style_string);
+              g_free(style_name);
+              g_free(style_string);
+            }
+            break;
+          case STRING_STYLE:
+            {
+              char *style_name = string_strdup_word(S_, 1);
+              set_props_from_style(marks, style_name);
+              g_free(style_name);
+            }
+          }
+        }
 
       /* Get rid of empty data sets */
       if (marks && marks->points->len == 0)
-	{
-	  g_ptr_array_remove_index(mark_set_list, mark_set_list->len-1);
-	  g_free(marks);
-	}
+        {
+          g_ptr_array_remove_index(mark_set_list, mark_set_list->len-1);
+          g_free(marks);
+        }
       
       global_mark_max_x = max_x;
       global_mark_max_y = max_y;
@@ -1189,6 +1245,9 @@ new_mark_set()
   marks->path_name = g_strdup_printf("Dataset %d", mark_global_count);
   marks->tree_path_string = NULL;
   marks->is_visible = TRUE;
+  marks->num_dashes = 0;
+  marks->dash_list = NULL;
+  marks->balloon_string = NULL;
   
   return marks;
 }
@@ -1318,7 +1377,7 @@ cb_quit()
 
 static
 gint cb_load_cancel(gpointer dummy1,
-		    GtkWidget *dialog_window)
+                    GtkWidget *dialog_window)
 {
   gtk_widget_destroy(dialog_window);
   return 1;    
@@ -1326,7 +1385,7 @@ gint cb_load_cancel(gpointer dummy1,
 
 static
 gint cb_load_image_ok(gpointer dummy1,
-		      GtkWidget *dialog_window)
+                      GtkWidget *dialog_window)
 {
   GtkFileSelection *file_selection_window = GTK_FILE_SELECTION(dialog_window);
   const gchar *fn = gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selection_window));
@@ -1355,12 +1414,12 @@ cb_load_image()
       gtk_file_selection_set_filename(window, giv_last_directory);
   
   g_signal_connect (G_OBJECT (window->ok_button),
-		    "clicked", GTK_SIGNAL_FUNC(cb_load_image_ok),
-		    window);
+                    "clicked", GTK_SIGNAL_FUNC(cb_load_image_ok),
+                    window);
 
   g_signal_connect (G_OBJECT (window->cancel_button),
-		    "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
-		    window);
+                    "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
+                    window);
 
   gtk_widget_show (GTK_WIDGET(window));
 
@@ -1370,8 +1429,8 @@ cb_load_image()
 
 static void
 cb_file_chooser_response(GtkWidget *dialog,
-			 gint response,
-			 gpointer user_data)
+                         gint response,
+                         gpointer user_data)
 {
   GtkWidget *file_chooser = GTK_WIDGET(dialog);
   int action = GPOINTER_TO_INT(user_data);
@@ -1380,25 +1439,25 @@ cb_file_chooser_response(GtkWidget *dialog,
     {
       GString *info_label = g_string_new("");
       gchar *selected_filename = 
-	gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(file_chooser));
+        gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(file_chooser));
 
       set_last_directory_from_filename(selected_filename);
       if (action == 0)
-	{
-	  g_string_sprintf(info_label, "Loading file %s", selected_filename);
-	  gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
-	  g_string_free(info_label, TRUE);
+        {
+          g_string_sprintf(info_label, "Loading file %s", selected_filename);
+          gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
+          g_string_free(info_label, TRUE);
 
-	  giv_load_image(selected_filename);
-	}
+          giv_load_image(selected_filename);
+        }
       else
-	{
-	  g_string_sprintf(info_label, "Loading file %s", selected_filename);
-	  gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
-	  g_string_free(info_label, TRUE);
+        {
+          g_string_sprintf(info_label, "Loading file %s", selected_filename);
+          gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
+          g_string_free(info_label, TRUE);
 
-	  giv_load_marks(selected_filename);
-	}
+          giv_load_marks(selected_filename);
+        }
       
       g_free(selected_filename);
     }
@@ -1411,20 +1470,20 @@ cb_load_image()
   GtkWidget *file_chooser;
   
   file_chooser = gtk_file_chooser_dialog_new ("Open File",
-					      GTK_WINDOW (w_window),
-					      GTK_FILE_CHOOSER_ACTION_OPEN,
-					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-					      NULL);
+                                              GTK_WINDOW (w_window),
+                                              GTK_FILE_CHOOSER_ACTION_OPEN,
+                                              GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                              GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                              NULL);
   
   if (giv_last_directory)
       gtk_file_chooser_set_filename(GTK_FILE_CHOOSER (file_chooser),
-				    giv_last_directory);
+                                    giv_last_directory);
   
   g_signal_connect (GTK_OBJECT (file_chooser), 
-		    "response", 
-		    G_CALLBACK (cb_file_chooser_response),
-		    GINT_TO_POINTER(0));
+                    "response", 
+                    G_CALLBACK (cb_file_chooser_response),
+                    GINT_TO_POINTER(0));
   
   gtk_window_move (GTK_WINDOW (file_chooser), 30, 30);
   
@@ -1436,7 +1495,7 @@ cb_load_image()
 
 static
 gint cb_load_marks_ok(gpointer dummy1,
-		      GtkWidget *dialog_window)
+                      GtkWidget *dialog_window)
 {
   GtkFileSelection *file_selection_window = GTK_FILE_SELECTION(dialog_window);
   const gchar *fn = gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selection_window));
@@ -1455,20 +1514,20 @@ cb_load_marks()
   GtkWidget *file_chooser;
   
   file_chooser = gtk_file_chooser_dialog_new ("Load Marks",
-					      GTK_WINDOW (w_window),
-					      GTK_FILE_CHOOSER_ACTION_OPEN,
-					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-					      NULL);
+                                              GTK_WINDOW (w_window),
+                                              GTK_FILE_CHOOSER_ACTION_OPEN,
+                                              GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                              GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                              NULL);
   
   if (giv_last_directory)
       gtk_file_chooser_set_filename(GTK_FILE_CHOOSER (file_chooser),
-				    giv_last_directory);
+                                    giv_last_directory);
   
   g_signal_connect (GTK_OBJECT (file_chooser), 
-		    "response", 
-		    G_CALLBACK (cb_file_chooser_response),
-		    GINT_TO_POINTER(1));
+                    "response", 
+                    G_CALLBACK (cb_file_chooser_response),
+                    GINT_TO_POINTER(1));
   
   gtk_window_move (GTK_WINDOW (file_chooser), 30, 30);
   
@@ -1489,12 +1548,12 @@ cb_load_marks()
       gtk_file_selection_set_filename(window, giv_last_directory);
 
   gtk_signal_connect (GTK_OBJECT (window->ok_button),
-		      "clicked", GTK_SIGNAL_FUNC(cb_load_marks_ok),
-		      window);
+                      "clicked", GTK_SIGNAL_FUNC(cb_load_marks_ok),
+                      window);
 
   gtk_signal_connect (GTK_OBJECT (window->cancel_button),
-		      "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
-		      window);
+                      "clicked", GTK_SIGNAL_FUNC(cb_load_cancel),
+                      window);
 
   gtk_widget_show (GTK_WIDGET(window));
 
@@ -1512,6 +1571,12 @@ cb_configure_event (GtkWidget *widget, GdkEventConfigure *event)
   return TRUE;
 }
 
+static void
+popdown_balloon()
+{
+  gtk_widget_hide(w_balloon_window);
+}
+
 static gint
 cb_configure_histogram_event (GtkWidget *widget, GdkEventConfigure *event)
 {
@@ -1521,21 +1586,21 @@ cb_configure_histogram_event (GtkWidget *widget, GdkEventConfigure *event)
   histogram_height = widget->allocation.height;
 
   histogram_drawing_pixmap = gdk_pixmap_new(widget->window,
-					    256, histogram_height, -1);
+                                            256, histogram_height, -1);
     
   /* And draw it to the background pixmap */
   gdk_draw_rectangle(histogram_drawing_pixmap,
-		     widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-		     TRUE,
-		     0,0,256, histogram_height);
+                     widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
+                     TRUE,
+                     0,0,256, histogram_height);
     
   draw_histogram();
     
   gdk_draw_pixmap(widget->window,
-		  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
-		  histogram_drawing_pixmap,
-		  0, 0, 0, 0,
-		  256, histogram_height);
+                  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
+                  histogram_drawing_pixmap,
+                  0, 0, 0, 0,
+                  256, histogram_height);
     
   gtk_widget_grab_focus(widget);
   return TRUE;
@@ -1548,11 +1613,11 @@ cb_histogram_expose_event (GtkWidget *widget, GdkEventExpose *event)
     return FALSE;
 
   gdk_draw_pixmap(widget->window,
-		  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
-		  histogram_drawing_pixmap,
-		  event->area.x, event->area.y,
-		  event->area.x, event->area.y,
-		  event->area.width, event->area.height);
+                  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
+                  histogram_drawing_pixmap,
+                  event->area.x, event->area.y,
+                  event->area.x, event->area.y,
+                  event->area.width, event->area.height);
 
   return FALSE;
 }
@@ -1565,22 +1630,25 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
   if (k == 'm')
     cb_toggle_marks_window();
   else if (k == 'z') {
-    if (0 == start_measure) {
+    if (0 == is_measuring_distance) {
       // start the measuring
-      start_measure = 1;
+      is_measuring_distance = 1;
       measure_point_index = 0;
       if (cursor_plus == 0)
-	cursor_plus = gdk_cursor_new(GDK_TCROSS);
+        cursor_plus = gdk_cursor_new(GDK_TCROSS);
       // change cursor
       gdk_window_set_cursor(widget->window, cursor_plus);
       gdk_flush();
     }
     else {
       // end measuring this distance
-      start_measure = 0;
+      giv_backstore_restore_background(back_store);        
+      
+      is_measuring_distance = FALSE;
       measure_x2 = measure_y2 = measure_x1 = measure_y1 = -1;
       if (0 == cursor_default)
-	cursor_default = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
+        cursor_default = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
+      
       // change cursor
       gdk_window_set_cursor(widget->window, cursor_default);
       gdk_flush();
@@ -1608,6 +1676,8 @@ cb_key_press_event(GtkWidget *widget, GdkEventKey *event)
     cb_toggle_goto_point_window();
   else if (k == 'f')
     fit_marks_in_window(TRUE);
+  else if (k == 'b')
+    toggle_track_labels();
   else if (k == ' ')
     cb_nextprev_image(FALSE);
   else if (k == GDK_BackSpace)
@@ -1624,13 +1694,13 @@ cb_nextprev_image(gboolean do_prev)
   if (do_prev)
     {
       if (img_idx == 0)
-	return FALSE;
+        return FALSE;
       img_idx--;
     }
   else
     {
       if (img_idx >= img_file_name_list->len-1)
-	return FALSE;
+        return FALSE;
       img_idx++;
     }
 
@@ -1649,17 +1719,17 @@ cb_button_press_event(GtkWidget *widget, GdkEventButton *event)
     
   if (button == 1) {
     // check if are in measure mode ('z')
-    if (start_measure) {
+    if (is_measuring_distance) {
       if (0 == measure_point_index) {
-	measure_x1 = last_move_x;
-	measure_y1 = last_move_y;
-	measure_point_index = 1;
-	measure_x2 = measure_y2 = -1;
+        measure_x1 = last_move_x;
+        measure_y1 = last_move_y;
+        measure_point_index = 1;
+        measure_x2 = measure_y2 = -1;
       }
       else {
-	measure_x2 = last_move_x;
-	measure_y2 = last_move_y;
-	measure_point_index = 0;
+        measure_x2 = last_move_x;
+        measure_y2 = last_move_y;
+        measure_point_index = 0;
       }
       is_signal_caught= TRUE;
     }
@@ -1673,7 +1743,7 @@ cb_button_press_event(GtkWidget *widget, GdkEventButton *event)
     }
   }
   if (is_signal_caught)
-    gtk_signal_emit_stop_by_name(GTK_OBJECT(widget), "button_press_event");
+    return TRUE;
     
   return FALSE;
 }
@@ -1689,47 +1759,42 @@ cb_motion_event(GtkWidget *widget, GdkEventButton *event)
   
   /* Don't update the coordinate if we are panning */
   if (gtk_image_viewer_get_is_panning(image_viewer))
-    return FALSE;
+    {
+      if (do_track_label)
+        gtk_widget_hide(w_balloon_window);
+
+      return FALSE;
+    }
 
   gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
-					   cx, cy, &x, &y);
-  
-  if (start_measure) {
-    if (1 == measure_point_index) {
-      GdkWindow *drawing_area = GTK_WIDGET(widget)->window;
-      GdkGC *gc = gdk_gc_new(drawing_area);
-      gc_set_attribs(gc,
-		     &set_colors[0],
-		     1,
-		     GDK_LINE_SOLID);
+                                           cx, cy, &x, &y);
 
-      double measure_x1_canvas, measure_y1_canvas;
-      // convert coords to canvas coords
-      gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
-					       measure_x1, measure_y1,
-					       &measure_x1_canvas,
-					       &measure_y1_canvas);
-  
-      // use XOR mode for drawing.
-      gdk_gc_set_function(gc, GDK_XOR);
-      if (measure_x2 != -1) {
-	// erase last line.
-	gdk_draw_line(drawing_area, gc, measure_x1_canvas, measure_y1_canvas, measure_x2, measure_y2);
-      }
-      // draw new line.
-      gdk_draw_line(drawing_area, gc, measure_x1_canvas, measure_y1_canvas, cx, cy);
-
-      // show distance
-      char buf[32];
-      g_string_sprintf(info_label, " (%d, %d) Measure ON:%f", (int)giv_floor(x),(int)giv_floor(y), 
-		       point_distance(measure_x1, measure_y1, x, y));
-      g_free(gc);
-      measure_x2 = cx;
-      measure_y2 = cy;
+  if (load_transformation == TRANSFORM_VFLIP)
+    {
+      int height = gdk_pixbuf_get_height(img_display);
+      y = height - 1 - y;
     }
-  }
+  
+  if (is_measuring_distance && measure_point_index == 1)
+    {
+      // Calculate distance
+      double m_dist = sqrt(sqr(measure_x1 - x) + sqr((measure_y1-y)));
+      
+      draw_measure_line(back_store,
+                        widget,
+                        measure_x1, measure_y1,
+                        x,y);
+
+      g_string_sprintf(info_label, " (%.3f,%.3f) dist=%.3f (%.3f,%.3f)",
+                       x,y,
+                       m_dist,
+                       x - measure_x1,
+                       y - measure_y1
+                       );
+
+    }
   else {
-    g_string_sprintf(info_label, " (%f, %f)", x, y);
+    g_string_sprintf(info_label, " (%.3f, %.3f)", x, y);
   }
   
   if (img_display)
@@ -1741,29 +1806,154 @@ cb_motion_event(GtkWidget *widget, GdkEventButton *event)
       guint8 *rgb;
 
       if (x>=0 && x<width && y>=0 && y<height)
-	{
-	  rgb = &buf[((int)y)*row_stride+((int)x)*3];
-	  
-	  if (img_is_mono)
-	    g_string_sprintfa(info_label,
-			      " [%3d] = #%2X",
-			      rgb[0],
-			      (int)rgb[2]);
-	  else 
-	    g_string_sprintfa(info_label,
-			      " [%3d %3d %3d] = #%6X",
-			      rgb[0], rgb[1], rgb[2],
-			      (int)(rgb[0]<<16) + (rgb[1]<<8) + rgb[2]);
-	}
+        {
+          rgb = &buf[((int)y)*row_stride+((int)x)*3];
+          
+          if (img_is_mono)
+            g_string_sprintfa(info_label,
+                              " [%3d] = #%2X",
+                              rgb[0],
+                              (int)rgb[2]);
+          else 
+            g_string_sprintfa(info_label,
+                              " [%3d %3d %3d] = #%6X",
+                              rgb[0], rgb[1], rgb[2],
+                              (int)(rgb[0]<<16) + (rgb[1]<<8) + rgb[2]);
+        }
     }
-  
+
+  if (do_track_label)
+    show_balloon(cx,cy);
+
   gtk_label_set(GTK_LABEL(w_info_label), info_label->str);
   g_string_free(info_label, TRUE);
   
-  last_move_x = (int)giv_floor(x);
-  last_move_y = (int)giv_floor(y);
+  last_move_x = x;
+  last_move_y = y;
+  last_cx = cx;
+  last_cy = cy;
 
   return FALSE;
+}
+
+void
+show_balloon(int cx, int cy)
+{
+  // Here I'm actually asking the server for the pixel value!
+  GdkImage *gdk_img = gdk_drawable_get_image(w_label_pixmap,
+                                             cx,cy,
+                                             1,1);
+  guint32 pixel_val = gdk_image_get_pixel(gdk_img, 0, 0);
+  int label = color_to_label(pixel_val);
+  
+  gdk_image_unref(gdk_img);
+  
+  if (label>=0)
+    {
+      mark_set_t *mark_set = g_ptr_array_index (mark_set_list, label);
+      GdkScreen *screen = gtk_widget_get_screen (image_viewer);
+      GdkScreen *pointer_screen;
+      gint px, py;
+          int balloon_x, balloon_y;
+          
+          if (mark_set->balloon_string)
+            gtk_label_set(GTK_LABEL(w_balloon_label),
+                          mark_set->balloon_string);
+          else if (mark_set->path_name)
+            gtk_label_set(GTK_LABEL(w_balloon_label),
+                          mark_set->path_name);
+          else
+            {
+              GString *balloon_string = g_string_new("");
+              g_string_sprintfa(balloon_string, "label = %d", label);
+              gtk_label_set(GTK_LABEL(w_balloon_label),
+                            balloon_string->str);
+              g_string_free(balloon_string, TRUE);
+            }
+          
+          gdk_display_get_pointer (gdk_screen_get_display (screen),
+                                   &pointer_screen, &px, &py, NULL);
+          
+          // Should this be configurable?
+          balloon_x = px+20;
+          balloon_y=  py-20;
+          
+          gtk_window_move (GTK_WINDOW (w_balloon_window),
+                           balloon_x, balloon_y);
+          
+          // Popup a balloon
+          gtk_widget_show(w_balloon_window);
+    }
+  else
+    gtk_widget_hide(w_balloon_window);
+}
+
+static void
+cb_file_list_drag_data_received (GtkWidget          *widget,
+                                 GdkDragContext     *context,
+                                 gint                x,
+                                 gint                y,
+                                 GtkSelectionData   *selection_data,
+                                 guint               info,
+                                 guint               drag_time,
+                                 gpointer            data)
+{
+  switch (info) {
+  case DND_TEXT_URI_LIST: {
+      gchar **uris;
+      guint i;
+      
+      uris = gtk_selection_data_get_uris (selection_data);
+      
+      // The following works on windows... Should instead recreate
+      // uris and then use common loading code...
+      if (uris == NULL) {
+          char *p;
+          char *sdata = g_strdup((const char*)selection_data->data);
+          uris = g_new0(gchar*, 2);
+
+          // Find \r or \n and place a end of string there
+          if ( (p=g_strstr_len(sdata, strlen(sdata), "\r")) != NULL)
+              *p = 0;
+          else if ( (p=g_strstr_len(sdata, strlen(sdata), "\n")) != NULL)
+              *p = 0;
+
+          uris[0] = sdata;
+          uris[1] = NULL;
+      }
+      
+      for (i = 0; uris[i] != NULL; i++) {
+          gchar *path = g_filename_from_uri(uris[i], NULL, NULL);
+
+          // Clear old marks
+          // TBD: giv_load_marks("");
+          if (g_strrstr(path, ".marks") != NULL
+              || g_strrstr(path, ".giv") != NULL
+              )
+              giv_load_marks(path);
+          else
+              giv_load_image(path);
+
+          g_free(path);
+
+          break;
+      }
+      
+      g_strfreev (uris);
+      break;
+  }
+  case DND_TEXT_PLAIN:
+      {
+          guchar *text = gtk_selection_data_get_text (selection_data);
+          printf("Got path through text_plain = %s\n", text);
+          break;
+      }
+      
+  default:
+      break;
+  }
+  
+  gtk_drag_finish (context, TRUE, FALSE, drag_time);
 }
 
 static gboolean
@@ -1776,7 +1966,7 @@ giv_check_img_for_mono(GdkPixbuf *im)
 
   for(pix_idx=0; pix_idx<width * height; pix_idx++) {
     if (buf[0] != buf[1]
-	|| buf[0] != buf[2])
+        || buf[0] != buf[2])
       return FALSE;
     buf+= 3;
   }
@@ -1788,13 +1978,14 @@ img_flip_vertical(GdkPixbuf *im)
 {
   int w = gdk_pixbuf_get_width(im);
   int h = gdk_pixbuf_get_height(im);
+  int stride = gdk_pixbuf_get_rowstride(im);
   guint8 *buf = gdk_pixbuf_get_pixels(im);
   int row_idx;
   int col_idx;
 
   for (row_idx=0; row_idx<h/2; row_idx++) {
-    guint8 *ptr1 = buf+row_idx * w * 3;
-    guint8 *ptr2 = buf+(h-row_idx-1) * w * 3;
+    guint8 *ptr1 = buf+stride * row_idx;
+    guint8 *ptr2 = buf+stride * (h-row_idx-1);
 
     for (col_idx=0; col_idx< w; col_idx++) {
       guint8 tmp_r = *ptr1;
@@ -1827,9 +2018,9 @@ img_flip_horizontal(GdkPixbuf *im)
       int r_idx = (row_idx * w + (w - col_idx - 1))*3;
 
       for (clr_idx=0; clr_idx<3; clr_idx++) {
-	guint8 tmp = buf[l_idx+clr_idx];
-	buf[l_idx+clr_idx] = buf[r_idx+clr_idx];
-	buf[r_idx+clr_idx] = tmp;
+        guint8 tmp = buf[l_idx+clr_idx];
+        buf[l_idx+clr_idx] = buf[r_idx+clr_idx];
+        buf[r_idx+clr_idx] = tmp;
       }
     }
   }
@@ -1848,22 +2039,22 @@ giv_load_image(const char *new_img_name)
     FILE *IMG;
     guint8 buf[2048];
     gint size;
-	
+        
     do_erase_img++;
     temp_name = g_strdup_printf("/tmp/giv%d", (int)getpid());
     IMG = fopen(temp_name, "w");
 
     while((size = fread(buf,1, sizeof(buf), stdin))) 
       fwrite(buf, 1, size, IMG);
-	
+        
     fclose(IMG);
     img_name_to_load = temp_name;
   }
 #endif
   
   img_org=gdk_pixbuf_new_from_file (img_name_to_load,
-				    &error
-				    );
+                                    &error
+                                    );
 #ifndef G_PLATFORM_WIN32
   if (temp_name)
     unlink(temp_name);
@@ -1898,7 +2089,7 @@ giv_load_image(const char *new_img_name)
   if (new_img_name != img_name)
     {
       if (img_name)
-	g_free(img_name);
+        g_free(img_name);
       img_name = g_strdup(new_img_name);
     }
   calc_histogram();
@@ -1949,8 +2140,8 @@ shrink_wrap()
     return;
     
   gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer),
-			     &scale_x, &scale_y
-			     );
+                             &scale_x, &scale_y
+                             );
 
 
   if (!w_window || !img_display)
@@ -1981,17 +2172,27 @@ int create_widgets(const gchar *init_img_filename)
   GtkWidget *button;
   GtkWidget *button_box;
   gint w,h;
-
+  GError *error = NULL;
+  GdkPixbuf *pixbuf_icon;
+  
   gdk_rgb_init ();
   gtk_widget_set_default_colormap (gdk_rgb_get_cmap ());
   gtk_widget_set_default_visual (gdk_rgb_get_visual ());
     
   /* Toplevel */
   w_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_signal_connect (GTK_OBJECT (w_window), "destroy",
-		      GTK_SIGNAL_FUNC (cb_quit), NULL);
+  g_signal_connect (GTK_OBJECT (w_window), "destroy",
+                    G_CALLBACK (cb_quit), NULL);
   gtk_container_border_width (GTK_CONTAINER (w_window), 3);
 
+  pixbuf_icon = gdk_pixbuf_new_from_inline(sizeof(image_giv_icon_inline),
+                                           image_giv_icon_inline,
+                                           FALSE,
+                                           &error);
+  
+  gtk_window_set_icon (GTK_WINDOW(w_window),
+                       pixbuf_icon);
+  
   /* Load the image specified as the first argument or create a grey
      image. */
   if (init_img_filename) {
@@ -1999,13 +2200,13 @@ int create_widgets(const gchar *init_img_filename)
     
     if (img_display)
       {
-	w=gdk_pixbuf_get_width(img_display)*current_scale_x;
-	h=gdk_pixbuf_get_height(img_display)*current_scale_y;
+        w=gdk_pixbuf_get_width(img_display)*current_scale_x;
+        h=gdk_pixbuf_get_height(img_display)*current_scale_y;
 
         /* Add some margin to get around windows bug */
 #if 0
-	w+= 40;
-	h+= 40;
+        w+= 40;
+        h+= 40;
 #endif
       }
     else
@@ -2048,16 +2249,42 @@ int create_widgets(const gchar *init_img_filename)
 
   /* My image drawing widget */
   image_viewer = gtk_image_viewer_new(img_display);
-  gtk_widget_set_double_buffered(image_viewer, FALSE);
+
+  // Force giv's background to be red
+  {
+    GdkColor color;
+    gdk_color_parse("white", &color);
+    gtk_widget_modify_bg(image_viewer, GTK_STATE_NORMAL, &color);
+  }
+
+  //  gtk_widget_set_double_buffered(image_viewer, FALSE);
   if (!img_display)
     gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(image_viewer),1.0e-6,1e6);
 
   gtk_widget_set_size_request(image_viewer, w, h);
 
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
-					   current_scale_x,
-					   current_scale_y,
-					   w/2,h/2,w/2,h/2);
+                                           current_scale_x,
+                                           current_scale_y,
+                                           w/2,h/2,w/2,h/2);
+
+  // Create a balloon popup where popups will be placed
+  w_balloon_window = gtk_window_new (GTK_WINDOW_POPUP);
+
+  // Make tooltip color yellow. This should probably be configurable
+  {
+    GdkColor color;
+    gdk_color_parse("yellow", &color);
+    gtk_widget_modify_bg(w_balloon_window, GTK_STATE_NORMAL, &color);
+  }
+
+  gtk_widget_set_app_paintable (w_balloon_window, TRUE);
+  gtk_window_set_resizable (GTK_WINDOW(w_balloon_window), FALSE);
+  w_balloon_label = gtk_label_new("Balloon");
+  gtk_label_set_line_wrap (GTK_LABEL (w_balloon_label), TRUE);
+  gtk_misc_set_alignment (GTK_MISC (w_balloon_label), 0.5, 0.5);
+  gtk_widget_show (w_balloon_label);
+  gtk_container_add (GTK_CONTAINER (w_balloon_window), w_balloon_label);
 
   /* Set up text */
   context = gtk_widget_get_pango_context (image_viewer);
@@ -2078,52 +2305,74 @@ int create_widgets(const gchar *init_img_filename)
 
     hadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_hadjustment(GTK_IMAGE_VIEWER(image_viewer),
-				     hadjust);
+                                     hadjust);
     
     vadjust = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 0.1, 0.1, 0.5));
     gtk_image_viewer_set_vadjustment(GTK_IMAGE_VIEWER(image_viewer),
-				     vadjust);
+                                     vadjust);
 
     scrolled_win = gtk_scrolled_window_new(hadjust, vadjust);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_win),
-				   GTK_POLICY_AUTOMATIC,
-				   GTK_POLICY_AUTOMATIC);
+                                   GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
     
     gtk_container_add (GTK_CONTAINER (scrolled_win), GTK_WIDGET(image_viewer));
     gtk_box_pack_start (GTK_BOX (vbox), GTK_WIDGET(scrolled_win),
-			TRUE, TRUE, 0);
+                        TRUE, TRUE, 0);
     gtk_widget_show(scrolled_win);
   }
   gtk_widget_show(GTK_WIDGET(image_viewer));
     
   /* events */
-  gtk_signal_connect (GTK_OBJECT(image_viewer),     "key_press_event",
-		      (GtkSignalFunc)		      cb_key_press_event
-		      , NULL);
-  gtk_signal_connect (GTK_OBJECT (image_viewer),    "button_press_event",
-		      (GtkSignalFunc)		      cb_button_press_event,
-		      NULL);
-  gtk_signal_connect (GTK_OBJECT (image_viewer),    "motion_notify_event",
-		      (GtkSignalFunc)		      cb_motion_event,
-		      NULL);
-  gtk_signal_connect (GTK_OBJECT(image_viewer),     "configure_event",
-		      (GtkSignalFunc)		      cb_configure_event,
-		      NULL);
-  gtk_signal_connect (GTK_OBJECT(image_viewer),     "view_changed",
-		      (GtkSignalFunc)		      draw_marks,
-		      NULL);
+  g_signal_connect (GTK_OBJECT(image_viewer),     "key_press_event",
+                    G_CALLBACK(cb_key_press_event),
+                    NULL);
+  g_signal_connect (GTK_OBJECT (image_viewer),    "button_press_event",
+                    G_CALLBACK(cb_button_press_event),
+                    NULL);
+  g_signal_connect (GTK_OBJECT (image_viewer),    "motion_notify_event",
+                    G_CALLBACK(cb_motion_event),
+                    NULL);
+  g_signal_connect (GTK_OBJECT(image_viewer),     "configure_event",
+                    G_CALLBACK(cb_configure_event),
+                    NULL);
+  g_signal_connect (GTK_OBJECT(image_viewer),     "view_changed",
+                    G_CALLBACK(draw_marks),
+                    NULL);
+  g_signal_connect (GTK_OBJECT(image_viewer),     "leave_notify_event",
+                    G_CALLBACK(popdown_balloon),
+                    NULL);
   gtk_widget_set_events(GTK_WIDGET(image_viewer),
-			GDK_EXPOSURE_MASK
-			| GDK_STRUCTURE_MASK
-			| GDK_PROPERTY_CHANGE_MASK
-			| GDK_POINTER_MOTION_MASK 
-			| GDK_BUTTON_PRESS_MASK
-			| GDK_KEY_PRESS_MASK
-			);
+                        GDK_EXPOSURE_MASK
+                        | GDK_STRUCTURE_MASK
+                        | GDK_PROPERTY_CHANGE_MASK
+                        | GDK_POINTER_MOTION_MASK 
+                        | GDK_BUTTON_PRESS_MASK
+                        | GDK_KEY_PRESS_MASK
+                        );
+
+  /* DnD */
+  g_signal_connect (GTK_WIDGET(image_viewer), "drag-data-received",
+                    G_CALLBACK (cb_file_list_drag_data_received),
+                    NULL);
+  
+  gtk_drag_dest_set (GTK_WIDGET(image_viewer),
+                     (GTK_DEST_DEFAULT_ALL),
+                     file_list_dest_targets,
+                     num_file_list_dest_targets,
+                     GDK_ACTION_COPY);
+  
+  GtkTargetList *target_list;
+  target_list = gtk_target_list_new (NULL, 0);
+  gtk_target_list_add_uri_targets (target_list, DND_TEXT_URI_LIST);
+  gtk_target_list_add_text_targets (target_list, DND_TEXT_PLAIN);
+  gtk_drag_dest_set_target_list (GTK_WIDGET (image_viewer), target_list);
+  gtk_target_list_unref (target_list);
+  
 #if 0
   gtk_signal_connect (GTK_OBJECT (drawing_area),    "expose_event",
-		      (GtkSignalFunc)		      cb_expose_event,
-		      NULL);
+                      (GtkSignalFunc)                 cb_expose_event,
+                      NULL);
 #endif
 
   /* This is necessary in order to be able to focus the drawing area */
@@ -2138,7 +2387,7 @@ int create_widgets(const gchar *init_img_filename)
   gtk_box_pack_start (GTK_BOX (button_box), button, FALSE, FALSE, 0);
 
   gtk_signal_connect (GTK_OBJECT (button), "clicked",
-		      GTK_SIGNAL_FUNC (cb_quit), NULL);
+                      GTK_SIGNAL_FUNC (cb_quit), NULL);
 
   /* Info box */
   w_info_label = gtk_label_new("");
@@ -2154,13 +2403,13 @@ int create_widgets(const gchar *init_img_filename)
      set_transfer_function(giv_current_transfer_function);
     
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
-					   current_scale_x,
-					   current_scale_y,
-					   w/2,h/2,w/2,h/2);
+                                           current_scale_x,
+                                           current_scale_y,
+                                           w/2,h/2,w/2,h/2);
 
   /* Show all the widgets */
   if (!do_no_display)
-     gtk_widget_show_all(w_window);
+     gtk_widget_show(w_window);
   else {
      gtk_widget_show(w_window);
      gtk_widget_hide(w_window);
@@ -2190,14 +2439,14 @@ create_marks_window()
   button = gtk_button_new_with_label("Toggle marks");
   gtk_box_pack_start (GTK_BOX (vbox), button, FALSE, FALSE, 0);
   gtk_signal_connect (GTK_OBJECT (button), "clicked",
-		      GTK_SIGNAL_FUNC (cb_toggle_marks), NULL);
+                      GTK_SIGNAL_FUNC (cb_toggle_marks), NULL);
   gtk_widget_show(button);
 
   /* Load marks */
   button = gtk_button_new_with_label("Load marks");
   gtk_box_pack_start (GTK_BOX (vbox), button, FALSE, FALSE, 0);
   gtk_signal_connect (GTK_OBJECT (button), "clicked",
-		      GTK_SIGNAL_FUNC (cb_load_marks), NULL);
+                      GTK_SIGNAL_FUNC (cb_load_marks), NULL);
   gtk_widget_show(button);
 }
 
@@ -2205,11 +2454,11 @@ static void
 cb_giv_print()
 {
   const char *filename = gtk_entry_get_text(GTK_ENTRY(print_dialog.filename_entry));
-  giv_print(filename);
+  giv_print_postscript(filename);
 }
 
 static void
-giv_print(const char *filename)
+giv_print_postscript(const char *filename)
 {
   FILE *PS;
 
@@ -2222,17 +2471,17 @@ giv_print(const char *filename)
 
   /* Print PROLOGUE */
   fprintf(PS,
-	  "%%!PS-Adobe-1.0 EPSF-1.0\n"
+          "%%!PS-Adobe-1.0 EPSF-1.0\n"
           "%%%%BoundingBox: %d %d %d %d\n",
           (int)(595-canvas_width)/2,
           (int)(842-canvas_height)/2,
           (int)(595-canvas_width)/2+canvas_width,
           (int)(842-canvas_height)/2+canvas_height
-	  );
+          );
 
   /* transformation matrix */
   fprintf(PS, "%d %d translate\n", (595-canvas_width)/2,
-	  (842+canvas_height)/2);
+          (842+canvas_height)/2);
 
   fprintf(PS, "1 -1 scale\n");
   /* Print bounding box */
@@ -2243,12 +2492,13 @@ giv_print(const char *filename)
   fprintf(PS, "closepath clip stroke\n");
 
   /* Print IMAGE */
-  draw_image_in_postscript(image_viewer,
-                           PS);
+  if (img_display)
+      draw_image_in_postscript(image_viewer,
+                               PS);
 
   /* Print MARKS */
   draw_marks_in_postscript(image_viewer,
-			   PS);
+                           PS);
 
   fprintf(PS, "showpage\n");
     
@@ -2276,7 +2526,7 @@ create_print_window()
   table1 = gtk_table_new (2, 3, FALSE);
   gtk_widget_ref (table1);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "table1", table1,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
 
   gtk_widget_show (table1);
   gtk_box_pack_start (GTK_BOX (vbox), table1, TRUE, TRUE, 0);
@@ -2284,31 +2534,31 @@ create_print_window()
   printer_name = gtk_entry_new ();
   gtk_widget_ref (printer_name);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "Printer name", printer_name,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (printer_name);
   gtk_table_attach (GTK_TABLE (table1), printer_name, 1, 2, 1, 2,
-		    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
 
   file_name = gtk_entry_new ();
   print_dialog.filename_entry = file_name;
   gtk_widget_ref (file_name);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "file_name", file_name,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (file_name);
   gtk_table_attach (GTK_TABLE (table1), file_name, 1, 2, 0, 1,
-		    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
     
   radiobutton1 = gtk_radio_button_new_with_label (print_destination_group, "File");
   print_destination_group = gtk_radio_button_group (GTK_RADIO_BUTTON (radiobutton1));
   gtk_widget_ref (radiobutton1);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "radiobutton1", radiobutton1,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (radiobutton1);
   gtk_table_attach (GTK_TABLE (table1), radiobutton1, 0, 1, 0, 1,
-		    (GtkAttachOptions) (GTK_FILL),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
 
   radiobutton2 = gtk_radio_button_new_with_label (print_destination_group, "Printer");
   print_destination_group = gtk_radio_button_group (GTK_RADIO_BUTTON (radiobutton2));
@@ -2317,25 +2567,25 @@ create_print_window()
                             (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (radiobutton2);
   gtk_table_attach (GTK_TABLE (table1), radiobutton2, 0, 1, 1, 2,
-		    (GtkAttachOptions) (GTK_FILL),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
 
 #if 0
   button1 = gtk_button_new_with_label ("...");
   gtk_widget_ref (button1);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "button1", button1,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (button1);
   gtk_table_attach (GTK_TABLE (table1), button1, 2, 3, 0, 1,
-		    (GtkAttachOptions) (0),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (0),
+                    (GtkAttachOptions) (0), 0, 0);
   gtk_widget_ref (button2);
   gtk_object_set_data_full (GTK_OBJECT (w_print_window), "button2", button2,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
   gtk_widget_show (button2);
   gtk_table_attach (GTK_TABLE (table1), button2, 2, 3, 1, 2,
-		    (GtkAttachOptions) (0),
-		    (GtkAttachOptions) (0), 0, 0);
+                    (GtkAttachOptions) (0),
+                    (GtkAttachOptions) (0), 0, 0);
 #endif
 
   /* print and quit buttons */
@@ -2347,15 +2597,15 @@ create_print_window()
   gtk_box_pack_start (GTK_BOX (hbox), button_print, TRUE, TRUE, 0);
   gtk_widget_show(button_print);
   gtk_signal_connect (GTK_OBJECT (button_print),
-		      "clicked", GTK_SIGNAL_FUNC(cb_giv_print),
-		      NULL);
+                      "clicked", GTK_SIGNAL_FUNC(cb_giv_print),
+                      NULL);
     
   button_cancel = gtk_button_new_with_label("Cancel");
   gtk_box_pack_start (GTK_BOX (hbox), button_cancel, TRUE, TRUE, 0);
   gtk_widget_show(button_cancel);
   gtk_signal_connect (GTK_OBJECT (button_cancel),
-		      "clicked", GTK_SIGNAL_FUNC(cb_toggle_print_window),
-		      NULL);
+                      "clicked", GTK_SIGNAL_FUNC(cb_toggle_print_window),
+                      NULL);
 
   gtk_widget_show_all(w_print_window);
 
@@ -2374,9 +2624,9 @@ giv_goto_xy(double x0, double y0, double zoom)
                                            &old_canvas_y);
                                                               
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
-					   zoom,
-					   zoom,
-					   old_canvas_x, old_canvas_y,
+                                           zoom,
+                                           zoom,
+                                           old_canvas_x, old_canvas_y,
                                            w/2,h/2);
 }
 
@@ -2412,7 +2662,7 @@ create_goto_point_window()
   table1 = gtk_table_new (2, 3, FALSE);
   gtk_widget_ref (table1);
   gtk_object_set_data_full (GTK_OBJECT (w_goto_point_window), "table1", table1,
-			    (GtkDestroyNotify) gtk_widget_unref);
+                            (GtkDestroyNotify) gtk_widget_unref);
 
   gtk_widget_show (table1);
   gtk_box_pack_start (GTK_BOX (vbox), table1, TRUE, TRUE, 0);
@@ -2447,15 +2697,15 @@ create_goto_point_window()
   gtk_box_pack_start (GTK_BOX (hbox), button_goto, TRUE, TRUE, 0);
   gtk_widget_show(button_goto);
   gtk_signal_connect (GTK_OBJECT (button_goto),
-		      "clicked", GTK_SIGNAL_FUNC(giv_goto_point),
-		      NULL);
+                      "clicked", GTK_SIGNAL_FUNC(giv_goto_point),
+                      NULL);
     
   button_cancel = gtk_button_new_with_label("Cancel");
   gtk_box_pack_start (GTK_BOX (hbox), button_cancel, TRUE, TRUE, 0);
   gtk_widget_show(button_cancel);
   gtk_signal_connect (GTK_OBJECT (button_cancel),
-		      "clicked", GTK_SIGNAL_FUNC(cb_toggle_goto_point_window),
-		      NULL);
+                      "clicked", GTK_SIGNAL_FUNC(cb_toggle_goto_point_window),
+                      NULL);
 
   gtk_widget_show_all(w_goto_point_window);
 
@@ -2463,14 +2713,14 @@ create_goto_point_window()
 
 static void
 create_button(GtkWidget *vbox,
-	      const gchar *label,
-	      gpointer func)
+              const gchar *label,
+              gpointer func)
 {
   /* Red only button */
   GtkWidget *button = gtk_button_new_with_label(label);
   gtk_box_pack_start (GTK_BOX (vbox), button, FALSE, FALSE, 0);
   gtk_signal_connect (GTK_OBJECT (button), "clicked",
-		      GTK_SIGNAL_FUNC (func), NULL);
+                      GTK_SIGNAL_FUNC (func), NULL);
   gtk_widget_show(button);
 }
 
@@ -2497,21 +2747,21 @@ create_histogram_window()
 
   /* Setup signals */
   gtk_signal_connect (GTK_OBJECT (histogram_drawing_area),    "expose_event",
-		      (GtkSignalFunc) cb_histogram_expose_event,
-		      NULL);
+                      (GtkSignalFunc) cb_histogram_expose_event,
+                      NULL);
   gtk_signal_connect (GTK_OBJECT (histogram_drawing_area),    "configure_event",
-		      (GtkSignalFunc) cb_configure_histogram_event,
-		      NULL);
+                      (GtkSignalFunc) cb_configure_histogram_event,
+                      NULL);
   gtk_signal_connect (GTK_OBJECT (histogram_drawing_area),    "button_press_event",
-		      (GtkSignalFunc)		      cb_histogram_zoom,
-		      NULL);
+                      (GtkSignalFunc)                 cb_histogram_zoom,
+                      NULL);
     
   gtk_widget_set_events(histogram_drawing_area,
-			GDK_EXPOSURE_MASK
-			| GDK_STRUCTURE_MASK
-			| GDK_PROPERTY_CHANGE_MASK
-			| GDK_BUTTON_PRESS_MASK
-			);
+                        GDK_EXPOSURE_MASK
+                        | GDK_STRUCTURE_MASK
+                        | GDK_PROPERTY_CHANGE_MASK
+                        | GDK_BUTTON_PRESS_MASK
+                        );
     
   gtk_widget_show(histogram_drawing_area);
 }
@@ -2564,67 +2814,67 @@ set_transfer_function(trans_func_t which_trans_func)
   case TRANS_FUNC_RESET:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
-	current_maps[col_idx][hist_idx] = hist_idx;
+        current_maps[col_idx][hist_idx] = hist_idx;
     break;
   case TRANS_FUNC_INVERT:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
-	current_maps[col_idx][hist_idx] = 255-current_maps[col_idx][hist_idx];
+        current_maps[col_idx][hist_idx] = 255-current_maps[col_idx][hist_idx];
     break;
   case TRANS_FUNC_LOW_CONTRAST:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
-	current_maps[col_idx][hist_idx] = LOW_CONTRAST_LOW +
-	  (LOW_CONTRAST_HIGH-LOW_CONTRAST_LOW)*hist_idx/256;
+        current_maps[col_idx][hist_idx] = LOW_CONTRAST_LOW +
+          (LOW_CONTRAST_HIGH-LOW_CONTRAST_LOW)*hist_idx/256;
     break;
   case TRANS_FUNC_NORM:
     {
       guint8 min[3], max[3];
-	    
+            
       min[0] = min[1]=min[2] = 255;
       max[0] = max[1] = max[2] = 0;
       for (pix_idx=0; pix_idx<width*height; pix_idx++) {
-	for (col_idx=0; col_idx<3;col_idx++) {
-	  if (*buf < min[col_idx])
-	    min[col_idx] = *buf;
-	  else if (*buf > max[col_idx])
-	    max[col_idx] = *buf;
-	  buf++;
-	}
+        for (col_idx=0; col_idx<3;col_idx++) {
+          if (*buf < min[col_idx])
+            min[col_idx] = *buf;
+          else if (*buf > max[col_idx])
+            max[col_idx] = *buf;
+          buf++;
+        }
       }
-	    
+            
       for (col_idx=0; col_idx<3; col_idx++) {
-	for (hist_idx=0; hist_idx<256; hist_idx++) {
-	  int map_value = 255 * (hist_idx-min[col_idx])
-	    / (max[col_idx] - min[col_idx]);
-	  if (map_value > 255)
-	    map_value = 255;
-	  else if (map_value < 0)
-	    map_value = 0;
-	  current_maps[col_idx][hist_idx] = map_value;
-	}
+        for (hist_idx=0; hist_idx<256; hist_idx++) {
+          int map_value = 255 * (hist_idx-min[col_idx])
+            / (max[col_idx] - min[col_idx]);
+          if (map_value > 255)
+            map_value = 255;
+          else if (map_value < 0)
+            map_value = 0;
+          current_maps[col_idx][hist_idx] = map_value;
+        }
       }
     }
     break;
   case TRANS_FUNC_EQ:
     {
       gint hist[3][256];
-	    
+            
       memset(hist, 0, sizeof(hist));
 
       for (pix_idx=0; pix_idx<width*height; pix_idx++) {
-	for (col_idx=0; col_idx<3;col_idx++) {
-	  hist[col_idx][*buf]++;
-	  buf++;
-	}
+        for (col_idx=0; col_idx<3;col_idx++) {
+          hist[col_idx][*buf]++;
+          buf++;
+        }
       }
-	    
+            
       for (col_idx=0; col_idx<3; col_idx++) {
-	int accsum = 0;
-	for (hist_idx=0; hist_idx<256; hist_idx++) {
-	  current_maps[col_idx][hist_idx] = (accsum * 255) / (width * height);
-	  accsum+= hist[col_idx][hist_idx];
-	}
+        int accsum = 0;
+        for (hist_idx=0; hist_idx<256; hist_idx++) {
+          current_maps[col_idx][hist_idx] = (accsum * 255) / (width * height);
+          accsum+= hist[col_idx][hist_idx];
+        }
       }
     }
     break;
@@ -2633,7 +2883,7 @@ set_transfer_function(trans_func_t which_trans_func)
   case TRANS_FUNC_COLOR_MAP:
     for (col_idx = 0; col_idx<3; col_idx++) 
       for (hist_idx = 0; hist_idx < 256; hist_idx++)
-	current_maps[col_idx][hist_idx] = color_maps[current_color_map].lut[hist_idx*3+col_idx];
+        current_maps[col_idx][hist_idx] = color_maps[current_color_map].lut[hist_idx*3+col_idx];
     break;
     
   }
@@ -2641,9 +2891,9 @@ set_transfer_function(trans_func_t which_trans_func)
 
   if (image_viewer)
   gtk_image_viewer_set_transfer_map(GTK_IMAGE_VIEWER(image_viewer),
-				    current_maps[0],
-				    current_maps[1],
-				    current_maps[2] );
+                                    current_maps[0],
+                                    current_maps[1],
+                                    current_maps[2] );
 }
 
 static void
@@ -2704,7 +2954,7 @@ cb_show_histogram()
 }
 
 static gint cb_set_color_map(GtkWidget *widget,
-			     gpointer userdata)
+                             gpointer userdata)
 {
   int map_idx = GPOINTER_TO_INT(userdata);
 
@@ -2738,7 +2988,7 @@ cb_open_false_color_window()
       w_false_color_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
       gtk_container_border_width (GTK_CONTAINER (w_false_color_window), 3);
       gtk_window_set_title (GTK_WINDOW (w_false_color_window),
-			    "False color options");
+                            "False color options");
 
       vbox = gtk_vbox_new(0,0);
       gtk_container_add (GTK_CONTAINER (w_false_color_window), vbox);
@@ -2749,54 +2999,54 @@ cb_open_false_color_window()
       gtk_box_pack_start (GTK_BOX(vbox), table, 0,0,0);
 
       for (map_idx=0; map_idx<num_maps; map_idx++)
-	{
+        {
           radiobutton = gtk_radio_button_new_with_label (radio_group, color_maps[map_idx].name);
-	  g_signal_connect (G_OBJECT(radiobutton), "toggled",
-			    G_CALLBACK(cb_set_color_map),
-			    GINT_TO_POINTER(map_idx));
+          g_signal_connect (G_OBJECT(radiobutton), "toggled",
+                            G_CALLBACK(cb_set_color_map),
+                            GINT_TO_POINTER(map_idx));
 
           radio_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (radiobutton));
           gtk_table_attach (GTK_TABLE (table), radiobutton, 0, 1, map_idx, map_idx+1,
                             (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                             (GtkAttachOptions) (0), 0, 0);
           {
-	    // Create a histogram for the lookup table
-	    GdkPixbuf *pb = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
-					   FALSE,
-					   gdk_pixbuf_get_bits_per_sample(img_display),
-					   64, 16);
-	    guint8 *buf = gdk_pixbuf_get_pixels (pb);
-	    guint row_stride = gdk_pixbuf_get_rowstride (pb);
-	    gint row_idx, col_idx;
-	    
-	    for (row_idx = 0; row_idx < 16; row_idx++)
-	      {
-		guint8 *row = buf + row_stride * row_idx;
-		for (col_idx = 0; col_idx < 64; col_idx++)
-		  {
-		    int sub_idx;
-		    int r,g,b;
+            // Create a histogram for the lookup table
+            GdkPixbuf *pb = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
+                                           FALSE,
+                                           gdk_pixbuf_get_bits_per_sample(img_display),
+                                           64, 16);
+            guint8 *buf = gdk_pixbuf_get_pixels (pb);
+            guint row_stride = gdk_pixbuf_get_rowstride (pb);
+            gint row_idx, col_idx;
+            
+            for (row_idx = 0; row_idx < 16; row_idx++)
+              {
+                guint8 *row = buf + row_stride * row_idx;
+                for (col_idx = 0; col_idx < 64; col_idx++)
+                  {
+                    int sub_idx;
+                    int r,g,b;
 
-		    /* Average the color lookup table */
-		    r = g = b = 0;
-		    for (sub_idx=0; sub_idx<256/64; sub_idx++)
-		      {
-			r += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3];
-			g += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+1];
-			b += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+2];
-		      }
-		    row[col_idx * 3  ] = r/4;
-		    row[col_idx * 3+1] = g/4;
-		    row[col_idx * 3+2] = b/4;
-		  }
-	      }
-	    
-	    GtkWidget *image = gtk_image_new_from_pixbuf(pb);
-	    gtk_table_attach (GTK_TABLE (table), image, 1, 2, map_idx, map_idx+1,
-			      (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-			      (GtkAttachOptions) (0), 10, 0);
+                    /* Average the color lookup table */
+                    r = g = b = 0;
+                    for (sub_idx=0; sub_idx<256/64; sub_idx++)
+                      {
+                        r += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3];
+                        g += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+1];
+                        b += color_maps[map_idx].lut[(col_idx * 4 + sub_idx)*3+2];
+                      }
+                    row[col_idx * 3  ] = r/4;
+                    row[col_idx * 3+1] = g/4;
+                    row[col_idx * 3+2] = b/4;
+                  }
+              }
+            
+            GtkWidget *image = gtk_image_new_from_pixbuf(pb);
+            gtk_table_attach (GTK_TABLE (table), image, 1, 2, map_idx, map_idx+1,
+                              (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                              (GtkAttachOptions) (0), 10, 0);
           }
-	}
+        }
           
       button = gtk_button_new_with_label("Close");
       g_signal_connect( G_OBJECT(button), "clicked", GTK_SIGNAL_FUNC( cb_open_false_color_window ), NULL);
@@ -2831,9 +3081,9 @@ set_square_aspect_ratio()
   
   gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer), &scale_x, &scale_y);
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
-					   scale_x,
-					   scale_x,
-					   w/2,h/2,w/2,h/2);
+                                           scale_x,
+                                           scale_x,
+                                           w/2,h/2,w/2,h/2);
 }
 
 static void
@@ -2851,7 +3101,7 @@ mono_only_image(int col_idx)
   if (img_org == img_display)
     {
       /* By copying I don't have to worry about strides, etc. It takes
-	 a bit more time though. */
+         a bit more time though. */
       img_display = gdk_pixbuf_copy(img_org);
     }
   
@@ -2909,7 +3159,7 @@ cb_toggle_marks()
 //----------------------------------------------------------------------*/
 static int
 cb_histogram_zoom(GtkWidget *widget,
-		  GdkEventButton *event)
+                  GdkEventButton *event)
 {
   gint button = event->button;
   if (button == 1)
@@ -2950,15 +3200,18 @@ draw_histogram()
   GdkColor color = histogram_color;
 
   gc_set_attribs(gc,
-		 &color,
-		 1,
-		 GDK_LINE_SOLID);
+                 &color,
+                 1,
+                 GDK_LINE_SOLID,
+                 0,
+                 NULL
+                 );
     
   for (col_idx=0; col_idx <3; col_idx++) {
     max_hist[col_idx] = 0;
     for (hist_idx=0; hist_idx<256; hist_idx++) {
       if (hist[col_idx][hist_idx]> max_hist[col_idx])
-	max_hist[col_idx]= hist[col_idx][hist_idx];
+        max_hist[col_idx]= hist[col_idx][hist_idx];
     }
   }
 
@@ -2969,16 +3222,16 @@ draw_histogram()
     hist_normalize = 1;
 
   gdk_draw_rectangle(histogram_drawing_pixmap,
-		     histogram_drawing_area->style->bg_gc[GTK_WIDGET_STATE (histogram_drawing_area)],
-		     TRUE,
-		     0,0,256,histogram_height);
+                     histogram_drawing_area->style->bg_gc[GTK_WIDGET_STATE (histogram_drawing_area)],
+                     TRUE,
+                     0,0,256,histogram_height);
   for (hist_idx=0; hist_idx<256; hist_idx++) {
     int y0 = histogram_height-5;
     int y1 = histogram_height-5-histogram_scale*hist_normalize * hist[0][hist_idx];
     gdk_draw_line(histogram_drawing_pixmap,
-		  gc,
-		  hist_idx, y0,
-		  hist_idx, y1); 
+                  gc,
+                  hist_idx, y0,
+                  hist_idx, y1); 
   }
   g_free(gc);
 
@@ -2991,27 +3244,37 @@ draw_histogram()
 //----------------------------------------------------------------------*/
 static void
 gc_set_attribs(GdkGC *gc,
-	       GdkColor *color,
-	       gint line_width,
-	       gint line_style)
+               GdkColor *color,
+               gint line_width,
+               gint line_style,
+               gint num_dashes,
+               gint8 *dash_list
+               )
 {
     
   /* I don't know if this is the proper way of doing it... */
   gdk_colormap_alloc_color (gdk_colormap_get_system(),
-			    color,
-			    FALSE,
-			    TRUE);
+                            color,
+                            FALSE,
+                            TRUE);
   gdk_gc_set_foreground(gc, color);
+  if (num_dashes) {
+    gdk_gc_set_dashes(gc, 0, dash_list, num_dashes);
+    if (line_style == GDK_LINE_SOLID)
+      line_style = GDK_LINE_ON_OFF_DASH;
+  }
+  
   gdk_gc_set_line_attributes(gc, line_width, line_style, GDK_CAP_ROUND,
-			     GDK_JOIN_ROUND);
+                             GDK_JOIN_ROUND);
+
 }
 
 static void
 draw_one_mark(GdkWindow *drawable,
-	      GdkGC *gc,
-	      int x, int y,
-	      int mark_type,
-	      double size_x, double size_y)
+              GdkGC *gc,
+              int x, int y,
+              int mark_type,
+              double size_x, double size_y)
 {
   if ((x+size_x < 0 || x-size_x > canvas_width)
       && (y+size_y < 0 || y-size_y > canvas_height))
@@ -3022,25 +3285,25 @@ draw_one_mark(GdkWindow *drawable,
       gboolean do_fill = mark_type == MARK_TYPE_FCIRCLE;
 
       gdk_draw_arc(drawable,
-		   gc,
-		   do_fill,
-		   x-size_x/2,y-size_y/2,
-		   size_x, size_y,
-		   0, 360*64);
+                   gc,
+                   do_fill,
+                   x-size_x/2,y-size_y/2,
+                   size_x, size_y,
+                   0, 360*64);
     }
   else if (mark_type == MARK_TYPE_SQUARE || mark_type == MARK_TYPE_FSQUARE)
     {
       gboolean do_fill = mark_type == MARK_TYPE_FSQUARE;
       gdk_draw_rectangle(drawable,
-			 gc,
-			 do_fill,
-			 x-size_x/2, y-size_y/2,
-			 size_x, size_y);
+                         gc,
+                         do_fill,
+                         x-size_x/2, y-size_y/2,
+                         size_x, size_y);
     }
   else if (mark_type == MARK_TYPE_PIXEL) {
     gdk_draw_point(drawable,
-		   gc,
-		   x, y);
+                   gc,
+                   x, y);
   }
   else
     g_message("Unknown mark type!");
@@ -3048,9 +3311,9 @@ draw_one_mark(GdkWindow *drawable,
 
 static inline gboolean
 line_hor_line_intersect(double x0, double y0, double x1, double y1,
-			double line_x0, double line_x1, double line_y,
-			/* output */
-			double *x_cross, double *y_cross)
+                        double line_x0, double line_x1, double line_y,
+                        /* output */
+                        double *x_cross, double *y_cross)
 {
   if (y1 == y0) {
     *y_cross = x0;
@@ -3074,9 +3337,9 @@ line_hor_line_intersect(double x0, double y0, double x1, double y1,
 
 static inline gboolean
 line_ver_line_intersect(double x0, double y0, double x1, double y1,
-			double line_y0, double line_y1, double line_x,
-			/* output */
-			double *x_cross, double *y_cross)
+                        double line_y0, double line_y1, double line_x,
+                        /* output */
+                        double *x_cross, double *y_cross)
 {
   if (x1 == x0) {
     *x_cross = x0;
@@ -3098,11 +3361,11 @@ line_ver_line_intersect(double x0, double y0, double x1, double y1,
   return (*y_cross >= line_y0 && *y_cross <= line_y1 && *x_cross >= x0 && *x_cross <= x1);
 }
 
-static inline gboolean
+gboolean
 clip_line_to_rectangle(double x0, double y0, double x1, double y1,
-		       int rect_x0, int rect_y0, int rect_x1, int rect_y1,
-		       /* output */
-		       double *cx0, double *cy0, double *cx1, double *cy1)
+                       int rect_x0, int rect_y0, int rect_x1, int rect_y1,
+                       /* output */
+                       double *cx0, double *cy0, double *cx1, double *cy1)
 {
   gboolean z0_inside, z1_inside;
   int num_crosses = 0;
@@ -3116,11 +3379,11 @@ clip_line_to_rectangle(double x0, double y0, double x1, double y1,
 
   /* Test if p1 is inside the window */
   z0_inside = (   x0 >= rect_x0 && x0 <= rect_x1
-		  && y0 >= rect_y0 && y0 <= rect_y1);
+                  && y0 >= rect_y0 && y0 <= rect_y1);
 
   /* Test if p2 is inside the window */
   z1_inside = (   x1 >= rect_x0 && x1 <= rect_x1
-		  && y1 >= rect_y0 && y1 <= rect_y1);
+                  && y1 >= rect_y0 && y1 <= rect_y1);
 
 #ifdef DEBUG_CLIP
   printf("z0_inside z1_inside = %d %d  z0=(%d %d)  z1=(%d %d) rect=(%d %d %d %d)\n", z0_inside, z1_inside, (int)x0, (int)y0, (int)x1, (int)y1, (int)rect_x0, (int)rect_y0, (int)rect_x1, (int)rect_y1);
@@ -3135,23 +3398,23 @@ clip_line_to_rectangle(double x0, double y0, double x1, double y1,
 
   /* Check for line intersection with the four edges */
   if (line_hor_line_intersect(x0, y0, x1, y1,
-			      rect_x0, rect_x1, rect_y0,
-			      &cross_x[num_crosses], &cross_y[num_crosses]))
+                              rect_x0, rect_x1, rect_y0,
+                              &cross_x[num_crosses], &cross_y[num_crosses]))
     ++num_crosses;
 
   if (line_hor_line_intersect(x0, y0, x1, y1,
-			      rect_x0, rect_x1, rect_y1,
-			      &cross_x[num_crosses], &cross_y[num_crosses]))
+                              rect_x0, rect_x1, rect_y1,
+                              &cross_x[num_crosses], &cross_y[num_crosses]))
     ++num_crosses;
 
   if (line_ver_line_intersect(x0, y0, x1, y1,
-			      rect_y0, rect_y1, rect_x0, 
-			      &cross_x[num_crosses], &cross_y[num_crosses]))
+                              rect_y0, rect_y1, rect_x0, 
+                              &cross_x[num_crosses], &cross_y[num_crosses]))
     ++num_crosses;
 
   if (line_ver_line_intersect(x0, y0, x1, y1,
-			      rect_y0, rect_y1, rect_x1, 
-			      &cross_x[num_crosses], &cross_y[num_crosses]))
+                              rect_y0, rect_y1, rect_x1, 
+                              &cross_x[num_crosses], &cross_y[num_crosses]))
     ++num_crosses;
 
 #ifdef DEBUG_CLIP
@@ -3196,6 +3459,7 @@ draw_marks(GtkImageViewer *image_viewer)
   int set_idx;
   double scale_x, scale_y;
   GdkGC *gc = gdk_gc_new(drawing_area);
+  GdkGC *gc_label = NULL;
 
   if (gtk_image_viewer_get_is_panning(image_viewer))
     return;
@@ -3203,232 +3467,399 @@ draw_marks(GtkImageViewer *image_viewer)
   canvas_width = gtk_image_viewer_get_canvas_width(image_viewer);
   canvas_height = gtk_image_viewer_get_canvas_height(image_viewer);
   gtk_image_viewer_get_scale(image_viewer, &scale_x, &scale_y);
-    
+
+  if (do_track_label)
+    {
+      int width=-1, height=-1;
+      GtkAllocation alloc;
+
+      if (w_label_pixmap)
+        gdk_drawable_get_size(GDK_DRAWABLE(w_label_pixmap), &width, &height);
+      
+      if (canvas_width != width || canvas_height != height)
+        {
+          alloc.x=alloc.y=0;
+          alloc.width=canvas_width;
+          alloc.height = canvas_height;
+
+          if (w_label_pixmap)
+            gdk_pixmap_unref(w_label_pixmap);
+          w_label_pixmap = gdk_pixmap_new(GTK_WIDGET(image_viewer)->window,
+                                          canvas_width, canvas_height,
+                                          -1);
+        }
+      gdk_drawable_get_size(w_label_pixmap, &width, &height);
+      
+      gc_label = gdk_gc_new(w_label_pixmap);
+      
+
+      // Now paint the pixmap in black
+      {
+        GdkColor color_of_black = { 0,0,0,0};
+        gdk_gc_set_foreground(gc, &color_of_black);
+        gdk_draw_rectangle(GDK_DRAWABLE(w_label_pixmap), gc_label, TRUE,
+                           0,0,
+                           width, height);
+      }
+    }
+
+  if (back_store)
+    free_giv_backstore (back_store);
+  
+  create_backstore(GTK_WIDGET(image_viewer));
+  if (is_measuring_distance && measure_point_index == 1)
+    draw_measure_line(back_store,
+                      GTK_WIDGET(image_viewer),
+                      measure_x1, measure_y1,
+                      last_move_x, last_move_y);
+
   if (!mark_set_list)
     return;
   if (!do_show_marks)
     return;
 
-  for (set_idx=0; set_idx < mark_set_list->len; set_idx++) {
-    mark_set_t *mark_set = g_ptr_array_index (mark_set_list, set_idx);
-    gboolean is_first_point;
-    gint p_idx;
-    double old_cx=-1, old_cy=-1;
-    gdouble mark_size_x, mark_size_y;
-    gint mark_type;
-    GArray *segments;
-
-
-   ////////////
-    if (mark_set->mark_type == MARK_TYPE_ARC) {
-      mark_set->do_scale_marks = 1;
-      if (mark_set->points->len != 3) {
-	fprintf(stderr, "Arc mark should have 3 coordinates: center point, start point, rotation angle and style!\n");
-      }
-      else {
-	// get center point.
-	double cpx, cpy; 
-	point_t cp = g_array_index(mark_set->points, point_t, 0);
-	gtk_image_viewer_img_coord_to_canv_coord(image_viewer, cp.data.point.x, cp.data.point.y, &cpx, &cpy);
-	
-	// get start point.
-	double spx, spy; 
-	point_t sp = g_array_index(mark_set->points, point_t, 1);
-	gtk_image_viewer_img_coord_to_canv_coord(image_viewer, sp.data.point.x, sp.data.point.y, &spx, &spy);
-	
-	// get rotation angle
-	double angle;
-	point_t dp = g_array_index(mark_set->points, point_t, 2);
-	angle = dp.data.point.x;
-	
-	int x=cpx, y=cpy;
-	double size_x = spx-cpx, size_y=spy-cpy;
-	double radius = sqrt((spx-cpx)*(spx-cpx) + (spy-cpy)*(spy-cpy));
-	gboolean do_fill = (dp.data.point.y == 1) ? 1 : 0;
-	
-	// set graphic attribs
-	gc_set_attribs(gc,
-		       &mark_set->color,
-		       mark_set->line_width,
-		       mark_set->line_style);
-	
-	// draw the arc
-	gdk_draw_arc(drawing_area,
-		     gc, 
-		     do_fill, 
-		     cpx-radius, 
-		     cpy-radius, 
-		     radius*2, 
-		     radius*2,
-		     0, 
-		     angle*64);
-	
-	// process next mark
-	continue;
-      }
-    }
-    ///////////
-
-    if (!mark_set->is_visible)
-      continue;
-
-    gc_set_attribs(gc,
-		   &mark_set->color,
-		   mark_set->line_width,
-		   mark_set->line_style);
-    pango_font_description_set_size (font_description, (int)(mark_set->text_size * PANGO_SCALE));
-    pango_context_set_font_description (context, font_description);
-
-    if (mark_set->do_draw_polygon)
-      {
-        GArray *points = g_array_new(FALSE, FALSE, sizeof(GdkPoint));
-        for (p_idx=0; p_idx<mark_set->points->len; p_idx++)
-          {
-            point_t p = g_array_index(mark_set->points, point_t, p_idx);
-            GdkPoint gp;
-            double x = p.data.point.x;
-            double y = p.data.point.y;
-            double cx, cy;
-            
-            gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
-                                                     x,y,
-                                                     &cx,&cy);
-            gp.x = (gint)cx;
-            gp.y = (gint)cy;
-            
-            points = g_array_append_val(points, gp);
-          }
-        gdk_draw_polygon(drawing_area, gc, TRUE, &(g_array_index(points, GdkPoint, 0)), points->len);
+  for (set_idx=0; set_idx < mark_set_list->len; set_idx++)
+    {
+      mark_set_t *mark_set = g_ptr_array_index (mark_set_list, set_idx);
+      gboolean is_first_point;
+      gint p_idx;
+      double old_cx=-1, old_cy=-1;
+      gdouble mark_size_x, mark_size_y;
+      gint mark_type;
+      GArray *segments = NULL;
+      GdkColor label_color;
+      int label_line_style = mark_set->line_style;
+      int label_line_width = mark_set->line_width;
+    
+      if (do_track_label)
+        {
+          label_color = label_to_color(set_idx);
+          if (label_line_style == GDK_LINE_DOUBLE_DASH)
+            label_line_style = GDK_LINE_SOLID;
+          // Make the label lines thicker so that we can hit them with
+          // the mouse easier!
+          if (label_line_width<3)
+            label_line_width = 3;
+        }
         
-        if (mark_set->do_draw_polygon_outline)
-          {
-            gc_set_attribs(gc,
-                           &mark_set->outline_color,
-                           mark_set->line_width,
-                           mark_set->line_style);
-            gdk_draw_polygon(drawing_area, gc, FALSE, &(g_array_index(points, GdkPoint, 0)), points->len);
-            
-          }
-        g_array_free(points, TRUE);
-        
+      ////////////
+      if (mark_set->mark_type == MARK_TYPE_ARC)
+        {
+          mark_set->do_scale_marks = 1;
+          if (mark_set->points->len != 3)
+            {
+              fprintf(stderr, "Arc mark should have 3 coordinates: center point, start point, rotation angle and style!\n");
+            }
+          else
+            {
+              // get center point.
+              double cpx, cpy; 
+              point_t cp = g_array_index(mark_set->points, point_t, 0);
+              gtk_image_viewer_img_coord_to_canv_coord(image_viewer, cp.data.point.x, cp.data.point.y, &cpx, &cpy);
+              
+              // get start point.
+              double spx, spy; 
+              point_t sp = g_array_index(mark_set->points, point_t, 1);
+              gtk_image_viewer_img_coord_to_canv_coord(image_viewer, sp.data.point.x, sp.data.point.y, &spx, &spy);
+              
+              // get rotation angle
+              double angle;
+              point_t dp = g_array_index(mark_set->points, point_t, 2);
+              angle = dp.data.point.x;
+              
+              int x=cpx, y=cpy;
+              double size_x = spx-cpx, size_y=spy-cpy;
+              double radius = sqrt((spx-cpx)*(spx-cpx) + (spy-cpy)*(spy-cpy));
+              gboolean do_fill = (dp.data.point.y == 1) ? 1 : 0;
+              
+              // set graphic attribs
+              gc_set_attribs(gc,
+                             &mark_set->color,
+                             mark_set->line_width,
+                             mark_set->line_style,
+                             mark_set->num_dashes,
+                             mark_set->dash_list
+                             );
+              
+              // draw the arc
+              gdk_draw_arc(drawing_area,
+                           gc, 
+                           do_fill, 
+                           cpx-radius, 
+                           cpy-radius, 
+                           radius*2, 
+                           radius*2,
+                           0, 
+                           angle*64);
+
+              if (do_track_label)
+                {
+                  // set graphic attribs
+                  gc_set_attribs(gc_label,
+                                 &label_color,
+                                 label_line_width,
+                                 label_line_style,
+                                 mark_set->num_dashes,
+                                 mark_set->dash_list
+                                 );
+                  
+                  gdk_draw_arc(w_label_pixmap,
+                               gc_label, 
+                               do_fill, 
+                               cpx-radius, 
+                               cpy-radius, 
+                               radius*2, 
+                               radius*2,
+                               0, 
+                               angle*64);
+                }
+              
+              // process next mark
+              continue;
+            }
+        }
+      
+      if (!mark_set->is_visible)
         continue;
-      }
-    segments = g_array_new(FALSE, FALSE, sizeof(GdkSegment));
-	
-    mark_size_x = mark_size_y = mark_set->mark_size;
-    mark_type = mark_set->mark_type;
-    if (mark_set->do_scale_marks) {
-      mark_size_x *= scale_x;
-      mark_size_y *= scale_y;
-    }
 
-    is_first_point = TRUE;
-    for (p_idx=0; p_idx<mark_set->points->len; p_idx++) {
-      point_t p = g_array_index(mark_set->points, point_t, p_idx);
-      double x = p.data.point.x;
-      double y = p.data.point.y;
-      double arc_dev;
-      double cx, cy;
-      int op = p.op;
+      // Draw the lines and the marks
+      gc_set_attribs(gc,
+                     &mark_set->color,
+                     mark_set->line_width,
+                     mark_set->line_style,
+                     mark_set->num_dashes,
+                     mark_set->dash_list
+                     );
+      
+      if (do_track_label)
+        gc_set_attribs(gc_label,
+                       &label_color,
+                       label_line_width,
+                       label_line_style,
+                       mark_set->num_dashes,
+                       mark_set->dash_list);
+    
+      pango_font_description_set_size (font_description, (int)(mark_set->text_size * PANGO_SCALE));
+      pango_context_set_font_description (context, font_description);
+      
+      if (mark_set->do_draw_polygon)
+        {
+          GArray *points = g_array_new(FALSE, FALSE, sizeof(GdkPoint));
+          for (p_idx=0; p_idx<mark_set->points->len; p_idx++)
+            {
+              point_t p = g_array_index(mark_set->points, point_t, p_idx);
+              GdkPoint gp;
+              double x = p.data.point.x;
+              double y = p.data.point.y;
+              double cx, cy;
+              
+              gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
+                                                       x,y,
+                                                       &cx,&cy);
+              gp.x = (gint)cx;
+              gp.y = (gint)cy;
+              
+              points = g_array_append_val(points, gp);
+            }
+          gdk_draw_polygon(drawing_area, gc, TRUE, &(g_array_index(points, GdkPoint, 0)), points->len);
+          if (do_track_label)
+            gdk_draw_polygon(w_label_pixmap, gc_label, TRUE, &(g_array_index(points, GdkPoint, 0)), points->len);
+          
+          if (mark_set->do_draw_polygon_outline)
+            {
+              gc_set_attribs(gc,
+                             &mark_set->outline_color,
+                             mark_set->line_width,
+                             mark_set->line_style,
+                             mark_set->num_dashes,
+                             mark_set->dash_list
+                             );
+              gdk_draw_polygon(drawing_area, gc, FALSE, &(g_array_index(points, GdkPoint, 0)), points->len);
+              if (do_track_label)
+                gdk_draw_polygon(w_label_pixmap, gc_label, FALSE, &(g_array_index(points, GdkPoint, 0)), points->len);
+              
+            }
+          g_array_free(points, TRUE);
+          
+          continue;
+        }
 
-      if (op == OP_ARC) {
-	  arc_dev = p.data.arc_dev;
-	  p_idx++;
-	  p = g_array_index(mark_set->points, point_t, p_idx);
-	  x = p.data.point.x;
-	  y = p.data.point.y;
-      }
-      gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
-					       x,y,
-					       &cx,&cy);
+      // Not polygons, thus segments
+      segments = g_array_new(FALSE, FALSE, sizeof(GdkSegment));
+      
+      mark_size_x = mark_size_y = mark_set->mark_size;
+      mark_type = mark_set->mark_type;
+      if (mark_set->do_scale_marks)
+        {
+          mark_size_x *= scale_x;
+          mark_size_y *= scale_y;
+        }
 
-      if (op == OP_TEXT) {
-	  pango_layout_set_text(layout, p.data.text_object->string, -1);
-
-	  gdk_draw_layout (drawing_area, gc, floor(cx+0.5), floor(cy+0.5), layout);
-	  
-	  continue;
-      }
+      is_first_point = TRUE;
+      for (p_idx=0; p_idx<mark_set->points->len; p_idx++)
+        {
+          point_t p = g_array_index(mark_set->points, point_t, p_idx);
+          double x = p.data.point.x;
+          double y = p.data.point.y;
+          double arc_dev;
+          double cx, cy;
+          int op = p.op;
+          
+          if (op == OP_ARC)
+            {
+              arc_dev = p.data.arc_dev;
+              p_idx++;
+              p = g_array_index(mark_set->points, point_t, p_idx);
+              x = p.data.point.x;
+              y = p.data.point.y;
+            }
+          gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
+                                                   x,y,
+                                                   &cx,&cy);
+          
+          if (op == OP_TEXT)
+            {
+              pango_layout_set_text(layout, p.data.text_object->string, -1);
+              
+              gdk_draw_layout (drawing_area, gc, floor(cx+0.5), floor(cy+0.5), layout);
+              
+              continue;
+            }
 #ifdef DEBUG_CLIP
-      printf("scale = %.0f  x y = %g %g   cx cy = %.2f %.2f\n", current_scale, x,y, cx, cy);
+          printf("scale = %.0f  x y = %g %g   cx cy = %.2f %.2f\n", current_scale, x,y, cx, cy);
 #endif
+          
+          if (mark_set->do_draw_lines
+              && !is_first_point)
+            { 
+              if (op == OP_ARC)
+                {
+                  int x,y,width,height,angle1,angle2;
+                  
+                  // Convert the arc_dev to canvas coordinates. At the
+                  // moment assume uniform scaling in x and y so that we
+                  // get circles.
+                  arc_dev *= scale_x;
+                  
+                  // Convert to gdk_draw_arc coordinates or should I perhaps
+                  // do polygon segments??
+                  givarc2gdkarc(old_cx,
+                                old_cy,
+                                cx,
+                                cy,
+                                arc_dev,
+                                // output
+                                &x,&y,&width,&height,&angle1,&angle2);
+                  
+                  // Draw it 
+                  gdk_draw_arc(drawing_area,
+                               gc,
+                               FALSE,
+                               x,y,
+                               width, height,
+                               angle1, angle2);
 
-      if (mark_set->do_draw_lines
-	  && !is_first_point) {
-	if (op == OP_ARC) {
-	    int x,y,width,height,angle1,angle2;
-	  
-	  // Convert the arc_dev to canvas coordinates. At the
-	  // moment assume uniform scaling in x and y so that we
-	  // get circles.
-	  arc_dev *= scale_x;
-
-	  // Convert to gdk_draw_arc coordinates or should I perhaps
-	  // do polygon segments??
-	  givarc2gdkarc(old_cx,
-			old_cy,
-			cx,
-			cy,
-			arc_dev,
-			// output
-			&x,&y,&width,&height,&angle1,&angle2);
-
-	  // Draw it 
-	  gdk_draw_arc(drawing_area,
-		       gc,
-		       FALSE,
-		       x,y,
-		       width, height,
-		       angle1, angle2);
-	}
-	else if (op == OP_DRAW) {
-	  GdkSegment seg;
-	  double x1,y1,x2,y2;
-	  
-	  if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
-				     0, 0, canvas_width, canvas_height,
-				     &x1,&y1,&x2,&y2)) {
-	    
-	    /* Must clip the area shown */
-	    seg.x1 = (gint16)x1;
-	    seg.y1 = (gint16)y1;
-	    seg.x2 = (gint16)x2;
-	    seg.y2 = (gint16)y2;
-	    segments = g_array_append_val(segments, seg);
-	  }
-	  
+                  if (do_track_label)
+                    gdk_draw_arc(w_label_pixmap,
+                                 gc_label, 
+                                 FALSE, 
+                                 x, y,
+                                 width, height,
+                                 angle1, angle2);
+                }
+              else if (op == OP_DRAW)
+                {
+                  GdkSegment seg;
+                  double x1,y1,x2,y2;
+                  
+                  if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
+                                             0, 0, canvas_width, canvas_height,
+                                             &x1,&y1,&x2,&y2)) {
+                    
+                    /* Must clip the area shown */
+                    seg.x1 = (gint16)x1;
+                    seg.y1 = (gint16)y1;
+                    seg.x2 = (gint16)x2;
+                    seg.y2 = (gint16)y2;
+                    segments = g_array_append_val(segments, seg);
+                  }
+                  
 #if 0
-	  draw_line(drawing_area,
-		    gc,
-		    old_cx, old_cy,
-		    cx, cy);
-	  
+                  draw_line(drawing_area,
+                            gc,
+                            old_cx, old_cy,
+                            cx, cy);
+                  
 #endif
-	}
-      }
-      if (mark_set->do_draw_marks) {
-	/* Trivial clipping for marks */
-	if (   cx+mark_size_x > 0
-	       && cy+mark_size_y > 0
-	       && cx-mark_size_x < canvas_width
-	       && cy-mark_size_y < canvas_height)
-	  draw_one_mark(drawing_area,
-			gc,
-			cx, cy,
-			mark_type,
-			mark_size_x,
-			mark_size_y
-			);
-      }
-      is_first_point = FALSE;
-      old_cx = cx;
-      old_cy = cy;
-    }
-    gdk_draw_segments(drawing_area, gc, &(g_array_index(segments,GdkSegment,0)), segments->len);
-    g_array_free(segments, TRUE);
+                }
+            }
+          
+          if (mark_set->do_draw_marks)
+            {
+              /* Trivial clipping for marks */
+              if (   cx+mark_size_x > 0
+                     && cy+mark_size_y > 0
+                     && cx-mark_size_x < canvas_width
+                     && cy-mark_size_y < canvas_height)
+                {
+                  draw_one_mark(drawing_area,
+                                gc,
+                                cx, cy,
+                                mark_type,
+                                mark_size_x,
+                                mark_size_y
+                                );
+                  if (do_track_label) 
+                    draw_one_mark(w_label_pixmap,
+                                  gc_label,
+                                  cx, cy,
+                                  mark_type,
+                                  mark_size_x,
+                                  mark_size_y
+                                  );
+                }
+            }
 
-  }
-  g_free(gc);
+          is_first_point = FALSE;
+          old_cx = cx;
+          old_cy = cy;
+          
+        }
+
+      gdk_draw_segments(drawing_area, gc, &(g_array_index(segments,GdkSegment,0)), segments->len);
+      if (do_track_label)
+        gdk_draw_segments(w_label_pixmap, gc_label, &(g_array_index(segments,GdkSegment,0)), segments->len);
+      
+      g_array_free(segments, TRUE);
+    }
+  gdk_gc_unref(gc);
+  if (gc_label)
+    gdk_gc_unref(gc_label);
+
+  if (do_track_label)  {
+      int i;
+      int width, height;
+      GdkDrawable *drawable = (GdkDrawable*)w_label_pixmap;
+
+      gdk_drawable_get_size(drawable, &width, &height);
+      GdkImage *gdk_img = gdk_drawable_get_image(drawable,
+                                                 0,0,
+                                                 width,height);
+      FILE *PPM = fopen("img.ppm", "wb");
+      fprintf(PPM, "P6\n%d %d\n255\n",width,height);
+      for (i=0; i<width*height; i++) {
+        int x = i%width;
+        int y = i/width;
+        guint32 pixel_val = gdk_image_get_pixel(gdk_img, x, y);
+        fputc((pixel_val>>16)%256, PPM);
+        fputc((pixel_val>>8)%256, PPM);
+        fputc(pixel_val%256, PPM);
+      }
+      fclose(PPM);
+
+      gdk_image_unref(gdk_img);
+    }
+  
 }
 
 /*======================================================================
@@ -3438,7 +3869,7 @@ draw_marks(GtkImageViewer *image_viewer)
 //----------------------------------------------------------------------*/
 static void
 draw_image_in_postscript(GtkWidget *widget,
-			 FILE *PS)
+                         FILE *PS)
 {
   int bpp = 3;
   int row_stride;
@@ -3447,16 +3878,16 @@ draw_image_in_postscript(GtkWidget *widget,
   double scale_y;
   guint8 *buf;
   int row_idx, clm_idx;
-  int copy_w = GTK_IMAGE_VIEWER(image_viewer)->canvas_width;
-  int copy_h = GTK_IMAGE_VIEWER(image_viewer)->canvas_height;
-  int offs_x = -GTK_IMAGE_VIEWER(image_viewer)->current_x0;
-  int offs_y = -GTK_IMAGE_VIEWER(image_viewer)->current_y0;
+  int copy_w = GTK_IMAGE_VIEWER(widget)->canvas_width;
+  int copy_h = GTK_IMAGE_VIEWER(widget)->canvas_height;
+  int offs_x = -GTK_IMAGE_VIEWER(widget)->current_x0;
+  int offs_y = -GTK_IMAGE_VIEWER(widget)->current_y0;
 
   GdkPixbuf *img_scaled;
 
-  gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(image_viewer),
-			     &scale_x, &scale_y
-			     );
+  gtk_image_viewer_get_scale(GTK_IMAGE_VIEWER(widget),
+                             &scale_x, &scale_y
+                             );
   
   img_scaled = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_display),
                               FALSE,
@@ -3472,7 +3903,7 @@ draw_image_in_postscript(GtkWidget *widget,
                    offs_x,
                    offs_y,
                    scale_x, scale_y,
-                   GTK_IMAGE_VIEWER(image_viewer)->interp_type);
+                   GTK_IMAGE_VIEWER(widget)->interp_type);
   
   img_width = gdk_pixbuf_get_width(img_scaled);  
   img_height = gdk_pixbuf_get_height(img_scaled);
@@ -3529,7 +3960,7 @@ draw_image_in_postscript(GtkWidget *widget,
 
 static void
 draw_marks_in_postscript(GtkWidget *widget,
-			 FILE *PS)
+                         FILE *PS)
 {
   int set_idx;
   GtkImageViewer *image_viewer = GTK_IMAGE_VIEWER(widget);
@@ -3543,40 +3974,40 @@ draw_marks_in_postscript(GtkWidget *widget,
     
   /* Create some postscript macros */
   fprintf(PS,
-	  "/sc { setrgbcolor } bind def\n"
-	  "/lw { setlinewidth } bind def\n"
-	  "/L { lineto } bind def\n"
-	  "/S { stroke } bind def\n"
-	  "/M /moveto load def\n"
-	  "/ms { /marksize_y exch def /marksize_x exch def } def\n"
-	  "/mC { /y exch def /x exch def\n"
-	  "       x marksize_x 2 div add y moveto\n"
-	  "       x y marksize_x 2 div 0 360 arc stroke\n"
-	  "    } bind def\n"
-	  "/mFC { /y exch def /x exch def\n"
-	  "       x marksize_x 2 div add y moveto\n"
-	  "       x y marksize_x 2 div 0 360 arc fill stroke\n"
-	  "    } bind def\n"
-	  "/mS { /y exch def /x exch def\n"
-	  "      x marksize_x 2 div sub  y marksize_y 2 div sub moveto\n"
-	  "      marksize_x 0 rlineto\n"
-	  "      0 marksize_y rlineto\n"
-	  "      marksize_x neg 0 rlineto\n"
-	  "      0 marksize_y neg rlineto\n"
-	  "      stroke } bind def\n"
-	  "/mFS { /y exch def /x exch def\n"
-	  "      x marksize_x 2 div sub  y marksize_y 2 div sub moveto\n"
-	  "      marksize_x 0 rlineto\n"
-	  "      0 marksize_y rlineto\n"
-	  "      marksize_x neg 0 rlineto\n"
-	  "      0 marksize_y neg rlineto\n"
-	  "      fill stroke } bind def\n"
+          "/sc { setrgbcolor } bind def\n"
+          "/lw { setlinewidth } bind def\n"
+          "/L { lineto } bind def\n"
+          "/S { stroke } bind def\n"
+          "/M /moveto load def\n"
+          "/ms { /marksize_y exch def /marksize_x exch def } def\n"
+          "/mC { /y exch def /x exch def\n"
+          "       x marksize_x 2 div add y moveto\n"
+          "       x y marksize_x 2 div 0 360 arc stroke\n"
+          "    } bind def\n"
+          "/mFC { /y exch def /x exch def\n"
+          "       x marksize_x 2 div add y moveto\n"
+          "       x y marksize_x 2 div 0 360 arc fill stroke\n"
+          "    } bind def\n"
+          "/mS { /y exch def /x exch def\n"
+          "      x marksize_x 2 div sub  y marksize_y 2 div sub moveto\n"
+          "      marksize_x 0 rlineto\n"
+          "      0 marksize_y rlineto\n"
+          "      marksize_x neg 0 rlineto\n"
+          "      0 marksize_y neg rlineto\n"
+          "      stroke } bind def\n"
+          "/mFS { /y exch def /x exch def\n"
+          "      x marksize_x 2 div sub  y marksize_y 2 div sub moveto\n"
+          "      marksize_x 0 rlineto\n"
+          "      0 marksize_y rlineto\n"
+          "      marksize_x neg 0 rlineto\n"
+          "      0 marksize_y neg rlineto\n"
+          "      fill stroke } bind def\n"
           "/mark_size_x %f def /mark_size_y %f def\n"
-	  "1 setlinejoin %% round endings and caps\n"
-	  "1 setlinecap\n"
-	  "newpath\n",
+          "1 setlinejoin %% round endings and caps\n"
+          "1 setlinecap\n"
+          "newpath\n",
           default_mark_size, default_mark_size
-	  );
+          );
     
   if (!mark_set_list)
     return;
@@ -3597,21 +4028,21 @@ draw_marks_in_postscript(GtkWidget *widget,
     
     /* Choose the color and line widths, etc*/
     if (set_idx == 0
-	|| !color_eq(&current_color, &mark_set->color))
+        || !color_eq(&current_color, &mark_set->color))
       {
-	double red = 1.0 * mark_set->color.red / 0xffff;
-	double green = 1.0 * mark_set->color.green / 0xffff;
-	double blue = 1.0 * mark_set->color.blue / 0xffff;
-	    
-	fprintf(PS, "%.4g %.4g %.4g sc\n", red, green, blue);
+        double red = 1.0 * mark_set->color.red / 0xffff;
+        double green = 1.0 * mark_set->color.green / 0xffff;
+        double blue = 1.0 * mark_set->color.blue / 0xffff;
+            
+        fprintf(PS, "%.4g %.4g %.4g sc\n", red, green, blue);
 
-	current_color = mark_set->color;
+        current_color = mark_set->color;
       }
-	    
+            
     if (current_line_width != mark_set->line_width)
       {
-	fprintf(PS, "%g lw\n", 1.0*mark_set->line_width);
-	current_line_width = mark_set->line_width;
+        fprintf(PS, "%g lw\n", 1.0*mark_set->line_width);
+        current_line_width = mark_set->line_width;
       }
 
     /* Draw marks*/
@@ -3621,16 +4052,16 @@ draw_marks_in_postscript(GtkWidget *widget,
       mark_size_x *= scale_x;
       mark_size_y *= scale_y;
     }
-	
+        
     if (mark_set->do_draw_marks) {
       if (current_mark_size_x != mark_size_x
-	  || current_mark_size_y != mark_size_y) {
-	fprintf(PS, "%g %g ms\n", mark_size_x, mark_size_y);
-	current_mark_size_x = mark_size_x;
-	current_mark_size_y = mark_size_y;
+          || current_mark_size_y != mark_size_y) {
+        fprintf(PS, "%g %g ms\n", mark_size_x, mark_size_y);
+        current_mark_size_x = mark_size_x;
+        current_mark_size_y = mark_size_y;
       }
     }
-	      
+              
     is_first_point = TRUE;
     for (p_idx=0; p_idx<mark_set->points->len; p_idx++) {
       point_t p = g_array_index(mark_set->points, point_t, p_idx);
@@ -3641,65 +4072,65 @@ draw_marks_in_postscript(GtkWidget *widget,
       in_path = FALSE;
 
       gtk_image_viewer_img_coord_to_canv_coord(image_viewer,
-					       x,y,
-					       &cx, &cy);
-	    
+                                               x,y,
+                                               &cx, &cy);
+            
 #ifdef DEBUG_CLIP
       printf("scale = %.0f  x y = %g %g   cx cy = %.2f %.2f\n", scale, x,y, cx, cy);
 #endif
 
       if (mark_set->do_draw_lines) {
-	if (is_first_point || op == OP_MOVE) {
-	  if (in_path)
-	    fprintf(PS, "S\n");
-	  in_path = FALSE;
-	  fprintf(PS, "%.4g %.4g M\n", cx,cy);
-	}
-	if (!is_first_point) {
-	  double x1,y1,x2,y2;
+        if (is_first_point || op == OP_MOVE) {
+          if (in_path)
+            fprintf(PS, "S\n");
+          in_path = FALSE;
+          fprintf(PS, "%.4g %.4g M\n", cx,cy);
+        }
+        if (!is_first_point) {
+          double x1,y1,x2,y2;
 
-	  if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
-				     0, 0, canvas_width, canvas_height,
-				     &x1,&y1,&x2,&y2)) {
-	    if (mark_set->do_draw_marks || old_cx != x1 || old_cy != y1) {
-	      if (cx < 0 || cy < 0
-		  || cx > canvas_width || cy > canvas_height)
-		{}
-	      else {
-		/* fix this to make postscript file smaller */
+          if (clip_line_to_rectangle(old_cx, old_cy, cx, cy,
+                                     0, 0, canvas_width, canvas_height,
+                                     &x1,&y1,&x2,&y2)) {
+            if (mark_set->do_draw_marks || old_cx != x1 || old_cy != y1) {
+              if (cx < 0 || cy < 0
+                  || cx > canvas_width || cy > canvas_height)
+                {}
+              else {
+                /* fix this to make postscript file smaller */
 #if 0
-		if (in_path)
-		  fprintf(PS, "S\n");
-		fprintf(PS, "%.4g %.4g M\n", x1,y1);
+                if (in_path)
+                  fprintf(PS, "S\n");
+                fprintf(PS, "%.4g %.4g M\n", x1,y1);
 #endif
-	      }
-	    }
-	    if (op == OP_DRAW) {
-	      fprintf(PS, "%.4g %.4g M\n", x1,y1);
-	      fprintf(PS, "%.4g %.4g L S\n", x2,y2);
-	      in_path = TRUE;
-	    }
-	  }
-	}
+              }
+            }
+            if (op == OP_DRAW) {
+              fprintf(PS, "%.4g %.4g M\n", x1,y1);
+              fprintf(PS, "%.4g %.4g L S\n", x2,y2);
+              in_path = TRUE;
+            }
+          }
+        }
       }
 
       if (mark_set->do_draw_marks) {
-	/* Trivial clipping for marks */
-	if (   cx+mark_size_x > 0
-	       && cy+mark_size_y > 0
-	       && cx-mark_size_x < canvas_width
-	       && cy-mark_size_y < canvas_height) {
-	  if (mark_type == MARK_TYPE_CIRCLE)
-	    fprintf(PS, "%.4g %.4g mC\n", cx, cy);
-	  else if (mark_type == MARK_TYPE_FCIRCLE)
-	    fprintf(PS, "%.4g %.4g mFC\n", cx, cy);
-	  else if (mark_type == MARK_TYPE_SQUARE)
-	    fprintf(PS, "%.4g %.4g mS\n", cx, cy);
-	  else if (mark_type == MARK_TYPE_FSQUARE)
-	    fprintf(PS, "%.4g %.4g mFS\n", cx, cy);
-	  else
-	    g_message("Unknown mark type %d!\n", (int)mark_type);
-	}
+        /* Trivial clipping for marks */
+        if (   cx+mark_size_x > 0
+               && cy+mark_size_y > 0
+               && cx-mark_size_x < canvas_width
+               && cy-mark_size_y < canvas_height) {
+          if (mark_type == MARK_TYPE_CIRCLE)
+            fprintf(PS, "%.4g %.4g mC\n", cx, cy);
+          else if (mark_type == MARK_TYPE_FCIRCLE)
+            fprintf(PS, "%.4g %.4g mFC\n", cx, cy);
+          else if (mark_type == MARK_TYPE_SQUARE)
+            fprintf(PS, "%.4g %.4g mS\n", cx, cy);
+          else if (mark_type == MARK_TYPE_FSQUARE)
+            fprintf(PS, "%.4g %.4g mFS\n", cx, cy);
+          else
+            g_message("Unknown mark type %d!\n", (int)mark_type);
+        }
       }
       is_first_point = FALSE;
       old_cx = cx;
@@ -3710,11 +4141,11 @@ draw_marks_in_postscript(GtkWidget *widget,
   }
 }
 
-static gboolean color_eq(GdkColor *color1, GdkColor *color2)
+gboolean color_eq(GdkColor *color1, GdkColor *color2)
 {
   return (color1->red == color2->red
-	  && color1->green == color2->green
-	  && color1->blue == color2->blue);
+          && color1->green == color2->green
+          && color1->blue == color2->blue);
 }
 
 /* Define own version of floor as I can't use built in version with
@@ -3730,13 +4161,30 @@ static double giv_floor(double x)
 static void
 set_last_directory_from_filename(const gchar *filename)
 {
-    gchar *dir_name;
-    
-    if (giv_last_directory)
-        free(giv_last_directory);
-    dir_name = g_path_get_dirname(filename);
-    giv_last_directory = g_strdup_printf("%s%s", dir_name, SEP);
-    free(dir_name);
+  gchar *dir_name;
+  
+  if (giv_last_directory)
+    free(giv_last_directory);
+  dir_name = g_path_get_dirname(filename);
+  giv_last_directory = g_strdup_printf("%s%s", dir_name, SEP);
+  free(dir_name);
+}
+
+/*
+// Toggle the tracking of labels.
+*/
+static void
+toggle_track_labels()
+{
+  const char *on_off_names[] = { "OFF", "ON" };
+  do_track_label = !do_track_label;
+  
+  if (do_track_label) {
+    draw_marks(GTK_IMAGE_VIEWER(image_viewer));
+    show_balloon(last_cx, last_cy);
+  }
+  else
+    gtk_widget_hide(w_balloon_window);
 }
 
 /*======================================================================
@@ -3747,9 +4195,12 @@ fit_marks_in_window(gboolean do_calc_scale)
 {
   // 500 is the default window width and height. It should be changed
   // to a parameter...
-  double x_scale = 500 / (global_mark_max_x)*0.7;
-  double y_scale = 500 / (global_mark_max_y)*0.7;
+  double x_scale = 500 / (global_mark_max_x-global_mark_min_x)*0.7;
+  double y_scale = 500 / (global_mark_max_y-global_mark_min_y)*0.7;
   double scale = x_scale;
+  double scroll_x_dist, scroll_y_dist, scroll_x_center, scroll_y_center;
+  double scroll_min_x, scroll_min_y, scroll_max_x, scroll_max_y;
+  double c_world_center_x, c_world_center_y;
 
   if (!do_calc_scale)
     {
@@ -3765,16 +4216,40 @@ fit_marks_in_window(gboolean do_calc_scale)
         y_scale = x_scale;
     }
 
+  scroll_x_dist = global_mark_max_x - global_mark_min_x;
+  scroll_y_dist = global_mark_max_y - global_mark_min_y;
+  scroll_x_center = 0.5*(global_mark_max_x + global_mark_min_x);
+  scroll_y_center = 0.5*(global_mark_max_y + global_mark_min_y);
+
+  scroll_min_x = scroll_x_center - scroll_x_dist * 0.6;
+  scroll_max_x = scroll_x_center + scroll_x_dist * 0.6;
+  scroll_min_y = scroll_y_center - scroll_y_dist * 0.6;
+  scroll_max_y = scroll_y_center + scroll_y_dist * 0.6;
+
+  gtk_image_viewer_set_scroll_region(GTK_IMAGE_VIEWER(image_viewer),
+                                     scroll_min_x, scroll_min_y,
+                                     scroll_max_x, scroll_max_y);
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           (global_mark_max_x+global_mark_min_x)/2.0,
+                                           (global_mark_max_y+global_mark_min_y)/2.0,
+                                           &c_world_center_x,
+                                           &c_world_center_y);
+                                           
   gtk_image_viewer_zoom_around_fixed_point(GTK_IMAGE_VIEWER(image_viewer),
                                            x_scale,
                                            y_scale,
-                                           global_mark_max_x/2.0,
-                                           global_mark_max_y/2.0,
-                                           250,250);
+                                           c_world_center_x,
+                                           c_world_center_y,
+                                           250,
+                                           250);
+
+#if 0
   gtk_image_viewer_set_scroll_width(GTK_IMAGE_VIEWER(image_viewer),
-                                    (int)(global_mark_max_x * 1.2));
+                                    (int)((global_mark_max_x - global_mark_min_x)* 1.2));
   gtk_image_viewer_set_scroll_height(GTK_IMAGE_VIEWER(image_viewer),
-                                     (int)(global_mark_max_y* 1.2));
+                                     (int)((global_mark_max_y-global_mark_min_y)* 1.2));
+#endif
+  
 }
 
 static void giv_free_style_array(gpointer data)
@@ -3783,20 +4258,20 @@ static void giv_free_style_array(gpointer data)
 }
 
 static void giv_style_add_string(const char *style_name,
-				 const char *style_string)
+                                 const char *style_string)
 {
     /* Try to get previous array */
     GPtrArray *style_array = g_hash_table_lookup (style_hash,
-						  style_name);
+                                                  style_name);
 
     /* Create a new style entry if it doesn't already exist */
     if (style_array == NULL)
       {
-	style_array = g_ptr_array_new();
+        style_array = g_ptr_array_new();
 
-	g_hash_table_insert(style_hash,
-			    g_strdup(style_name),
-			    style_array);
+        g_hash_table_insert(style_hash,
+                            g_strdup(style_name),
+                            style_array);
       }
 
     /* Push the new string at the end of the array */
@@ -3804,11 +4279,11 @@ static void giv_style_add_string(const char *style_name,
 }
 
 static void set_props_from_style(mark_set_t *marks,
-				 const char *style_name)
+                                 const char *style_name)
 {
   /* Try to get previous array */
   GPtrArray *style_array = g_hash_table_lookup (style_hash,
-						style_name);
+                                                style_name);
   int prop_idx;
 
   if (!style_array)
@@ -3824,96 +4299,123 @@ static void set_props_from_style(mark_set_t *marks,
       gchar *S_ = string_strdup_word(style_string, 0);
 
       NCASE("lw")
-	{
-	  marks->line_width = string_to_atof(style_string,1);
-	}
+        {
+          marks->line_width = string_to_atof(style_string,1);
+        }
+      NCASE("ls")
+        {
+          marks->line_style = string_to_atoi(S_, 1) % 3;
+          break;
+        }
       NCASE("color")
-	{
-	  char *color_name = string_strdup_word(style_string, 1);
-	  GdkColor color;
-	  if (gdk_color_parse(color_name,&color))
-	    marks->color = color;
-	  g_free(color_name);
-	}
+        {
+          char *color_name = string_strdup_word(style_string, 1);
+          GdkColor color;
+          if (gdk_color_parse(color_name,&color))
+            marks->color = color;
+          g_free(color_name);
+        }
       NCASE("outline_color")
-	{
-	  char *color_name = string_strdup_word(style_string, 1);
-	  GdkColor color;
-	  if (gdk_color_parse(color_name,&color))
-	    marks->outline_color = color;
-	  marks->do_draw_polygon_outline = TRUE;
-	  g_free(color_name);
-	}
+        {
+          char *color_name = string_strdup_word(style_string, 1);
+          GdkColor color;
+          if (gdk_color_parse(color_name,&color))
+            marks->outline_color = color;
+          marks->do_draw_polygon_outline = TRUE;
+          g_free(color_name);
+        }
       NCASE("marks")
-	{
-	  char *mark_name = string_strdup_word(style_string, 1);
-	  marks->do_draw_marks = TRUE;
-	  
-	  marks->mark_type = parse_mark_type(mark_name, style_name, prop_idx);
-	  
-	  g_free(mark_name);
-	}
+        {
+          char *mark_name = string_strdup_word(style_string, 1);
+          marks->do_draw_marks = TRUE;
+          
+          marks->mark_type = parse_mark_type(mark_name, style_name, prop_idx);
+          
+          g_free(mark_name);
+        }
       NCASE("noline")
-	{
-	  marks->do_draw_lines = FALSE;
-	}
+        {
+          marks->do_draw_lines = FALSE;
+        }
       NCASE("line")
-	{
-	  marks->do_draw_lines = TRUE;
-	}
+        {
+          marks->do_draw_lines = TRUE;
+        }
       NCASE("scale_marks")
-	{
-	  if (string_count_words(S_) == 1)
-	    marks->do_scale_marks = 1;
-	  else
-	    marks->do_scale_marks = string_to_atoi(style_string, 1);
-	}
+        {
+          if (string_count_words(S_) == 1)
+            marks->do_scale_marks = 1;
+          else
+            marks->do_scale_marks = string_to_atoi(style_string, 1);
+        }
       NCASE("mark_size")
-	{
-	  marks->mark_size = string_to_atof(style_string, 1);
-	}
+        {
+          marks->mark_size = string_to_atof(style_string, 1);
+        }
       NCASE("nomark")
-	{
-	  marks->do_draw_marks = FALSE;
-	}
+        {
+          marks->do_draw_marks = FALSE;
+        }
       NCASE("polygon")
         {
-	  marks->do_draw_polygon = TRUE;
+          marks->do_draw_polygon = TRUE;
         }
+      NCASE("linedash")
+        {
+          // Get string and split it on commas
+          char *p;
+          char *dash_string = string_strdup_word(S_,1);
+          int i, num_dashes;
+          
+          // Replace comma with spaces for easier parsing
+          p = dash_string;
+          while((p=g_strstr_len(p, strlen(dash_string), ","))) 
+            *p = ' ';
+          
+          num_dashes = string_count_words(dash_string);
+          marks->num_dashes = num_dashes;
+          marks->dash_list = g_new0(gint8, num_dashes);
+          for (i=0; i<num_dashes; i++)
+            marks->dash_list[i] = string_to_atoi(dash_string, i);
+          free(dash_string);
+          
+          break;
+        }
+        
       g_free(S_);
     }
 }
 
 static
 int circle_from_3points(double a_x,
-			double a_y,
-			double b_x,
-			double b_y,
-			double c_x,
-			double c_y,
-			// output
-			double* p_x,
-			double* p_y,
-			double* radius
-			)
+                        double a_y,
+                        double b_x,
+                        double b_y,
+                        double c_x,
+                        double c_y,
+                        // output
+                        double* p_x,
+                        double* p_y,
+                        double* radius
+                        )
 {
 
     double D = (a_x - c_x) * (b_y - c_y) - (b_x - c_x) * (a_y - c_y);
 
     if (D==0)
-	return -1;
+        return -1;
 
     *p_x = (((a_x - c_x) * (a_x + c_x)
-	     + (a_y - c_y) * (a_y + c_y)) / 2 * (b_y - c_y) 
-	    -  ((b_x - c_x) * (b_x + c_x)
-		+ (b_y - c_y) * (b_y + c_y)) / 2 * (a_y - c_y)) 
-	/ D;
-	
+             + (a_y - c_y) * (a_y + c_y)) / 2 * (b_y - c_y) 
+            -  ((b_x - c_x) * (b_x + c_x)
+                + (b_y - c_y) * (b_y + c_y)) / 2 * (a_y - c_y)) 
+        / D;
+        
     *p_y = (((b_x - c_x) * (b_x + c_x)
-	     + (b_y - c_y) * (b_y + c_y)) / 2 * (a_x - c_x)
-	    -  ((a_x - c_x) * (a_x + c_x)
-		+ (a_y - c_y) * (a_y + c_y)) / 2 * (b_x - c_x))
-	/ D;
+             + (b_y - c_y) * (b_y + c_y)) / 2 * (a_x - c_x)
+            -  ((a_x - c_x) * (a_x + c_x)
+                + (a_y - c_y) * (a_y + c_y)) / 2 * (b_x - c_x))
+        / D;
 
     *radius = sqrt( (*p_x - a_x)*(*p_x-a_x) + (*p_y - a_y)*(*p_y-a_y));
 
@@ -3924,17 +4426,17 @@ int circle_from_3points(double a_x,
 // the arcdev may be scaled properly... Currently this only works
 // for square aspect ratio.
 void givarc2gdkarc(double x0,
-		   double y0,
-		   double x1,
-		   double y1,
-		   double arc_dev,
-		   // output
-		   int* x,
-		   int* y,
-		   int* width,
-		   int* height,
-		   int* angle1,
-		   int* angle2)
+                   double y0,
+                   double x1,
+                   double y1,
+                   double arc_dev,
+                   // output
+                   int* x,
+                   int* y,
+                   int* width,
+                   int* height,
+                   int* angle1,
+                   int* angle2)
 {
     double xm,ym;  // midpoint between z0 and z1
     double xe,ye;  // unit vector perpendicular to z0->z1
@@ -3960,10 +4462,10 @@ void givarc2gdkarc(double x0,
 
     // Convert to center and radius
     circle_from_3points(x0,y0,
-			x1,y1,
-			x2,y2,
-			// output
-			&xc, &yc, &r);
+                        x1,y1,
+                        x2,y2,
+                        // output
+                        &xc, &yc, &r);
 
     // Calculate starting and ending angles and rotate to fit coordinate 
     *angle1 = (int)((atan2(x0-xc,y0-yc)/M_PI*180-90)*64);
@@ -3973,3 +4475,102 @@ void givarc2gdkarc(double x0,
     *x = (int)xc-r;
     *y = (int)yc-r;
 }
+
+static double sqr(double x)
+{
+  return x*x;
+}
+
+
+/** 
+ * Draw the line used for measuring. Done by cairo.
+ * 
+ * @param backstore 
+ * @param image_viewer 
+ * @param x0 
+ * @param y0 
+ * @param x1 
+ * @param y1 
+ */
+static void
+draw_measure_line(giv_backstore_t *backstore,
+                  GtkWidget *image_viewer,
+                  double x0, double y0,
+                  double x1, double y1)
+{
+  double cx0, cy0, cx1, cy1;
+  double lw = 5;
+  double arrow_a = 10;
+  double arrow_b = 10;
+  double arrow_c = 15;
+  double d; // Line distance from arrow to arrow
+  cairo_t *cr = back_store->cairo;
+  
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           measure_x1, measure_y1,
+                                           &cx0, &cy0);
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           last_move_x, last_move_y,
+                                           &cx1, &cy1);
+
+  giv_backstore_restore_background (back_store);
+  giv_backstore_store_background_line (back_store,
+                                       (int)cx0,(int)cy0,
+                                       (int)cx1,(int)cy1);
+  cairo_save(cr);
+  // Set up cairo so that we can draw in x-axis only.
+  cairo_translate(cr, 0.5*(cx0+cx1), 0.5*(cy0+cy1));
+  cairo_rotate(cr, atan2(cy1-cy0,cx1-cx0));
+
+  d = sqrt((cx1-cx0)*(cx1-cx0)+(cy1-cy0)*(cy1-cy0));
+
+  // Draw an arrow from (-d/2,0) to (d/2,0) based on the
+  // parameters arrow_a, arrow_b, and arrow_c.
+  cairo_move_to(cr, -(d/2-arrow_a), lw/2);
+  cairo_line_to(cr, -(d/2-arrow_c), arrow_b);
+  cairo_line_to(cr, -d/2, 0);
+  cairo_line_to(cr, -(d/2-arrow_c), -arrow_b);
+  cairo_line_to(cr, -(d/2-arrow_a), -lw/2);
+  
+  cairo_line_to(cr, (d/2-arrow_a), -lw/2);
+  cairo_line_to(cr, (d/2-arrow_c), -arrow_b);
+  cairo_line_to(cr, d/2, 0);
+  cairo_line_to(cr, (d/2-arrow_c), arrow_b);
+  cairo_line_to(cr, (d/2-arrow_a), lw/2);
+  
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_restore(cr);
+}
+
+static gint
+create_backstore(GtkWidget *image_viewer)
+{
+  back_store = new_giv_backstore (GTK_WIDGET (image_viewer) );
+  giv_backstore_set_color(back_store,
+                          "magenta",
+                          0.95);
+  giv_backstore_set_line_width(back_store, 10);
+  giv_backstore_set_line_cap_extra_store(back_store, 40);
+}
+
+/* Given an index, create a color that corresponds to that color. This
+   is done simply by treating r,g,b as a 24-bit number.
+*/
+GdkColor
+label_to_color(int label)
+{
+    int b = (label+1) % 256;
+    int g = ((label+1) >> 8) % 256;
+    int r = ((label+1) >> 16) % 256;
+
+    GdkColor color = {0,r*256,g*256,b*256};
+    return color;
+}
+
+int
+color_to_label(int color)
+{
+  return (color-1);
+}
+

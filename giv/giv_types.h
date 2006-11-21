@@ -1,6 +1,8 @@
 #ifndef GIV_TYPES_H
 #define GIV_TYPES_H
 
+#include <gtk/gtk.h>
+
 typedef struct {
   char *string;
   double x, y;
@@ -25,6 +27,7 @@ typedef struct {
   gint line_style;
   gint mark_type;
   gint text_size;
+  gint num_dashes;
   gdouble mark_size;
   gboolean do_scale_marks;
   gboolean do_draw_marks;
@@ -36,6 +39,8 @@ typedef struct {
   gchar *file_name;
   gchar *tree_path_string;
   gboolean is_visible;
+  gint8 *dash_list;
+  gchar *balloon_string;
 } mark_set_t;
 
 extern GtkWidget *image_viewer;

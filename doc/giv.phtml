@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld, 18-May-2004 -->
+<!-- Changed by: Dov Grobgeld, 20-Nov-2006 -->
 </head>
 <:
 
@@ -87,7 +87,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 <h1 align=center>A Manual for Giv<br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1><a href="mailto:dov.grobgeld@weizmann.ac.il">dov.grobgeld@weizmann.ac.il</a></font><br>
-    <font size=-1>Last modified: 2001-03-04</font>
+    <font size=-1>Last modified: 2006-11-20</font>
 </h1>
 
 <: section("Name") :>
@@ -185,6 +185,10 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <:TR():><: td() :>$noline
         <: td() :>$noline
         <: td() :>Don't draw line between the coordinates.
+
+    <:TR():><: td() :>$linedash
+        <: td() :>$linedash 10 5
+        <: td() :>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
 
     <:TR():><: td() :>$mark_size
         <: td() :>$mark_size 15
