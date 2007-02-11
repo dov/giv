@@ -1,3 +1,31 @@
+2006-12-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv.c: Erased debug stuff that I forgot in the code.
+
+2006-12-17  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* configure.in: Bumped version to 0.3.19
+
+	* giv.c: Erased calculations of flipping as it is now handled by
+	the gtk image viewer.
+
+	* configure.in: Bumped to version 0.3.18
+
+	* Added multi line baalons.
+
+	* Verfied that 'v' and 'h' key commands work.
+
+2006-11-24  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Added option $vflip that flips the image.
+
+2006-11-22  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv.nsi.in: Fixed file association section so that hopefully
+	clicking on a giv file will open giv.
+
+	* configure.in: Bumped version to 0.3.17
+
 2006-11-21  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
 	* configure.in: Bumped versions to 0.3.16 in order to release 

@@ -40,7 +40,7 @@ typedef struct {
   gchar *tree_path_string;
   gboolean is_visible;
   gint8 *dash_list;
-  gchar *balloon_string;
+  GString *balloon_string;
 } mark_set_t;
 
 extern GtkWidget *image_viewer;
