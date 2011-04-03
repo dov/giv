@@ -1,23 +1,25 @@
                       giv - The G(reat|tk|NU) Image Viewer
                       Dov Grobgeld <dov.grobgeld@gmail.com>
-                             21 November 2006 
-                         http://giv.sf.net/giv
+                           Monday 2010-01-11 19:31 
+                           http://giv.sf.net/giv
 
-giv is an image and vector viewer based on the gtk_image_viewer
-widget. It was designed especially with the scientific vision and the
-computational geometry audience in mind and has support for drawing
-vector graphics on top of the image.
+giv is a cross platform image and vector viewer. It was designed
+especially with the scientific vision and the computational geometry
+audience in mind and has support for drawing vector graphics on top of
+the image. It supports 8-bit, 16-bit, 32-bit, floating point gray and
+color images through a plugin system.
+
+Version series 0.9.0 is an almost complete refactoring
 
 Installation:
 
+    The development build environment is scons, and autoconfig is 
+    by constraint.
+    
     * See INSTALL
-
-Requirements:
-
-    * gtk_image_viewer - See 
-           http://giv.sourceforge.net/gtk-image-viewer/
 
 Documentation:
 
     * See doc/giv.html for documentation.
+    * See doc/plugins.txt for documentation about the new plugin system.
 

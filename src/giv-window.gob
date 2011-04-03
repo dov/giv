@@ -1,0 +1,3136 @@
+//======================================================================
+//  giv_window.gob - 
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Thu Aug 16 20:12:48 2007
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include <math.h>
+#include <gtk/gtk.h>
+#include "giv_data.h"
+#include "plis/plis.h"
+#include "givimage.h"
+%}
+
+%{
+#include <gdk/gdkkeysyms.h>
+#include <stdlib.h>
+#include <vector>
+#include "../config.h"
+#include "gtkimageviewer/gtk-image-viewer.h"
+#include "logo_150_inline.i"
+#include "giv-logo.i"
+#include "GivParser.h"
+#include "GivPainterAgg.h"
+#include "GivPainterCairoPixbuf.h"
+#include "GivRenderer.h"
+#include "colormaps.h"
+#include "giv-info.h"
+#include "giv-markup.h"
+#include "cairo-svg.h"
+#include "cairo-ps.h"
+#include "cairo-pdf.h"
+
+using namespace std;
+using namespace plis;
+
+#define CASE(s) if (strcmp(s,S_)==0)
+#ifdef WIN32
+#undef PRINT_BY_IMAGE
+#endif
+
+static const char ui_descr_menu_string[] =
+#include "menu-top-xml.i"
+;
+static const char ui_descr_popup_string[] =
+#include "menu-popup-xml.i"
+;
+static const char copyright_string[] =
+#include "copyright.i"
+;
+
+enum {
+    PSEUDO_COLOR_OFF,
+    PSEUDO_COLOR_LOW_CONTRAST,
+    PSEUDO_COLOR_RAINBOW,
+    PSEUDO_COLOR_RED_TEMP,
+    PSEUDO_COLOR_BGRY,
+    PSEUDO_COLOR_BLUE_WHITE,
+    PSEUDO_COLOR_GRBW,
+    PSEUDO_COLOR_INVERT,
+    PSEUDO_COLOR_EQUALIZE,
+    PSEUDO_COLOR_NORMALIZE
+};
+    
+enum
+{
+    DND_TEXT_PLAIN,
+    DND_TEXT_URI_LIST
+};
+
+/* Target types for dropping into the file list */
+static const GtkTargetEntry file_list_dest_targets[] = {
+  { "text/uri-list", 0, DND_TEXT_URI_LIST }
+};
+
+static void cb_view_menu_bar (GtkAction *action, gpointer data);
+static void cb_view_marks (GtkAction *action, gpointer data);
+static void cb_view_balloons (GtkAction *action, gpointer data);
+static void cb_view_sub_pixel (GtkAction *action, gpointer data);
+static void cb_view_hflip (GtkAction *action, gpointer data);
+static void cb_view_vflip (GtkAction *action, gpointer data);
+static void cb_view_cross_hair (GtkAction *action, gpointer data);
+static void cb_view_auto_resize (GtkAction *action, gpointer data);
+static void cb_menu_measure_distance (GtkAction *action, gpointer data);
+static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
+static void cb_menu_default (GtkAction *action, gpointer data);
+static void cb_menu_new_window (GtkAction *action, gpointer data);
+static void cb_menu_fill (GtkAction *action, gpointer data);
+static void cb_menu_shrink_wrap (GtkAction *action, gpointer data);
+static void cb_menu_close_window (GtkAction *action, gpointer data);
+static void cb_menu_clear (GtkAction *action, gpointer data);
+static void cb_menu_copyright (GtkAction *action, gpointer data);
+static void cb_menu_about (GtkAction *action, gpointer data);
+static void cb_menu_open (GtkAction *action, gpointer data);
+static void cb_menu_export (GtkAction *action, gpointer data);
+static void cb_menu_print (GtkAction *action, gpointer data);
+static void cb_menu_mark_browser (GtkAction *action, gpointer data);
+static void cb_menu_info_dialog (GtkAction *action, gpointer data);
+static gboolean giv_check_img_for_mono(GdkPixbuf *im);
+static void cb_change_pseudo_color(GtkRadioAction* action,
+                                   GtkRadioAction*,
+                                   GivWindow *self);
+static void cb_image_reference(const char *filename,
+                               gpointer self);
+static void cb_set_orientation(GivParser::orientation_t hflip,
+                               GivParser::orientation_t vflip,
+                               gpointer self);
+static void menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container);
+
+static void
+cb_file_list_drag_data_received (GtkWidget          *widget,
+				 GdkDragContext     *context,
+				 gint                x,
+				 gint                y,
+				 GtkSelectionData   *selection_data,
+				 guint               info,
+				 guint               drag_time,
+				 gpointer            data);
+
+static void
+fit_marks_in_window(GivWindow *self);
+
+static void
+app_error (GivWindow *self,
+           const char *format, ...);
+
+static void
+cb_image_annotate(GtkImageViewer *imgv,
+                  GdkPixbuf *pixbuf,
+                  gint shift_x,
+                  gint shift_y,
+                  gdouble scale_x,
+                  gdouble scale_y,
+                  gpointer user_data
+                  );
+static int
+cb_image_size_alloc(GtkWidget *widget,
+                    GtkAllocation *allocation,
+                    gpointer           user_data);
+
+static void
+cb_flip_changed(GtkImageViewer *imgv,
+                gboolean do_flip_horizontal,
+                gboolean do_flip_vertical,
+                gpointer data);
+ 
+static gint
+cb_button_press_event (GtkWidget * widget,
+                       GdkEventButton * event,
+                       gpointer user_data);
+static gint
+cb_button_release_event (GtkWidget * widget,
+                         GdkEventButton * event,
+                         gpointer user_data);
+static gint
+cb_key_press_event (GtkWidget * widget,
+                    GdkEventKey * event,
+                    gpointer user_data);
+static gint
+cb_scroll_event (GtkWidget * widget,
+                 GdkEventScroll * event,
+                 gpointer user_data);
+
+static gint
+cb_motion_event(GtkWidget *widget,
+                GdkEventMotion *event,
+                gpointer user_data);
+static gint
+cb_leave_notify_event(GtkWidget *widget,
+                      GdkEventCrossing *event,
+                      gpointer user_data);
+
+static void
+apply_color_map(GivWindow *self);
+
+static double sqr(double x);
+static void
+draw_measure_line(giv_backstore_t *backstore,
+                  GtkWidget *image_viewer,
+                  double x0, double y0,
+                  double x1, double y1);
+
+static giv_backstore_t *create_backstore(GtkWidget *image_viewer);
+
+static void pixbuf_to_cairo(GdkPixbuf *img,
+                            // output
+                            GdkPixbuf **cairo_img);
+static gchar *read_pnm_comment(const char *filename);
+
+void draw_to_cairo(cairo_t *cr,
+                   int width,
+                   int height,
+                   GivWindow *self);
+bool is_file_ext(const char *fn,
+                 const char* ext_match);
+gboolean cb_load_image_when_idle(gpointer user_data);
+
+static void
+export_to_file(GivWindow *self,
+               int width,
+               int height,
+               const char *filename);
+
+// The following tables contain all the actions for both the menubar
+// and the popup menus.
+    
+static int num_top_levels = 0;
+ 
+static GtkActionEntry entries[] = 
+{
+  { "FileMenuAction", NULL, "_File" },                  /* name, stock id, label */
+  { "ViewMenuAction", NULL, "_View" },  
+  { "ToolMenuAction", NULL, "_Tools" },  
+  { "HelpMenuAction", NULL, "_Help" },  
+  { "ColorTableMenuAction", NULL, "_ColorTable" },  
+    
+  { "OpenAction", GTK_STOCK_OPEN,
+    "_Open", "<control>O",    
+    "Open",
+    G_CALLBACK (cb_menu_open) },
+  { "ExportAction", GTK_STOCK_SAVE,
+    "_Export", "<control>E",    
+    "Export",
+    G_CALLBACK (cb_menu_export) },
+  { "NewWindowAction", GTK_STOCK_NEW,
+    "_New Window", "<control>n",    
+    "New Window",
+    G_CALLBACK (cb_menu_new_window) },
+  { "CloseWindowAction", GTK_STOCK_CLOSE,
+    "_Close Window", "<control>n",    
+    "Close Window",
+    G_CALLBACK (cb_menu_close_window) },
+  { "ClearAction", GTK_STOCK_CLEAR,
+    "_Clear", "<control>c",    
+    "Clear",
+    G_CALLBACK (cb_menu_clear) },
+  { "PrintAction", GTK_STOCK_PRINT,
+    "_Print", "<control>P",    
+    "Print",
+    G_CALLBACK (cb_menu_print) },
+  { "QuitAction", GTK_STOCK_QUIT,
+    "_Quit", "<control>Q",    
+    "Quit",
+    G_CALLBACK (gtk_main_quit) },
+  { "AboutAction", GTK_STOCK_ABOUT,
+    "_About", NULL,
+    "About",
+    G_CALLBACK (cb_menu_about) },
+  { "CopyrightAction", NULL,
+    "_Copyright", NULL,
+    "Copyright",
+    G_CALLBACK (cb_menu_copyright) },
+  { "ToolMarkBrowserAction",
+    NULL,
+    "View Mark Browser", NULL,    
+    "View Mark Browser",
+    G_CALLBACK (cb_menu_mark_browser) },
+  { "ToolInfoAction",
+    NULL,
+    "View Info", NULL,    
+    "View Info",
+    G_CALLBACK (cb_menu_info_dialog) },
+  { "PreferencesAction",
+    GTK_STOCK_PREFERENCES,    
+    "_Preferences", NULL,
+    "Preferences",
+    G_CALLBACK (cb_menu_default) },
+  { "FillAction",
+    NULL,
+    "_Fill", NULL,
+    "Fill",
+    G_CALLBACK (cb_menu_fill) },
+  { "ShrinkWrapAction",
+    NULL,
+    "_Shrink Wrap", NULL,
+    "Shrink Wrap",
+    G_CALLBACK (cb_menu_shrink_wrap) }
+};
+
+static GtkToggleActionEntry toggle_entries[] =
+{
+  { "ViewMenuBarAction",
+    NULL,
+    "View Menu", "<control>V",    
+    "View Menu",
+    G_CALLBACK (cb_view_menu_bar), TRUE },
+  { "ViewMarksAction",
+    NULL,
+    "View Marks", NULL,    
+    "View Marks",
+    G_CALLBACK (cb_view_marks), TRUE },
+  { "ViewBalloonAction",
+    NULL,
+    "View Balloons", NULL,    
+    "View Balloons",
+    G_CALLBACK (cb_view_balloons), FALSE },
+  { "ViewSubPixelAction",
+    NULL,
+    "Sub pixel coord", NULL,    
+    "View sub pixel",
+    G_CALLBACK (cb_view_sub_pixel), FALSE },
+  { "ViewHorizontalFlip",
+    NULL,
+    "Horizontal Flip", NULL,    
+    "Horizontal Flip",
+    G_CALLBACK (cb_view_hflip), FALSE },
+  { "ViewVerticalFlip",
+    NULL,
+    "Vertical Flip", NULL,    
+    "Vertical Flip",
+    G_CALLBACK (cb_view_vflip), FALSE },
+  { "ViewCrossHair",
+    NULL,
+    "View Cross Hair", NULL,    
+    "View Cross hair",
+    G_CALLBACK (cb_view_cross_hair), FALSE },
+  { "AutoResize",
+    NULL,
+    "_Auto Resize", NULL,    
+    "Auto Resize",
+    G_CALLBACK (cb_view_auto_resize), TRUE },
+  { "ToolMeasureDistanceAction",
+    NULL,    
+    "_Measure Distance", NULL,
+    "Measure Distance",
+    G_CALLBACK (cb_menu_measure_distance), FALSE },
+  { "ToolQuiverZoomAction",
+    NULL,    
+    "_Quiver Zoom", NULL,
+    "Quiver Zoom",
+    G_CALLBACK (cb_menu_quiver_zoom), FALSE },
+};
+
+static GtkRadioActionEntry actionsPseudoColor[] = {
+    { "PseudoColorNone", NULL, "_None", NULL, "Histogram equaliziation", PSEUDO_COLOR_OFF },
+    { "PseudoColorEqualize", NULL, "_Equalize", NULL, NULL, PSEUDO_COLOR_EQUALIZE },
+    { "PseudoColorNormalize", NULL, "N_ormalize", NULL, NULL, PSEUDO_COLOR_NORMALIZE },
+    { "PseudoColorInvert", NULL, "_Invert", NULL, NULL, PSEUDO_COLOR_INVERT },
+    { "PseudoColorLowContrast", NULL, "Low _Contrast", NULL, NULL, PSEUDO_COLOR_LOW_CONTRAST },
+    { "PseudoColorRainbow", NULL, "_Rainbow", NULL, NULL, PSEUDO_COLOR_RAINBOW },
+    { "PseudoColorRedTemp", NULL, "Red _Temperature", NULL, NULL, PSEUDO_COLOR_RED_TEMP },
+    { "PseudoColorBGRY", NULL, "_Blue Green Red Yellow", NULL, NULL, PSEUDO_COLOR_BGRY },
+    { "PseudoColorBlueWhite", NULL, "Blue _White", NULL, NULL, PSEUDO_COLOR_BLUE_WHITE },
+    { "PseudoColorGRBW", NULL, "_Green Red Blue White", NULL, NULL, PSEUDO_COLOR_GRBW }
+};
+    
+static void die(const char *fmt, ...);
+
+static gchar *last_image_path = NULL;
+static gchar *last_export_image_path = NULL;
+
+%}
+
+%privateheader{
+#include <vector>
+#include "giv-mark-tree-dialog.h"
+#include "giv-backstore.h"
+
+typedef std::vector<std::vector<plis::slip> > FilenameList;
+%}
+
+class Giv:Window from Gtk:Window
+{
+    private GtkWidget *w_menubox;
+    private GtkWidget *w_popup;
+    private GtkWidget *w_imgv;
+    private GtkWidget *w_info_label;
+    private GtkWidget *w_filechooser = NULL;
+    private GtkWidget *w_mark_tree_dialog = NULL;
+    private GtkWidget *w_info_dialog = NULL;
+    private GtkWidget *w_balloon_window = NULL;
+    private GtkWidget *w_balloon_label = NULL;
+    private GtkWidget *w_scrolled_win;
+    //    private GdkPixbuf *img_org = NULL;
+    private GivImage *img_org = NULL;
+    private GdkPixbuf *img_display = NULL;
+    // This image is a copy of the img display but with label
+    // colors. It is never shown onto the screen.
+    private GdkPixbuf *w_label_image = NULL;
+    private void *giv_parser;
+    private gint cb_annotate_id;
+    private bool do_view_marks = true;
+    private bool img_is_mono = false;
+    private bool do_show_balloon = false;
+    private bool do_show_sub_pixel = false;
+    private bool do_flip_horizontal = false;
+    private bool do_flip_vertical = false;
+    private bool do_view_cross_hair = false;
+    private bool do_square_aspect_ratio = true;
+    private bool do_auto_fit_marks = TRUE;
+    private gdouble last_move_x=-1;
+    private gdouble last_move_y=-1;
+    private double last_cx;
+    private double last_cy;
+    private GtkUIManager *menu_manager = NULL;
+    private GtkUIManager *popup_manager = NULL;
+    private gint colormap = PSEUDO_COLOR_OFF;
+    private FilenameList filename_list;
+    private int filename_list_index = -1;
+    private int img_in_list_idx = -1;
+    private plis::llip *cb_names;
+    private giv_backstore_t *back_store = NULL;
+    private gboolean is_measuring_distance = FALSE;
+    private gboolean is_quiver_zoom = FALSE;
+    private gint measure_point_index = 0;
+    private double measure_x1=-1;
+    private double measure_y1=-1;
+    private double measure_x2=-1;
+    private double measure_y2=-1;
+    private double quiver_scale = 1.0;
+    private GdkCursor *cursor_plus=0;
+    private GdkCursor *cursor_default=0;
+    private gboolean is_dragging = FALSE;
+    private GtkPrintSettings *print_settings = NULL;
+    private gchar *img_comment = NULL;
+    private gint idle_index = 0;
+    private gint idle_handle = -1;
+
+    public GtkWidget *
+    new (int argc, char *argv[])
+    {
+        GivWindow *self = GIV_WINDOW(GET_NEW); 
+        GtkWidget *w_vbox, *w_right_box;
+        GtkActionGroup *action_group;
+        GError *error = NULL;
+        int argp = 1;
+        GdkPixbuf *pixbuf_icon;
+        bool do_join = false;
+        int width = 500;
+        int height = 500;
+        double scale = -1;
+        double shift_x = 0;
+        double shift_y = 0;
+        char *export_filename = NULL;
+
+        // Parse command line
+        while(argp < argc && argv[argp][0] == '-') {
+            char *S_ = argv[argp++];
+
+            CASE("-help") {
+                printf("giv - An image and vector viewer\n"
+                       "\n"
+                       "Syntax:\n"
+                       "    giv [-n] [-join] image [image...]\n"
+                       "\n"
+                       "Options:\n" 
+                       "    -join      Join the display of all files on command line\n"
+                       "    -n         Initially use 1:1 zoom for images.\n"
+                       "    -geometry  Set size of image viewer\n"
+                       "    -zoom scale shift_x shift_y   Zoom the image\n"
+                       "    -export fn                    Export to fn.\n"
+                       );
+                exit(0);
+            }
+            CASE("-n") {
+                selfp->do_auto_fit_marks = false;
+                continue;
+            }
+            CASE("-join") {
+                do_join = true;
+                continue;
+            }
+            CASE("-geometry") {
+                llip matches;
+                if (slip(argv[argp++]).m("(\\d+)x(\\d+)", matches)) {
+                    width = atoi(matches[1]);
+                    height = atoi(matches[2]);
+                }
+                continue;
+            }
+            CASE("-zoom") {
+                scale = atof(argv[argp++]);
+                shift_x = atof(argv[argp++]);
+                shift_y = atof(argv[argp++]);
+                continue;
+            }
+            CASE("-export") {
+                export_filename = argv[argp++];
+                continue;
+            }
+
+            printf("Unknown option %s!\n", S_);
+            exit(-1);
+        }
+
+        selfp->cb_names = new llip;
+
+        gtk_window_set_resizable(GTK_WINDOW(self), true);
+        g_object_set(G_OBJECT(self),
+                     "allow-shrink", TRUE,
+                     NULL);
+
+        pixbuf_icon = gdk_pixbuf_new_from_inline(sizeof(image_giv_icon_inline),
+                                                 image_giv_icon_inline,
+                                                 FALSE,
+                                                 &error);
+        
+        gtk_window_set_icon (GTK_WINDOW(self),
+                             pixbuf_icon);
+
+        num_top_levels++;
+        g_signal_connect (G_OBJECT(self), "destroy",
+                          GTK_SIGNAL_FUNC (giv_window_destroy), self);
+    
+    
+        w_vbox = gtk_vbox_new(0,0);
+        gtk_container_add(GTK_CONTAINER(self),
+                          w_vbox);
+    
+        selfp->w_menubox = gtk_vbox_new(0,0);
+        selfp->giv_parser = (void*) new GivParser();
+        ((GivParser*)selfp->giv_parser)->set_reference_callback(&cb_image_reference, (gpointer)self);
+        ((GivParser*)selfp->giv_parser)->set_orientation_callback(&cb_set_orientation, (gpointer)self);
+        w_right_box = gtk_hbox_new(0,0);
+    
+        action_group = gtk_action_group_new ("TestActions");
+        selfp->menu_manager = gtk_ui_manager_new ();
+        selfp->popup_manager = gtk_ui_manager_new ();
+        gtk_ui_manager_insert_action_group (selfp->menu_manager, action_group, 0);
+        gtk_ui_manager_insert_action_group (selfp->popup_manager, action_group, 0);
+        gtk_action_group_add_actions (action_group, entries, G_N_ELEMENTS(entries), self);
+        gtk_action_group_add_toggle_actions (action_group,
+                                             toggle_entries,
+                                             G_N_ELEMENTS(toggle_entries),
+                                             self);
+        gtk_action_group_add_radio_actions (action_group,
+                                            actionsPseudoColor,
+                                            G_N_ELEMENTS(actionsPseudoColor),
+                                            0,
+                                            G_CALLBACK(cb_change_pseudo_color),
+                                            self);
+    
+        gtk_ui_manager_add_ui_from_string (selfp->menu_manager,
+                                           ui_descr_menu_string,
+                                           -1,
+                                           &error);
+        if (error)
+            die("Got error: %s\n", error->message);
+        gtk_ui_manager_add_ui_from_string (selfp->popup_manager,
+                                           ui_descr_popup_string,
+                                           -1,
+                                           &error);
+        if (error)
+            die("Got error: %s\n", error->message);
+        selfp->w_popup = gtk_ui_manager_get_widget (selfp->popup_manager,
+                                                    "/popup");
+        /* This signal is necessary in order to place widgets from the UI manager
+         * into the menu_box */
+        g_signal_connect(selfp->menu_manager, 
+                         "add_widget", 
+                         G_CALLBACK (menu_add_widget), 
+                         selfp->w_menubox
+                         );
+        g_signal_connect(selfp->popup_manager, 
+                         "add_widget", 
+                         G_CALLBACK (menu_add_widget), 
+                         selfp->w_popup
+                         );
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           selfp->w_menubox, FALSE, FALSE, 0);
+        gtk_widget_show(gtk_ui_manager_get_widget(selfp->menu_manager,
+                                                  "/menubar"));
+
+
+        selfp->w_scrolled_win = gtk_scrolled_window_new(NULL, NULL);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(selfp->w_scrolled_win),
+                                       GTK_POLICY_AUTOMATIC,
+                                       GTK_POLICY_AUTOMATIC);
+        
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           selfp->w_scrolled_win, TRUE, TRUE, 0);
+
+        selfp->w_imgv = gtk_image_viewer_new(NULL);
+
+        gtk_container_add(GTK_CONTAINER(selfp->w_scrolled_win),
+                          selfp->w_imgv);
+
+        // The new windows version does not propagate this as it should!
+        gtk_image_viewer_set_vadjustment(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                         gtk_scrolled_window_get_vadjustment(
+                                             GTK_SCROLLED_WINDOW(selfp->w_scrolled_win)));
+        gtk_image_viewer_set_hadjustment(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                         gtk_scrolled_window_get_hadjustment(
+                                             GTK_SCROLLED_WINDOW(selfp->w_scrolled_win)));
+
+        selfp->w_info_label = gtk_label_new("");
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           selfp->w_info_label, FALSE, FALSE, 0);
+
+        gtk_widget_set_events(GTK_WIDGET(selfp->w_imgv),
+                              GDK_EXPOSURE_MASK
+                              | GDK_STRUCTURE_MASK
+                              | GDK_SUBSTRUCTURE_MASK
+                              | GDK_PROPERTY_CHANGE_MASK
+                              | GDK_POINTER_MOTION_MASK 
+                              | GDK_BUTTON_PRESS_MASK
+                              | GDK_KEY_PRESS_MASK
+                              | GDK_LEAVE_NOTIFY_MASK
+                              | GDK_SCROLL_MASK
+                              );
+    
+        g_signal_connect(selfp->w_imgv,
+                         "button-press-event",
+                         G_CALLBACK(cb_button_press_event),
+                         self);
+        g_signal_connect(selfp->w_imgv,
+                         "button-release-event",
+                         G_CALLBACK(cb_button_release_event),
+                         self);
+        g_signal_connect(selfp->w_imgv,
+                         "key-press-event",
+                         G_CALLBACK(cb_key_press_event),
+                         self);
+        g_signal_connect(selfp->w_imgv,
+                         "scroll-event",
+                         G_CALLBACK(cb_scroll_event),
+                         self);
+        g_signal_connect (selfp->w_imgv,
+                          "motion_notify_event",
+                          G_CALLBACK(cb_motion_event),
+                          self);
+        g_signal_connect (selfp->w_imgv,
+                          "leave_notify_event", 
+                          G_CALLBACK(cb_leave_notify_event),
+                          self);
+
+        selfp->cb_annotate_id =
+            g_signal_connect(selfp->w_imgv,
+                             "image-annotate",
+                             G_CALLBACK(cb_image_annotate),
+                             self);
+        g_signal_connect(selfp->w_imgv,
+                         "flip-changed",
+                         G_CALLBACK(cb_flip_changed),
+                         self);
+        
+        g_signal_connect (selfp->w_imgv,
+                          "drag-data-received",
+                          G_CALLBACK (cb_file_list_drag_data_received),
+                          self);
+        g_signal_connect (selfp->w_imgv,
+                          "size-allocate",
+                          G_CALLBACK (cb_image_size_alloc),
+                          self);
+
+        /* DnD */
+        gtk_drag_dest_set (selfp->w_imgv,
+                           (GTK_DEST_DEFAULT_ALL),
+                           file_list_dest_targets,
+                           G_N_ELEMENTS(file_list_dest_targets),
+                           GDK_ACTION_COPY);
+        
+        GtkTargetList *target_list;
+        target_list = gtk_target_list_new (NULL, 0);
+        gtk_target_list_add_uri_targets (target_list, DND_TEXT_URI_LIST);
+        gtk_target_list_add_text_targets (target_list, DND_TEXT_PLAIN);
+        gtk_drag_dest_set_target_list (GTK_WIDGET (selfp->w_imgv), target_list);
+        gtk_target_list_unref (target_list);
+
+        gtk_widget_set_size_request(selfp->w_imgv, width, height);
+
+#if 0
+        giv_window_shrink_wrap(self);
+#endif
+
+        // This is ugly, don't show the window if we are exporting...
+        if (!export_filename)
+            gtk_widget_show_all(GTK_WIDGET(self));
+
+        // Create the balloon window that is not shown at this point
+        selfp->w_balloon_window = gtk_window_new (GTK_WINDOW_POPUP);
+
+        // Make tooltip color yellow. This should probably be configurable
+        {
+            GdkColor color = {0,0,0,0};
+            gdk_color_parse("yellow", &color);
+            gtk_widget_modify_bg(selfp->w_balloon_window,
+                                 GTK_STATE_NORMAL, &color);
+        }
+
+        gtk_widget_set_app_paintable (selfp->w_balloon_window, TRUE);
+        gtk_window_set_resizable (GTK_WINDOW(selfp->w_balloon_window), FALSE);
+        selfp->w_balloon_label = gtk_label_new("Balloon");
+        gtk_label_set_line_wrap (GTK_LABEL (selfp->w_balloon_label), TRUE);
+        gtk_misc_set_alignment (GTK_MISC (selfp->w_balloon_label), 0.5, 0.5);
+        gtk_widget_show (selfp->w_balloon_label);
+        gtk_container_add (GTK_CONTAINER (selfp->w_balloon_window),
+                           selfp->w_balloon_label);
+        gdk_flush();
+
+        // Handle the command line
+        if (argc == argp+1) {
+            char *filename = argv[argp++];
+            char *basename = g_path_get_basename(filename);
+            giv_window_read_dir_into_filename_list(self, filename);
+            selfp->filename_list_index = -1;
+            for (int i=0; i<(int)selfp->filename_list.size(); i++) {
+                if (g_str_has_suffix(selfp->filename_list[i][0].c_str(),
+                                     basename)) {
+                    selfp->filename_list_index = i;
+                    break;
+                }
+            }
+            if (selfp->filename_list.size()
+                && selfp->filename_list_index < 0) {
+                app_error(self,
+                          "Failed loading %s! No such file.\n",
+                          filename);
+                giv_window_load_file(self, selfp->filename_list[0][0].c_str());
+                selfp->filename_list_index = 0;
+            }
+#if 0
+            else
+                giv_window_set_current_file(self,
+                                            selfp->filename_list_index);
+#endif
+            g_free(basename);
+        }
+        else {
+            selfp->filename_list_index = 0;
+            if (do_join) {
+                vector<slip> fn;
+                while (argp < argc) {
+                    fn.push_back(argv[argp++]);
+                }
+
+                selfp->filename_list.push_back(fn);
+            }
+            else {
+                while (argp < argc) {
+                    vector<slip> fn;
+                    fn.push_back(argv[argp++]);
+                    
+                    selfp->filename_list.push_back(fn);
+                    if (selfp->filename_list.size()==1) {
+#if 0
+                        giv_window_set_current_file(self,
+                                                    0);
+#endif
+                    }
+                }
+            }
+        }
+
+        giv_window_set_current_file(self,
+                                    selfp->filename_list_index);
+#if 0
+        printf("img_org do_auto_fit_marks = %d %d\n",
+               selfp->img_org, selfp->do_auto_fit_marks);
+#endif
+
+        if (scale> 0) {
+            gtk_image_viewer_set_scale_and_shift(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                                 scale, scale,
+                                                 shift_x, shift_y);
+        }
+        else if (!selfp->img_org)
+            fit_marks_in_window(self);
+        else if (!selfp->do_auto_fit_marks) {
+            gtk_image_viewer_zoom_reset(GTK_IMAGE_VIEWER(selfp->w_imgv));
+        }
+
+        // This is ugly. If there is an export file name then use it
+        // and exit. The problem with this approach is that we are
+        // still dependent on a windowing system.
+        if (export_filename) {
+            export_to_file(self,
+                           width,
+                           height,
+                           export_filename);
+            exit(0);
+        }
+
+        return GTK_WIDGET(self);
+    }
+
+    
+    public void destroy(self)
+    {
+        num_top_levels--;
+        gtk_widget_destroy(GTK_WIDGET(self));
+        
+        if (num_top_levels == 0)
+            gtk_main_quit();
+    }
+
+    public int load_giv(self,
+                        const char *filename)
+    {
+        //        ((GivParser*)selfp->giv_parser)->clear();
+        ((GivParser*)selfp->giv_parser)->parse_file(filename);
+        selfp->quiver_scale = ((GivParser*)selfp->giv_parser)->get_quiver_scale();
+        giv_window_redraw(self);
+        return 0;
+    }
+
+    public GivData *get_giv_data(self)
+    {
+        return &(((GivParser*)selfp->giv_parser)->get_giv_datasets());
+    }
+    
+    public void load_image(self,
+                           const char *filename)
+    {
+        GError *error = NULL;
+        GdkPixbuf *new_img = NULL;
+
+        new_img = gdk_pixbuf_new_from_file(filename,
+                                           &error);
+        if (slip(filename).m("p(g|p)m","i")) {
+            if (selfp->img_comment)
+                g_free(selfp->img_comment);
+            selfp->img_comment = read_pnm_comment(filename);
+        }
+
+        if (error) {
+            app_error(self,
+                      "Failed to load image %s: %s\n",
+                      filename, error->message);
+            g_error_free(error);
+            return;
+        }
+        
+        if (selfp->img_org)
+            gdk_pixbuf_unref(selfp->img_org);
+        if (selfp->img_display) {
+            gdk_pixbuf_unref(selfp->img_display);
+            selfp->img_display = NULL;
+        }
+
+        selfp->img_org = new_img;
+
+        selfp->img_is_mono = giv_check_img_for_mono(selfp->img_org);
+
+        apply_color_map(self);
+        //giv_window_shrink_wrap(self);
+    }
+
+    public void load_file(self,
+                          const char *filename)
+    {
+        if (g_str_has_suffix(filename, ".giv")
+            || g_str_has_suffix(filename, ".marks")
+            )
+            giv_window_load_giv(self, filename);
+        else {
+            //            ((GivParser*)selfp->giv_parser)->clear();
+            giv_window_load_image(self, filename);
+        } 
+        gchar *basename = g_path_get_basename(filename);
+        gchar *new_title = g_strdup_printf("giv: %s", basename);
+#if 0
+        gtk_window_set_title(GTK_WINDOW(self), new_title);
+#endif
+        g_free(new_title);
+        g_free(basename);
+
+    }
+
+    /**
+     *
+     * Set the current image displayed to image_index. This function
+     * clears the previous image being displayed.
+     **/
+    private void set_current_file(self,
+                                  int display_index)
+    {
+        int img_in_list_idx = -1;
+
+        giv_window_popdown_balloon(self);
+        if (display_index < 0)
+            return;
+
+        // Erase the old marks
+        ((GivParser*)selfp->giv_parser)->clear();
+
+        //        printf("freezing...\n");
+        gtk_image_viewer_set_freeze(GTK_IMAGE_VIEWER(selfp->w_imgv), TRUE);
+#if 0
+        g_signal_handler_block(selfp->w_imgv,
+                               selfp->cb_annotate_id
+                               );
+
+#endif
+        // Load files and check if we have an image
+        gboolean has_image = false;
+        selfp->cb_names->clear();
+        if (display_index < (int)selfp->filename_list.size()) 
+            for (int i=0; i<(int)selfp->filename_list[display_index].size(); i++) {
+                slip fn = selfp->filename_list[display_index][i];
+                selfp->cb_names->push_back(fn);
+
+                if (fn.m("\\.(giv|marks)")
+                    || i == 0) 
+                    giv_window_load_file(self, fn);
+            }
+        
+        for (int i=0; i<(int)selfp->cb_names->size(); i++) {
+            if (!(*selfp->cb_names)[i].m("\\.(giv|marks)")) {
+                has_image = true;
+                break;
+            }
+        }
+
+        // If the new entry does not contain an image, then clear
+        // the old image.
+        if (!has_image) {
+            if (selfp->img_org) {
+                gdk_pixbuf_unref(selfp->img_org);
+                selfp->img_org = NULL;
+            }
+            if (selfp->img_display) {
+                gdk_pixbuf_unref(selfp->img_display);
+                selfp->img_display = NULL;
+            }
+
+            // Erase comments
+            if (selfp->img_comment) {
+                g_free(selfp->img_comment);
+                selfp->img_comment = NULL;
+            }
+            gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv), NULL);
+        }
+        else
+            img_in_list_idx = 0;
+
+        // Load the new data
+        bool found_img = false;
+        for (int i=1; i<(int)selfp->cb_names->size(); i++) {
+            slip& fn = (*selfp->cb_names)[i];
+            if (!fn.m(".giv|.marks")) {
+                if (found_img)
+                    continue;
+                found_img = true;
+                img_in_list_idx = i;
+            }
+            giv_window_load_file(self, fn);
+        }
+
+        selfp->filename_list_index = display_index;
+        selfp->img_in_list_idx = img_in_list_idx;
+        giv_window_set_image_info(self);
+        
+        if (selfp->do_auto_fit_marks) 
+            fit_marks_in_window(self);
+#if 0
+        printf("Redrawing after thawing... auto_fit = %d\n",
+               selfp->do_auto_fit_marks);
+        g_signal_handler_unblock(selfp->w_imgv,
+                               selfp->cb_annotate_id
+                               );
+#endif
+        gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                   selfp->img_display);
+
+        //        printf("unfreezing...\n");
+        gtk_image_viewer_set_freeze(GTK_IMAGE_VIEWER(selfp->w_imgv), FALSE);
+    }
+
+    public void set_image_info(self)
+    {
+        int fli = selfp->filename_list_index;
+        if (fli >= (int)selfp->filename_list.size())
+            return;
+        gchar *basename = g_path_get_basename(selfp->filename_list[fli][0]);
+        gchar *new_title = NULL;        
+
+        if (selfp->img_in_list_idx > 0
+            && selfp->cb_names
+            && selfp->img_in_list_idx < (int)selfp->cb_names->size()
+            ) {
+            gchar *img_basename = g_path_get_basename((*selfp->cb_names)[selfp->img_in_list_idx]);
+            new_title = g_strdup_printf("giv: %s - %s",
+                                        basename,
+                                        img_basename);
+            g_free(img_basename);
+        }
+        else 
+            new_title = g_strdup_printf("giv: %s", basename);
+
+        gtk_label_set(GTK_LABEL(selfp->w_info_label),
+                      slipprintf("Loaded: %s", basename));
+
+        gtk_window_set_title(GTK_WINDOW(self), new_title);
+
+        if (selfp->w_info_dialog) {
+            slip info = slipprintf("Filenames(%d):", selfp->cb_names->size());
+            if (fli>=(int)selfp->filename_list.size())
+                return;
+            for (int i=0; i<(int)selfp->cb_names->size(); i++) {
+                info += slipprintf("\t%s\n",
+                                   (*selfp->cb_names)[i].c_str());
+            }
+            if (selfp->img_org) {
+                int img_w = gdk_pixbuf_get_width(selfp->img_org);
+                int img_h = gdk_pixbuf_get_height(selfp->img_org);
+                // Multiplication sign = \303\277 =  &#10761;
+                info += slipprintf("Resolution:\t%d\303\227%d\n",
+                                   img_w, img_h);
+            }
+            if (selfp->img_comment) {
+                info += slipprintf("\nComment:\n----------------------\n%s\n",
+                                   selfp->img_comment);
+            }
+            slip window_name = slipprintf("Info: %s", basename);
+            giv_info_set_info(GIV_INFO(selfp->w_info_dialog),
+                              window_name,
+                              info);
+        }
+        g_free(new_title);
+        g_free(basename);
+    }
+    
+    public void set_image(self,
+                          GdkPixbuf *image)
+    {
+        if (selfp->img_org)
+            gdk_pixbuf_unref(selfp->img_org);
+        if (selfp->img_display)
+            gdk_pixbuf_ref(selfp->img_display);
+        selfp->img_org = image;
+        apply_color_map(self);
+        gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                   selfp->img_display);
+    }
+
+    public void redraw(self)
+    {
+        gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(selfp->w_imgv), TRUE);
+    }
+
+    private void show_balloon(self,
+                              gint cx, gint cy)
+    {
+        int row_stride = gdk_pixbuf_get_rowstride(selfp->w_label_image);
+        guint8 *buf = gdk_pixbuf_get_pixels(selfp->w_label_image);
+        gint n_channels = gdk_pixbuf_get_n_channels(selfp->w_label_image);
+        guint8 *rgb = buf + cy*row_stride+cx*n_channels;
+
+        // TBD: Move this to the GivPainterAgg class
+        int label = rgb[2]+256*rgb[1]+256*256*rgb[0]-1;
+        
+        if (label>=0) {
+            vector<giv_dataset_t *>& datasets = ((GivParser*)(selfp->giv_parser))->get_giv_datasets();
+            giv_dataset_t *mark_set = datasets[label];
+            GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(self));
+            GdkScreen *pointer_screen;
+            gint px, py;
+            int balloon_x, balloon_y;
+            
+            if (mark_set->balloon_string.length())
+                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                              mark_set->balloon_string.c_str());
+            else if (mark_set->path_name)
+                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                              mark_set->path_name);
+            else {
+                GString *balloon_string = g_string_new("");
+                g_string_sprintfa(balloon_string, "label = %d", label);
+                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                              balloon_string->str);
+                g_string_free(balloon_string, TRUE);
+            }
+            
+            gdk_display_get_pointer (gdk_screen_get_display (screen),
+                                     &pointer_screen, &px, &py, NULL);
+            
+            // Should this be configurable?
+            balloon_x = px+20;
+            balloon_y=  py-20;
+            
+            gtk_window_move (GTK_WINDOW (selfp->w_balloon_window),
+                             balloon_x, balloon_y);
+            
+            // Popup a balloon
+            gtk_widget_show(selfp->w_balloon_window);
+        }
+        else
+            gtk_widget_hide(selfp->w_balloon_window);
+    }
+
+    private void
+    popdown_balloon(self)
+    {
+        gtk_widget_hide(selfp->w_balloon_window);
+    }
+
+
+    /*======================================================================
+    //  Make the giv window exactly big enough for the contents.
+    //----------------------------------------------------------------------*/
+    private void
+    shrink_wrap(self)
+    {
+      int new_width, new_height;
+      gint s_width, s_height;
+      gdouble scale_x, scale_y;
+      gint shift_x, shift_y;
+    
+      if (!selfp->w_imgv)
+        return;
+
+      gtk_image_viewer_get_scale_and_shift(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                           &scale_x, &scale_y,
+                                           &shift_x, &shift_y
+                                           );
+    
+    
+      if (!selfp->img_display)
+        return;
+    
+      s_width = gdk_screen_width ();
+      s_height = gdk_screen_height ();
+
+      new_width = (int)(gdk_pixbuf_get_width(selfp->img_display) * scale_x+1);
+      new_height = (int)(gdk_pixbuf_get_height(selfp->img_display) * scale_y+1);
+    
+      if (new_width > 0.75*s_width)
+        new_width = (int)(0.75*s_width);
+      if (new_height > 0.75*s_height)
+        new_height = (int)(0.75*s_height);
+
+      // Get current scrolled win
+      int old_width = selfp->w_scrolled_win->allocation.width;
+      int old_height = selfp->w_scrolled_win->allocation.height;
+#if 0
+      gtk_widget_set_size_request(GTK_WIDGET(selfp->w_scrolled_win),
+                                  new_width, new_height);
+#endif
+
+#if 0
+      // TBD - add everything that is not part of the window
+      if (GTK_WIDGET_VISIBLE(selfp->w_menubox)) 
+          new_height+= selfp->w_menubox->allocation.height;
+      new_height+= selfp->w_info_label->allocation.height;
+#endif
+
+      gtk_image_viewer_one_shot_block_fill_on_resize(GTK_IMAGE_VIEWER(selfp->w_imgv));
+      
+      int old_window_width = GTK_WIDGET(self)->allocation.width;
+      int old_window_height = GTK_WIDGET(self)->allocation.height;
+      gtk_window_resize(GTK_WINDOW(self),
+                        old_window_width + (new_width-old_width),
+                        old_window_height + (new_height-old_height) );
+
+    }
+
+    public void
+    clear_marks(self)
+    {
+        ((GivParser*)selfp->giv_parser)->clear();
+    }
+
+    private bool
+    read_dir_into_filename_list(self,
+                                const char *path)
+    {
+        char *dirname = g_strdup(path);
+        GError *error = NULL;
+        selfp->filename_list.clear();
+
+        if (!g_file_test(dirname, GFileTest(G_FILE_TEST_IS_DIR))) {
+            g_free(dirname);
+            dirname = g_path_get_dirname(path);
+            if (!g_file_test(dirname, GFileTest(G_FILE_TEST_IS_DIR)))
+                return false;
+        }
+        GDir *dir = g_dir_open(dirname, 0, &error);
+        if (error) {
+            app_error(self, "%s", error->message);
+            g_error_free(error);
+            return false;
+        }
+        
+        const char *filename;
+        while((filename = g_dir_read_name(dir))) {
+            if (slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg)$","i")) {
+                vector<slip> fl;
+                fl.push_back(slip(dirname) + "/" + filename);
+                selfp->filename_list.push_back(fl);
+            }
+        }
+        g_dir_close(dir);
+        return true;
+    }
+
+}
+
+%{
+static void die(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap,fmt); 
+    
+    vfprintf(stderr, fmt, ap);
+    exit(-1);
+}
+
+/* Implement a handler for GtkUIManager's "add_widget" signal. The UI manager
+ * will emit this signal whenever it needs you to place a new widget it has. */
+static void
+menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container)
+{
+    gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
+    gtk_widget_show (widget);
+}
+
+static gint
+cb_button_press_event (GtkWidget * widget,
+                       GdkEventButton * event,
+                       gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+
+    giv_window_popdown_balloon(self);
+
+    if (event->button == 1) {
+        // check if are in measure mode ('z')
+        if (selfp->is_measuring_distance) {
+            if (0 == selfp->measure_point_index) {
+                selfp->measure_x1 = selfp->last_move_x;
+                selfp->measure_y1 = selfp->last_move_y;
+                selfp->measure_point_index = 1;
+                selfp->measure_x2 = selfp->measure_y2 = -1;
+            }
+            else {
+                selfp->measure_x2 = selfp->last_move_x;
+                selfp->measure_y2 = selfp->last_move_y;
+                selfp->measure_point_index = 0;
+            }
+            return 1;
+        }
+    }
+    else if (event->button == 2) {
+        selfp->is_dragging = TRUE;
+        return 0;
+    }
+    
+    if (event->button == 3
+        && !(event->state & GDK_CONTROL_MASK)
+        ) {
+        gtk_widget_show(selfp->w_popup);
+        gtk_menu_popup (GTK_MENU (selfp->w_popup),
+                        NULL, NULL, NULL, NULL,
+                        event->button, event->time);
+        return 1;
+    }
+    return 0;
+}
+
+static gint
+cb_button_release_event (GtkWidget * widget,
+                         GdkEventButton * event,
+                         gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+    if (event->button == 2) {
+#if 0
+        g_signal_handler_unblock(selfp->w_imgv,
+                                 selfp->cb_annotate_id);
+#endif
+        selfp->is_dragging = FALSE;
+        giv_window_redraw(self);
+    }
+
+    return 0;
+}
+
+static gint
+cb_key_press_event (GtkWidget * widget,
+                    GdkEventKey * event,
+                    gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+    gint k = event->keyval;
+    if (k == 'q')
+        gtk_main_quit();
+    if (k== 'o')
+        cb_menu_mark_browser(NULL, self);
+    if (k== 'i')
+        cb_menu_info_dialog(NULL, self);
+    if (k == 'f') {
+        fit_marks_in_window(self);
+        return 1;
+    }
+    if (k=='s') {
+        giv_window_shrink_wrap(self);
+        return 1;
+    }
+    if (// reload
+        k == GDK_KP_Enter
+        || k == GDK_Enter
+        // forward
+        || k == ' '
+        || k == GDK_Right
+        || k == GDK_KP_Right
+        // backward
+        || k == GDK_BackSpace
+        || k == GDK_Left
+        || k == GDK_KP_Left
+        ) {
+        int index_delta = 0;
+
+        if (k == ' '
+            || k == GDK_Right
+            || k == GDK_KP_Right)
+            index_delta = 1;
+        else if (k == GDK_BackSpace
+                 || k == GDK_Left
+                 || k == GDK_KP_Left )
+            index_delta = -1;
+#if 0
+        app_error(self,
+                  "filename_list.size() = %d\n",
+                  selfp->filename_list.size());
+#endif
+        int s = selfp->filename_list.size();
+        int new_index = (selfp->filename_list_index + s + index_delta) % s;
+        if (selfp->idle_handle < 0) {
+            selfp->idle_index = new_index;
+            selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
+                                            self);
+        }
+                   
+        //        giv_window_set_current_file(self, new_index);
+        return 1;
+    }
+    if (k == GDK_Up
+        || k == GDK_KP_Up
+        || k == GDK_Down
+        || k == GDK_KP_Down
+        ) {
+        int s = selfp->cb_names->size();
+        int dir = 1;
+        if (k == GDK_Down
+            || k == GDK_KP_Down)
+            dir = -1;
+        int next_img_idx = selfp->img_in_list_idx+dir;
+        // Getting next image...
+        while(selfp->img_in_list_idx >= 0
+              && next_img_idx != selfp->img_in_list_idx) {
+            if (next_img_idx == s)
+                next_img_idx = 0;
+            if (next_img_idx < 0)
+                next_img_idx = s-1;
+            slip fn = (*selfp->cb_names)[next_img_idx];
+            if (!fn.m("\\.(giv|marks)")) {
+                giv_window_load_file(self, fn);
+                selfp->img_in_list_idx = next_img_idx;
+                gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                           selfp->img_display);
+                giv_window_set_image_info(self);
+                if (selfp->do_auto_fit_marks) 
+                    fit_marks_in_window(self);
+
+                break;
+            }
+            next_img_idx+=dir;
+        }
+    }
+    if (k == 'm') {
+        // Toggle the marks by pressing the toggle button in the menu.
+        // Is there a better way?
+        gtk_check_menu_item_set_active(
+            GTK_CHECK_MENU_ITEM(
+                gtk_ui_manager_get_widget(selfp->menu_manager,
+                                          "/menubar/ViewMenu/Marks")),
+            !selfp->do_view_marks);
+    }
+    if (k == 'c') {
+        // Toggle the marks by pressing the toggle button in the menu.
+        // Is there a better way?
+        gtk_check_menu_item_set_active(
+            GTK_CHECK_MENU_ITEM(
+                gtk_ui_manager_get_widget(selfp->menu_manager,
+                                          "/menubar/ViewMenu/CrossHair")),
+            !selfp->do_view_cross_hair);
+    }
+    if (k == 'b') {
+        // Toggle the marks by pressing the toggle button in the menu.
+        // Is there a better way?
+        gtk_check_menu_item_set_active(
+            GTK_CHECK_MENU_ITEM(
+                gtk_ui_manager_get_widget(selfp->menu_manager,
+                                          "/menubar/ViewMenu/Balloons")),
+            !selfp->do_show_balloon);
+    }
+    if (k == 'i') {
+#if 0
+        // TBD: create a popup window
+        int index = selfp->filename_list_index;
+        for (int i=0; i<(int)selfp->filename_list[index].size(); i++) 
+            printf("%s\n",
+                   selfp->filename_list[index][i].c_str());
+#endif
+    }
+    
+    return 0;
+}
+
+static gint
+cb_scroll_event (GtkWidget * widget,
+                 GdkEventScroll * event,
+                 gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+    
+    if (event->state & GDK_SHIFT_MASK
+        || selfp->is_quiver_zoom) {
+        if (event->direction == GDK_SCROLL_UP) {
+            selfp->quiver_scale *= 1.1;
+        } else {
+            selfp->quiver_scale /= 1.1;
+        }
+
+        ((GivParser*)selfp->giv_parser)->set_quiver_scale(selfp->quiver_scale);
+        giv_window_redraw(self);
+
+        // Do a synthetic motion event to upgrade zoom position
+        cb_motion_event(widget, GdkEventMotion, user_data);
+
+        return 1;
+    }
+    return 0;
+}
+
+static gint
+cb_motion_event(GtkWidget *widget,
+                GdkEventMotion *event,
+                gpointer user_data
+                )
+{
+    GivWindow *self = (GivWindow *)user_data;
+    GtkImageViewer *image_viewer = GTK_IMAGE_VIEWER(selfp->w_imgv);
+    int cx = (int)event->x;
+    int cy = (int)event->y;
+    double x,y;
+    GString *info_label = g_string_new("");
+    
+    gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                             cx, cy, &x, &y);
+    
+    if (selfp->is_measuring_distance
+        && selfp->measure_point_index == 1) {
+        // Calculate distance
+        double m_dist = sqrt(sqr(selfp->measure_x1 - x) + sqr((selfp->measure_y1-y)));
+
+        draw_measure_line(selfp->back_store,
+                          widget,
+                          selfp->measure_x1, selfp->measure_y1,
+                          x,y);
+        
+        g_string_sprintf(info_label, " (%.3f,%.3f) dist=%.3f (%.3f,%.3f)",
+                         x,y,
+                         m_dist,
+                         x - selfp->measure_x1,
+                         y - selfp->measure_y1
+                         );
+        
+    }
+    else if (selfp->do_show_sub_pixel)
+         g_string_sprintf(info_label, " (%.3f, %.3f)", x, y);
+    else
+         g_string_sprintf(info_label, " (%.0f, %.0f)", x, y);
+    
+    if (selfp->img_org) {
+        int width = gdk_pixbuf_get_width(selfp->img_org);
+        int height = gdk_pixbuf_get_height(selfp->img_org);
+        int row_stride = gdk_pixbuf_get_rowstride(selfp->img_org);
+        guint8 *buf = gdk_pixbuf_get_pixels(selfp->img_org);
+        guint8 *rgb;
+        gint n_channels = gdk_pixbuf_get_n_channels(selfp->img_org);
+        
+        if (x>=0 && x<width && y>=0 && y<height) {
+            rgb = &buf[((int)y)*row_stride+((int)x)*n_channels];
+            
+            if (selfp->img_is_mono)
+                g_string_sprintfa(info_label,
+                                  " [%3d] = #%2X",
+                                  rgb[0],
+                                  (int)rgb[2]);
+            else 
+                g_string_sprintfa(info_label,
+                                  " [%3d %3d %3d] = #%6X",
+                                  rgb[0], rgb[1], rgb[2],
+                                  (int)(rgb[0]<<16) + (rgb[1]<<8) + rgb[2]);
+        }
+    }
+    
+    if (!selfp->is_dragging
+        && !selfp->is_measuring_distance
+        && selfp->do_show_balloon)
+        giv_window_show_balloon(self,cx,cy);
+    
+    gtk_label_set(GTK_LABEL(selfp->w_info_label), info_label->str);
+    g_string_free(info_label, TRUE);
+    
+    selfp->last_move_x = x;
+    selfp->last_move_y = y;
+    selfp->last_cx = cx;
+    selfp->last_cy = cy;
+    
+    return FALSE;
+}
+
+static gint
+cb_leave_notify_event(GtkWidget *widget,
+                      GdkEventCrossing *event,
+                      gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    giv_window_popdown_balloon(self);
+    
+    return FALSE;
+}
+
+static void cb_view_menu_bar (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    if (GTK_WIDGET_VISIBLE(selfp->w_menubox))
+        gtk_widget_hide(selfp->w_menubox);
+    else
+        gtk_widget_show(selfp->w_menubox);
+}
+
+static void cb_view_marks (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    GSList *proxies = NULL;
+    GSList *p;
+
+    if (action)
+        proxies = gtk_action_get_proxies(action);
+    selfp->do_view_marks = !selfp->do_view_marks;
+
+    // Block to prevent an infinite loop of activating and deactivating.
+    p = proxies;
+    while(p) {
+        gtk_action_block_activate_from(action, GTK_WIDGET(p->data));
+        p = p->next;
+    }
+                                   
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Marks")),
+        selfp->do_view_marks);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/Marks")),
+        selfp->do_view_marks);
+    
+    p = proxies;
+    while(p) {
+        gtk_action_unblock_activate_from(action, GTK_WIDGET(p->data));
+        p = p->next;
+    }
+    
+    giv_window_redraw(self);
+}
+
+static void cb_view_balloons (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    GSList *proxies = NULL;
+    GSList *p;
+
+    if (action)
+        proxies = gtk_action_get_proxies(action);
+    selfp->do_show_balloon = !selfp->do_show_balloon;
+
+    // Block to prevent an infinite loop of activating and deactivating.
+    p = proxies;
+    while(p) {
+        gtk_action_block_activate_from(action, GTK_WIDGET(p->data));
+        p = p->next;
+    }
+                                   
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Balloons")),
+        selfp->do_show_balloon);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/Balloons")),
+        selfp->do_show_balloon);
+    
+    p = proxies;
+    while(p) {
+        gtk_action_unblock_activate_from(action, GTK_WIDGET(p->data));
+        p = p->next;
+    }
+
+    // Force redraw to calculate the label image
+    giv_window_popdown_balloon(self);
+    if (selfp->do_show_balloon) {
+        // Force redraw to calculate the label image
+        giv_window_redraw(self);
+        giv_window_show_balloon(self, (int)selfp->last_cx, (int)selfp->last_cy);
+    }
+}
+
+static void cb_view_sub_pixel (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->do_show_sub_pixel = !selfp->do_show_sub_pixel;
+}
+
+static void cb_view_hflip (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->do_flip_horizontal = !selfp->do_flip_horizontal;
+    gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                              selfp->do_flip_horizontal,
+                              selfp->do_flip_vertical);
+}
+
+static void cb_view_vflip (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->do_flip_vertical = !selfp->do_flip_vertical;
+    gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                              selfp->do_flip_horizontal,
+                              selfp->do_flip_vertical);
+}
+
+static void cb_view_cross_hair (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->do_view_cross_hair = !selfp->do_view_cross_hair;
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/CrossHair")),
+        selfp->do_view_cross_hair);
+
+    giv_window_redraw(self);
+}
+
+static void cb_view_auto_resize (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->do_auto_fit_marks = !selfp->do_auto_fit_marks;
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/AutoResize")),
+        selfp->do_auto_fit_marks);
+
+    if (selfp->do_auto_fit_marks)
+        fit_marks_in_window(self);
+}
+
+static void
+app_error (GivWindow *self,
+           const char *format, ...)
+{
+    va_list ap;
+    va_start(ap,format);
+    gchar *message = g_strdup_vprintf(format, ap);
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new (GTK_WINDOW(self),
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_ERROR,
+                                     GTK_BUTTONS_CLOSE,
+                                     message);
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), true);
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
+    g_free(message);
+  
+    return;
+}
+
+static gint
+cb_mark_tree_destroy(GtkWidget *dialog,
+                     gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    selfp->w_mark_tree_dialog = NULL;
+    return 0;
+}
+
+static gint
+cb_info_destroy(GtkWidget *dialog,
+                gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    selfp->w_info_dialog = NULL;
+    return 0;
+}
+
+void
+cb_menu_mark_browser (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    if (selfp->w_mark_tree_dialog)
+        return;
+    selfp->w_mark_tree_dialog = giv_mark_tree_dialog_new(self);
+    g_signal_connect(selfp->w_mark_tree_dialog, "destroy",
+                     G_CALLBACK(cb_mark_tree_destroy), self);
+
+    gtk_widget_show_all(selfp->w_mark_tree_dialog);
+
+    return;
+}
+
+void
+cb_menu_info_dialog (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    if (selfp->w_info_dialog)
+        return;
+    selfp->w_info_dialog = giv_info_new(self);
+    g_signal_connect(selfp->w_info_dialog, "destroy",
+                     G_CALLBACK(cb_info_destroy), self);
+
+    gtk_widget_show_all(selfp->w_info_dialog);
+    giv_window_set_image_info(self);
+
+    return;
+}
+
+void
+cb_menu_quiver_zoom (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    
+    selfp->is_quiver_zoom = !selfp->is_quiver_zoom;
+  
+    return;
+}
+
+void
+cb_menu_measure_distance (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    
+    selfp->is_measuring_distance = !selfp->is_measuring_distance;
+    if (selfp->is_measuring_distance) {
+        selfp->back_store = create_backstore(selfp->w_imgv);
+        if (!selfp->cursor_plus) {
+            selfp->cursor_plus = gdk_cursor_new(GDK_TCROSS);
+        }
+        gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
+    }
+    else {
+        free_giv_backstore (selfp->back_store);
+        selfp->back_store = NULL;
+        gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+    }
+  
+    return;
+}
+
+void
+cb_menu_default (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    app_error(self, "Sorry. Not implemented yet");
+  
+    return;
+}
+
+static void
+cb_menu_fill (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    fit_marks_in_window(self);
+  
+    return;
+}
+
+static void
+cb_menu_shrink_wrap (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    giv_window_shrink_wrap(self);
+  
+    return;
+}
+
+// Have to decide exactly what I am supposed to load in the new window...
+void
+cb_menu_new_window (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    GtkWidget *w_new_giv = giv_window_new(0, NULL);
+    giv_window_set_image(GIV_WINDOW(w_new_giv),
+                         selfp->img_org);
+    gtk_widget_show(w_new_giv);
+  
+    return;
+}
+
+void
+cb_menu_close_window (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    gtk_widget_destroy(GTK_WIDGET(self));
+  
+    return;
+}
+
+void
+cb_menu_clear (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    ((GivParser*)selfp->giv_parser)->clear();
+    gdk_pixbuf_unref(selfp->img_org);
+    selfp->img_org = NULL;
+    gdk_pixbuf_unref(selfp->img_display);
+    selfp->img_display = NULL;
+    gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv), NULL);
+    
+    return;
+}
+
+static void
+cb_menu_open_response(GtkWidget *dialog,
+                        gint response,
+                        gpointer user_data)
+{
+    GivWindow *self = GIV_WINDOW(user_data);
+
+    if (response == GTK_RESPONSE_ACCEPT) {
+        gchar *selected_filename = 
+            gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(selfp->w_filechooser));
+
+        char *basename = g_path_get_basename(selected_filename);
+        giv_window_read_dir_into_filename_list(self, selected_filename);
+        selfp->filename_list_index = -1;
+        for (int i=0; i<(int)selfp->filename_list.size(); i++) {
+            if (g_str_has_suffix(selfp->filename_list[i][0].c_str(),
+                                 basename)) {
+                selfp->filename_list_index = i;
+                break;
+            }
+        }
+        g_free(basename);
+        if (selfp->filename_list.size()
+            && selfp->filename_list_index < 0) {
+            giv_window_load_file(self, selfp->filename_list[0][0].c_str());
+            selfp->filename_list_index = 0;
+        }
+        else
+            giv_window_set_current_file(self,
+                                        selfp->filename_list_index);
+
+#if 0
+        giv_window_load_file(self, selected_filename);
+#endif
+        if (last_image_path)
+            g_free(last_image_path);
+        last_image_path = selected_filename;
+    }
+    gtk_widget_destroy (selfp->w_filechooser);
+    selfp->w_filechooser = NULL;
+}
+
+void
+cb_menu_open (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->w_filechooser = gtk_file_chooser_dialog_new ("Open File",
+                                                GTK_WINDOW (self),
+                                                GTK_FILE_CHOOSER_ACTION_OPEN,
+                                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                                GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                                NULL);
+
+#if 0
+    gtk_window_set_transient_for (GTK_WINDOW (selfp->w_filechooser),
+                                  GTK_WINDOW (self));
+#endif
+    gtk_dialog_set_default_response ( GTK_DIALOG(selfp->w_filechooser),
+                                      GTK_RESPONSE_ACCEPT);
+
+    if (last_image_path)
+        gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (selfp->w_filechooser),
+                                       last_image_path);
+
+    g_signal_connect (GTK_OBJECT (selfp->w_filechooser), 
+                      "response", 
+                      G_CALLBACK (cb_menu_open_response),
+                      self);
+
+    /* Display that dialog */
+    gtk_widget_show_all (selfp->w_filechooser);
+
+    return;
+}
+
+static void
+export_to_file(GivWindow *self,
+               int width,
+               int height,
+               const char *filename)
+{
+    char *basename = g_path_get_basename(filename);
+    printf("Exporting to  %s\n", filename);
+    
+    if (is_file_ext(basename, "svg|pdf|ps")) {
+        cairo_surface_t *surface = NULL;
+        if (is_file_ext(basename, "svg")) 
+            surface = cairo_svg_surface_create(filename,
+                                               width,
+                                               height);
+        else if (is_file_ext(basename, "svg")) 
+            surface = cairo_ps_surface_create(filename,
+                                              width,
+                                              height);
+        else if (is_file_ext(basename, "pdf"))
+            surface = cairo_pdf_surface_create(filename,
+                                               width,
+                                               height);
+        
+        cairo_t *cr = cairo_create(surface);
+        draw_to_cairo(cr, width, height, self);
+        cairo_destroy (cr);
+        
+        cairo_surface_destroy(surface);
+    }
+    else if (is_file_ext(basename, "png")) {
+        cairo_surface_t *surface_image = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                                    width,
+                                                                    height);
+        cairo_t *cr = cairo_create(surface_image);
+        draw_to_cairo(cr, width, height, self);
+        cairo_destroy (cr);
+        if (cairo_surface_write_to_png (surface_image, filename)
+            != CAIRO_STATUS_SUCCESS) {
+            app_error(self,
+                      "Failed saving image to %s!\n",
+                      filename);
+        }
+        cairo_surface_destroy(surface_image);
+    }
+    else
+        app_error(self,
+                  "Unsupported file type for exporting.\n"
+                  "Supported types are svg, ps, pdf, and png\n");
+}
+
+static void
+cb_menu_export_response(GtkWidget *dialog,
+                        gint response,
+                        gpointer user_data)
+{
+    GivWindow *self = GIV_WINDOW(user_data);
+
+    if (response == GTK_RESPONSE_ACCEPT) {
+        int width = selfp->w_imgv->allocation.width;
+        int height = selfp->w_imgv->allocation.height;
+        gchar *selected_filename = 
+            gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(selfp->w_filechooser));
+
+        export_to_file(self, width, height, selected_filename);
+    }
+    gtk_widget_destroy (selfp->w_filechooser);
+    selfp->w_filechooser = NULL;
+}
+
+void
+cb_menu_export (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+
+    selfp->w_filechooser
+        = gtk_file_chooser_dialog_new ("Export File",
+                                       GTK_WINDOW (self),
+                                       GTK_FILE_CHOOSER_ACTION_SAVE,
+                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                       GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+                                       NULL);
+
+    gtk_dialog_set_default_response ( GTK_DIALOG(selfp->w_filechooser),
+                                      GTK_RESPONSE_ACCEPT);
+
+    if (last_export_image_path) 
+        gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (selfp->w_filechooser),
+                                       last_export_image_path);
+    else if (last_image_path) 
+        gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (selfp->w_filechooser),
+                                       last_image_path);
+
+    g_signal_connect (GTK_OBJECT (selfp->w_filechooser), 
+                      "response", 
+                      G_CALLBACK (cb_menu_export_response),
+                      self);
+
+    /* Display that dialog */
+    gtk_widget_show_all (selfp->w_filechooser);
+
+    return;
+}
+
+void begin_print(GtkPrintOperation *operation,
+                 GtkPrintContext   *context,
+                 gpointer           user_data)
+{
+    g_object_set(G_OBJECT(operation),
+                 "n-pages", 1,
+                 NULL);
+}
+
+/** 
+ * 
+ * 
+ * @param cr 
+ * @param width 
+ * @param height 
+ * @param do_print_shift_adjust Whether to shift and adjust page suitable for printing
+ * @param self 
+ */
+void draw_to_cairo(cairo_t *cr,
+                   int width,
+                   int height,
+                   GivWindow *self)
+{
+    vector<giv_dataset_t *>& datasets = ((GivParser*)(selfp->giv_parser))->get_giv_datasets();
+    double scale_x, scale_y;
+    gint shift_x, shift_y;
+    
+    gtk_image_viewer_get_scale_and_shift(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                         &scale_x, &scale_y,
+                                         &shift_x, &shift_y);
+    // TBD: * turn on cairo clip area
+    //      * draw image
+    int cnv_width = selfp->w_imgv->allocation.width;
+    int cnv_height = selfp->w_imgv->allocation.height;
+    if (cnv_width <= 1) {
+        cnv_width = width;
+        cnv_height = height;
+    }
+
+    cairo_set_line_width (cr, 2);
+    cairo_rectangle(cr, 0,0,cnv_width, cnv_height);
+    cairo_stroke_preserve(cr);
+    cairo_clip(cr);
+
+#ifdef PRINT_BY_IMAGE
+    // Draw img_display
+    GdkPixbuf *img_scaled, *cimg;
+    GdkInterpType interp_type = GDK_INTERP_NEAREST;
+    int dst_x = 0, dst_y = 0;
+    double super_res = 4;
+    int dwidth = gdk_pixbuf_get_width(selfp->img_display);
+    int dheight = gdk_pixbuf_get_width(selfp->img_display);
+    int copy_w = cnv_width*super_res;
+    int copy_h = cnv_height*super_res;
+
+    img_scaled = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                TRUE,
+                                8,
+                                cnv_width*super_res,
+                                cnv_height*super_res);
+    gdk_pixbuf_fill(img_scaled,
+                    0xffffffff);
+
+    if (dwidth * scale_x *super_res < cnv_width) {
+        dst_x = (cnv_width-dwidth*scale_x*super_res)/2;
+        copy_w = dwidth*scale_x*super_res;
+    }
+    if (dheight * scale_y *super_res < cnv_height) {
+        dst_y = (cnv_height-dheight*scale_y*super_res)/2;
+        copy_h = dheight*scale_y*super_res;
+    }
+
+    if (selfp->img_display) {
+        gdk_pixbuf_scale(selfp->img_display,
+                         img_scaled,
+                         dst_x,dst_y,
+                         copy_w,
+                         copy_h,
+                         -shift_x,
+                         -shift_y,
+                         scale_x, scale_y,
+                         interp_type);
+    }
+
+    GivPainterCairoPixbuf painter(img_scaled, true);
+
+    GivRenderer renderer(datasets, painter,
+                         scale_x, scale_y,
+                         shift_x, shift_y,
+                         cnv_width, cnv_height);
+    renderer.paint();
+
+    pixbuf_to_cairo(img_scaled,
+                    // output
+                    &cimg);
+
+    cairo_surface_t* img_srf
+        = cairo_image_surface_create_for_data(gdk_pixbuf_get_pixels(cimg),
+                                              CAIRO_FORMAT_ARGB32,
+                                              gdk_pixbuf_get_width(cimg),
+                                              gdk_pixbuf_get_height(cimg),
+                                              gdk_pixbuf_get_rowstride(cimg));
+
+    
+
+    cairo_set_source_surface(cr, img_srf, 0, 0);
+    cairo_paint(cr);
+    cairo_surface_destroy(img_srf);
+    gdk_pixbuf_unref(cimg);
+    gdk_pixbuf_unref(img_scaled);
+#else
+    if (selfp->img_display) {
+        // Draw img_display
+        GdkPixbuf *cimg;
+        
+        pixbuf_to_cairo(selfp->img_display,
+                        // output
+                        &cimg);
+        
+        cairo_surface_t* img_srf
+            = cairo_image_surface_create_for_data(gdk_pixbuf_get_pixels(cimg),
+                                                  CAIRO_FORMAT_ARGB32,
+                                                  gdk_pixbuf_get_width(cimg),
+                                                  gdk_pixbuf_get_height(cimg),
+                                                  gdk_pixbuf_get_rowstride(cimg));
+
+        cairo_save(cr);
+        cairo_translate(cr, -shift_x, -shift_y);
+        cairo_scale(cr, scale_x, scale_y);
+        cairo_set_source_surface(cr, img_srf, 0, 0);
+        cairo_paint(cr);
+        cairo_restore(cr);
+        cairo_surface_destroy(img_srf);
+        gdk_pixbuf_unref(cimg);
+    }
+
+    GivPainterCairo painter(cr);
+    GivRenderer renderer(datasets, painter,
+                         scale_x, scale_y,
+                         shift_x, shift_y,
+                         cnv_width, cnv_height);
+    renderer.paint();
+#endif
+}
+
+void draw_page (GtkPrintOperation *operation,
+                GtkPrintContext   *context,
+                gint               page_nr,
+                gpointer           user_data)
+{
+    GivWindow *self = GIV_WINDOW(user_data);
+    cairo_t *cr;
+    gdouble width, height;
+
+    cr = gtk_print_context_get_cairo_context (context);
+    width = gtk_print_context_get_width (context);
+    height = gtk_print_context_get_height (context);
+
+    //      * draw image
+    int cnv_width = selfp->w_imgv->allocation.width;
+    int cnv_height = selfp->w_imgv->allocation.height;
+
+    // shift adjust for printing
+    double draw_width = 150; // mm
+    cairo_translate(cr, (210-draw_width)/2, 0);
+    double scale = 1.0*draw_width/cnv_width;
+    cairo_scale(cr, scale, scale);
+
+    draw_to_cairo(cr, width, height, self);
+}
+
+void
+cb_menu_print (GtkAction *action, gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    GtkPrintOperation *print;
+    GtkPrintOperationResult res;
+    
+    print = gtk_print_operation_new ();
+    // The following should be made more advanced for windows...
+    gtk_print_operation_set_unit(print, GTK_UNIT_MM);
+    
+    if (selfp->print_settings != NULL) 
+        gtk_print_operation_set_print_settings (print, selfp->print_settings);
+    
+    g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), self);
+    g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), self);
+
+    res = gtk_print_operation_run (print, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
+                                   GTK_WINDOW (self), NULL);
+    
+    if (res == GTK_PRINT_OPERATION_RESULT_APPLY) {
+        if (selfp->print_settings != NULL)
+            g_object_unref (selfp->print_settings);
+        selfp->print_settings = GTK_PRINT_SETTINGS(g_object_ref (gtk_print_operation_get_print_settings (print)));
+    }
+    
+    g_object_unref (print);
+    
+    return;
+}
+
+static void
+cb_menu_about(GtkAction *action,
+	      gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    GtkWidget *about_window;
+    GtkWidget *vbox;
+    GtkWidget *label, *w_image;
+    GdkPixbuf *icon;
+    gchar *markup;
+    GError *err = NULL;
+  
+    about_window = gtk_dialog_new ();
+    gtk_window_set_transient_for(GTK_WINDOW(about_window),
+                                 GTK_WINDOW(self));
+    gtk_dialog_add_button (GTK_DIALOG (about_window),
+                           GTK_STOCK_OK, GTK_RESPONSE_OK);
+    gtk_dialog_set_default_response (GTK_DIALOG (about_window),
+                                     GTK_RESPONSE_OK);
+  
+    gtk_window_set_title(GTK_WINDOW (about_window), "giv");
+  
+    gtk_window_set_resizable (GTK_WINDOW (about_window), FALSE);
+
+#if 0
+    g_signal_connect (G_OBJECT (about_window), "delete-event",
+                      G_CALLBACK (gtk_widget_destroy), about_window);
+#endif
+  
+    vbox = gtk_vbox_new (FALSE, 0);
+    gtk_container_set_border_width (GTK_CONTAINER (vbox), 6);
+    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (about_window)->vbox), vbox, FALSE, FALSE, 0);
+
+    icon = gdk_pixbuf_new_from_inline(sizeof(logo_150_inline),
+                                      logo_150_inline,
+                                      FALSE,
+                                      &err);
+    w_image = gtk_image_new_from_pixbuf(icon);
+
+    gtk_box_pack_start (GTK_BOX (vbox), w_image, FALSE, FALSE, 0);
+
+    label = gtk_label_new (NULL);
+    gtk_label_set_selectable(GTK_LABEL(label), TRUE);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.5, 0.5);
+    gtk_label_set_justify (GTK_LABEL (label), GTK_JUSTIFY_CENTER);
+    markup = g_strdup_printf ("<span size=\"xx-large\" weight=\"bold\">Giv "VERSION"</span>\n\n"
+                              "%s\n"
+                              "Homepage: http://giv.sourceforge.net/giv"
+                              "\n"
+                              "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt></span>\n",
+                              ("The G(reat|tk) Image Viewer"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2009\n"),
+                              ("Programming by: Dov Grobgeld\n"),
+                              ("dov.grobgeld@gmail.com"));
+    gtk_label_set_markup (GTK_LABEL (label), markup);
+    g_free (markup);
+    gtk_box_pack_start (GTK_BOX (vbox), label, TRUE, TRUE, 0);
+  
+    gtk_widget_show_all (about_window);
+    gtk_dialog_run (GTK_DIALOG (about_window));
+    gtk_widget_destroy (about_window);
+}
+
+static void
+cb_menu_copyright(GtkAction *action,
+                  gpointer data)
+{
+    GtkWidget *copyright_window;
+    GtkWidget *scroll_window;
+    GtkWidget *w_text;
+    GtkTextIter end_iter;
+    GtkTextBuffer *text_buffer;
+  
+    copyright_window = gtk_dialog_new ();
+#if 0
+    gtk_window_set_transient_for(GTK_WINDOW(copyright_window),
+                                 GTK_WINDOW(self));
+#endif
+    gtk_dialog_add_button (GTK_DIALOG (copyright_window),
+                           GTK_STOCK_OK, GTK_RESPONSE_OK);
+    gtk_dialog_set_default_response (GTK_DIALOG (copyright_window),
+                                     GTK_RESPONSE_OK);
+  
+    gtk_window_set_title(GTK_WINDOW (copyright_window), "Giv Copyright");
+
+#if 0
+    g_signal_connect (G_OBJECT (copyright_window), "delete-event",
+                      G_CALLBACK (gtk_widget_destroy), copyright_window);
+#endif
+  
+    // Insert copyright here
+    scroll_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(copyright_window)->vbox),
+                       scroll_window, TRUE, TRUE, 0);
+
+    w_text = gtk_text_view_new ();
+#if 0
+    // why does this make the bell ring?
+    gtk_text_view_set_editable      (GTK_TEXT_VIEW(w_text), FALSE);
+#endif
+    gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW(w_text), FALSE);
+    gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW(w_text), GTK_WRAP_NONE);
+    gtk_widget_set_size_request (w_text, 600, 500);
+    gtk_container_add(GTK_CONTAINER(scroll_window),
+                      w_text);
+    text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (w_text));
+    
+    gtk_text_buffer_get_end_iter(text_buffer,
+                                 &end_iter);
+    giv_text_buffer_insert_markup(text_buffer,
+                                  &end_iter,
+                                  copyright_string);
+
+    gtk_widget_show_all (copyright_window);
+    gtk_dialog_run (GTK_DIALOG (copyright_window));
+    gtk_widget_destroy (copyright_window);
+}
+
+static void
+cb_image_annotate(GtkImageViewer *imgv,
+                  GdkPixbuf *pixbuf,
+                  gint shift_x,
+                  gint shift_y,
+                  gdouble scale_x,
+                  gdouble scale_y,
+                  gpointer user_data
+                  )
+{
+    GivWindow *self = GIV_WINDOW(user_data);
+
+    int width = gdk_pixbuf_get_width(pixbuf);
+    int height = gdk_pixbuf_get_height(pixbuf);
+    vector<giv_dataset_t *>& datasets = ((GivParser*)(selfp->giv_parser))->get_giv_datasets();
+
+#if 0
+    printf("annotate: tx ty sx sy n_dsets = %d %d %.2f %.2f %d\n",
+           shift_x, shift_y,
+           scale_x, scale_y,
+           datasets.size()
+           );
+#endif
+
+    GivPainterAgg painter(pixbuf, true);
+#if 0
+    GivPainterCairoPixbuf painter(pixbuf, true);
+#endif
+    GivRenderer renderer(datasets, painter,
+                         scale_x, scale_y,
+                         shift_x, shift_y,
+                         width, height);
+    if (!selfp->is_dragging && selfp->do_view_marks)
+        renderer.paint();
+
+    gint li_width, li_height;
+    gdk_window_get_size(GTK_WIDGET(imgv)->window, 
+                        &li_width, &li_height
+                        );
+    if (selfp->do_view_cross_hair && selfp->img_org) {
+        int w = gdk_pixbuf_get_width(selfp->img_org);
+        int h = gdk_pixbuf_get_height(selfp->img_org);
+
+        // Draw twice, the first time with gray to create a shadow
+        for (int i=0; i<2; i++) {
+            double sx = 0, sy = 0;
+
+            if (i==0) {
+                painter.set_color(1,1,1,0.2);  // Fixed red at the moment
+                painter.set_line_width(3);
+            }
+            else {
+                painter.set_color(1,0,0,0.9);  // Fixed red at the moment
+                painter.set_line_width(1);
+            }
+            double x0 = 0*scale_x-shift_x;
+            double y0 = h/2*scale_y-shift_y+sy;
+            double x1 = w*scale_x-shift_x;
+            double y1 = y0;
+            painter.add_line_segment(x0,y0, x1,y1);
+            x0 = w/2*scale_x-shift_x+sx;
+            y0 = 0*scale_y-shift_y;
+            x1 = x0;
+            y1 = h*scale_y-shift_y;
+            painter.add_line_segment(x0,y0, x1,y1);
+            painter.stroke();
+            painter.fill();
+        }
+    }
+
+    // Create the label image necessary for the balloon popup. The
+    // balloon image is always the size of the total displayed area.
+    // It would be faster to store and scroll the label image. But
+    // we currently don't have any way of doing that. 
+    if (selfp->do_show_balloon) {
+        gint li_shift_x, li_shift_y;
+        gdouble li_scale_x, li_scale_y;
+        if (selfp->w_label_image)
+            gdk_pixbuf_unref(selfp->w_label_image);
+
+        selfp->w_label_image = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                              TRUE,
+                                              8,
+                                              li_width, li_height);
+
+        // Get scroll and shift for the current image
+        gtk_image_viewer_get_scale_and_shift(imgv,
+                                             &li_scale_x, &li_scale_y,
+                                             &li_shift_x, &li_shift_y);
+        GivPainterAgg painter(selfp->w_label_image, false);
+#if 0
+        GivPainterCairoPixbuf painter(selfp->w_label_image, false);
+#endif
+        painter.set_do_paint_by_index(true);
+        gdk_pixbuf_fill(selfp->w_label_image,
+                        0x000000ff);
+        
+        GivRenderer renderer(datasets, painter,
+                             li_scale_x, li_scale_y,
+                             li_shift_x, li_shift_y,
+                             li_width, li_height);
+        renderer.paint();
+    }
+}
+
+static int
+cb_image_size_alloc(GtkWidget *widget,
+                    GtkAllocation *allocation,
+                    gpointer           user_data)
+{
+    return 0;
+}
+    
+static void
+cb_flip_changed(GtkImageViewer *imgv,
+                gboolean do_flip_horizontal,
+                gboolean do_flip_vertical,
+                gpointer data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+#if 0
+    selfp->do_flip_vertical = do_flip_vertical;
+    selfp->do_flip_horizontal = do_flip_horizontal;
+#endif
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/HorizontalFlip")),
+        do_flip_horizontal);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/VerticalFlip")),
+        do_flip_vertical);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/HorizontalFlip")),
+        do_flip_horizontal);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/VerticalFlip")),
+        do_flip_vertical);
+}        
+ 
+static inline gboolean
+line_hor_line_intersect(double x0, double y0, double x1, double y1,
+                        double line_x0, double line_x1, double line_y,
+                        /* output */
+                        double *x_cross, double *y_cross)
+{
+  if (y1 == y0) {
+    *y_cross = x0;
+    *x_cross = 0; /* Any x is a crossing */
+    if (y1 == line_y)
+      return TRUE;
+    return FALSE;
+  }
+
+  *y_cross = line_y; /* Obviously! */
+  *x_cross = x0 + (x1 - x0)*(line_y - y0)/(y1-y0);
+
+  if (y1<y0) {
+    double tmp = y0;
+    y0=y1;
+    y1=tmp;
+  }
+
+  return (*x_cross >= line_x0 && *x_cross <= line_x1 && *y_cross >= y0 && *y_cross <= y1);
+}
+
+static inline gboolean
+line_ver_line_intersect(double x0, double y0, double x1, double y1,
+                        double line_y0, double line_y1, double line_x,
+                        /* output */
+                        double *x_cross, double *y_cross)
+{
+  if (x1 == x0) {
+    *x_cross = x0;
+    *y_cross = 0; /* Any y is a crossing */
+    if (x1 == line_x)
+      return TRUE;
+    return FALSE;
+  }
+
+
+  *x_cross = line_x; /* Obviously! */
+  *y_cross = y0 + (y1 - y0)*(line_x - x0)/(x1-x0);
+
+  if (x1<x0) {
+    double tmp = x0;
+    x0=x1;
+    x1=tmp;
+  }
+  return (*y_cross >= line_y0 && *y_cross <= line_y1 && *x_cross >= x0 && *x_cross <= x1);
+}
+
+static gboolean
+giv_check_img_for_mono(GdkPixbuf *im)
+{
+    int pix_idx;
+    int width = gdk_pixbuf_get_width(im);
+    int height = gdk_pixbuf_get_height(im);
+    guint8 *buf = gdk_pixbuf_get_pixels(im);
+    
+    for(pix_idx=0; pix_idx<width * height; pix_idx++) {
+        if (buf[0] != buf[1]
+            || buf[0] != buf[2])
+            return FALSE;
+        buf+= 3;
+    }
+    return TRUE;
+}
+
+static void
+cb_change_pseudo_color(GtkRadioAction* action,
+                       GtkRadioAction*,
+                       GivWindow *self)
+{
+    int value = gtk_radio_action_get_current_value(action);
+    selfp->colormap = value;
+    apply_color_map(self);
+    gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                               selfp->img_display);
+    giv_window_redraw(self);
+}
+
+static void
+apply_color_map(GivWindow *self)
+{
+    /* Color maps */
+    struct color_maps_struct {
+      const char *name;
+      const guint8 *lut;
+    } color_maps[] = {
+      {
+          "Low contrast",
+          lut_lowcontrast,
+      },
+      {
+        "Rainbow ",
+        lut_rainbow,
+      },
+      {
+        "Red temperature",
+        lut_red_temperature,
+      },
+      {
+        "Blue Green Red Yellow",
+        lut_blue_green_red_yellow
+      },
+      {
+        "Blue White",
+        lut_blue_white
+      },
+      {
+        "Green Red Blue White",
+        lut_grn_red_blu_wht
+      }
+    };
+
+    if (selfp->img_display)
+        gdk_pixbuf_unref(selfp->img_display);
+
+    if (selfp->colormap == PSEUDO_COLOR_OFF
+        //        || !selfp->img_is_mono
+        ) {
+        selfp->img_display = selfp->img_org;
+        gdk_pixbuf_ref(selfp->img_display);
+    }
+    else {
+        int width = gdk_pixbuf_get_width(selfp->img_org);
+        int height = gdk_pixbuf_get_height(selfp->img_org);
+        int stride = gdk_pixbuf_get_rowstride(selfp->img_org);
+        int n_channels = gdk_pixbuf_get_n_channels(selfp->img_org);
+        guint8 *buf = gdk_pixbuf_get_pixels(selfp->img_org);
+
+        selfp->img_display = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                            FALSE,
+                                            8,
+                                            width, height);
+        gdk_pixbuf_fill(selfp->img_display,
+                        0x000000ff);
+
+        int dstride = gdk_pixbuf_get_rowstride(selfp->img_display);
+        int dn_channels = gdk_pixbuf_get_n_channels(selfp->img_display);
+        guint8 *dbuf = gdk_pixbuf_get_pixels(selfp->img_display);
+
+        const guint8 *tmap;
+        guint8 dyn_map[256*3];
+        if (selfp->colormap == PSEUDO_COLOR_INVERT) {
+            for (int i=0; i<256; i++)
+                dyn_map[3*i]=dyn_map[3*i+1]=dyn_map[3*i+2] = 255-i;
+            tmap = dyn_map;
+        }
+        else if (selfp->colormap == PSEUDO_COLOR_EQUALIZE) {
+            gint hist[3][256];
+            
+            memset(hist, 0, sizeof(hist));
+
+            for (int row_idx=0; row_idx<height; row_idx++) {
+                guint8 *p = buf + stride*row_idx;
+                for (int col_idx=0; col_idx<width; col_idx++) {
+                    for (int rgb_idx=0; rgb_idx<3;rgb_idx++) {
+                        hist[rgb_idx][*p]++;
+                        p++;
+                    }
+                }
+            }
+            
+            for (int col_idx=0; col_idx<3; col_idx++) {
+                int accsum = 0;
+                for (int hist_idx=0; hist_idx<256; hist_idx++) {
+                    dyn_map[hist_idx*3+col_idx] = (accsum * 255) / (width * height);
+                    accsum+= hist[col_idx][hist_idx];
+                }
+            }
+            tmap = dyn_map;
+        }
+        else if (selfp->colormap == PSEUDO_COLOR_NORMALIZE) {
+            guint8 min[3], max[3];
+            
+            min[0] = min[1]=min[2] = 255;
+            max[0] = max[1] = max[2] = 0;
+
+            for (int row_idx=0; row_idx<height; row_idx++) {
+                guint8 *p = buf + stride*row_idx;
+                for (int col_idx=0; col_idx<width; col_idx++) {
+                    for (int rgb_idx=0; rgb_idx<3; rgb_idx++) {
+                        if (*p < min[rgb_idx]) 
+                            min[rgb_idx] = *p;
+                        if (*p > max[rgb_idx])
+                            max[rgb_idx] = *p;
+                        p++;
+                    }
+                }
+            }
+
+            for (int col_idx=0; col_idx<3; col_idx++) {
+                for (int hist_idx=0; hist_idx<256; hist_idx++) {
+                    int max_min = (max[col_idx] - min[col_idx]);
+                    if (max_min==0)
+                        max_min = 1;
+                    int map_value = 255 * (hist_idx-min[col_idx])
+                        / max_min;
+                    if (map_value > 255)
+                        map_value = 255;
+                    else if (map_value < 0)
+                        map_value = 0;
+                    dyn_map[hist_idx*3+col_idx] = map_value;
+                }
+            }
+            tmap = dyn_map;
+        }
+        else 
+            tmap = color_maps[selfp->colormap-PSEUDO_COLOR_LOW_CONTRAST].lut;
+        for (int row_idx=0; row_idx<height; row_idx++) {
+            for (int col_idx=0; col_idx<width; col_idx++) {
+                int idx = row_idx * stride + col_idx * n_channels;
+                int didx = row_idx * dstride + col_idx * dn_channels;
+                dbuf[didx+0] = tmap[buf[idx]*3];
+                dbuf[didx+1] = tmap[buf[idx+1]*3+1];
+                dbuf[didx+2] = tmap[buf[idx+2]*3+2];
+            }
+        }
+    }
+#if 0
+    gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                               selfp->img_display);
+#endif
+}
+
+static void cb_image_reference(const char *filename,
+                               gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+    slip fn_path(filename);
+
+#if 0
+    app_error(self, "cb_image_reference = %s",
+              filename);
+#endif
+    
+    if (!g_file_test(fn_path, GFileTest(G_FILE_TEST_IS_REGULAR))) {
+        gchar *dirname = g_path_get_dirname(selfp->filename_list[selfp->filename_list_index][0]);
+        fn_path = slip(dirname) + "/" + filename;
+        g_free(dirname);
+
+        if (!g_file_test(fn_path, GFileTest(G_FILE_TEST_IS_REGULAR))) {
+            app_error(self,
+                      "Failed loading file %s!\n", filename);
+            return;
+        }
+    }
+
+#if 0
+    giv_window_load_file(GIV_WINDOW(user_data), fn_path);
+#endif
+    selfp->cb_names->push(fn_path);
+
+    // Update the info being displayed
+#if 0
+    giv_window_set_image_info(self);
+#endif
+
+}
+
+static void cb_set_orientation(GivParser::orientation_t hflip,
+                               GivParser::orientation_t vflip,
+                               gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+
+    if (vflip != GivParser::ORIENTATION_UNDEF) {
+        cb_flip_changed(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                        selfp->do_flip_horizontal,
+                        vflip == GivParser::ORIENTATION_FLIP,
+                        self);
+    }
+    if (hflip != GivParser::ORIENTATION_UNDEF) {
+        cb_flip_changed(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                        vflip == GivParser::ORIENTATION_FLIP,
+                        selfp->do_flip_vertical,
+                        self);
+    }
+}       
+
+static void
+cb_file_list_drag_data_received (GtkWidget          *widget,
+				 GdkDragContext     *context,
+				 gint                x,
+				 gint                y,
+				 GtkSelectionData   *selection_data,
+				 guint               info,
+				 guint               drag_time,
+				 gpointer            data)
+{
+    GivWindow *self = GIV_WINDOW(data);
+    switch (info) {
+    case DND_TEXT_URI_LIST: {
+        gchar **uris;
+        guint i;
+        
+        uris = gtk_selection_data_get_uris (selection_data);
+        
+        // The following works on windows... Should instead recreate
+        // uris and then use common loading code...
+        if (uris == NULL) {
+            uris = g_new0(gchar*, 2);
+            char *sdata = g_strdup((gchar*)selection_data->data);
+            char *nl_pos;
+            if ((nl_pos = g_strstr_len(sdata, strlen(sdata), "\r")))
+                *nl_pos = 0;
+            if ((nl_pos = g_strstr_len(sdata, strlen(sdata), "\n")))
+                *nl_pos = 0;
+            
+            uris[0] = sdata;
+            uris[1] = 0;
+        }
+
+        // The following is a copy and paste of what is done with loading
+        // from the command line and should be fixed.
+        for (i = 0; uris[i] != NULL; i++) {
+            gchar *path = g_filename_from_uri(uris[i], NULL, NULL);
+
+            giv_window_read_dir_into_filename_list(self, path);
+
+            selfp->filename_list_index = -1;
+            gchar *basename = g_path_get_basename(path);
+            for (int i=0; i<(int)selfp->filename_list.size(); i++) {
+                if (g_str_has_suffix(selfp->filename_list[i][0].c_str(),
+                                     basename)) {
+                    selfp->filename_list_index = i;
+                    break;
+                }
+            }
+            g_free(basename);
+
+            giv_window_set_current_file(self,
+                                        selfp->filename_list_index);
+            g_free(path);
+            
+            break;
+        }
+        
+        g_strfreev (uris);
+        break;
+    }
+    case DND_TEXT_PLAIN:
+        {
+#if 0
+            guchar *text = gtk_selection_data_get_text (selection_data);
+#endif
+            break;
+        }
+        
+    default:
+        break;
+    }
+    
+  gtk_drag_finish (context, TRUE, FALSE, drag_time);
+}
+
+//======================================================================
+//  Make the window exactly fit the marks.
+//----------------------------------------------------------------------
+static void
+fit_marks_in_window(GivWindow *self)
+{
+    double min_x, min_y, max_x, max_y;
+
+    // Block recursive size-alloc events
+    g_signal_handlers_block_by_func(selfp->w_imgv, (gpointer)&cb_image_size_alloc, self);
+
+    ((GivParser*)selfp->giv_parser)->get_data_bbox(min_x, min_y,
+                                                   max_x, max_y);
+#if 0
+    printf("min_x min_y max_x max_y = %f %f %f %f\n",
+           min_x, min_y, max_x, max_y);
+#endif
+    double scroll_x_dist, scroll_y_dist, scroll_x_center, scroll_y_center;
+    double scroll_min_x, scroll_min_y, scroll_max_x, scroll_max_y;
+    double margin = 0;
+    
+#if 0
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(selfp->w_scrolled_win),
+                                   GTK_POLICY_NEVER,
+                                   GTK_POLICY_NEVER);
+#endif
+
+    if (selfp->img_org) {
+        int img_w = gdk_pixbuf_get_width(selfp->img_org);
+        int img_h = gdk_pixbuf_get_height(selfp->img_org);
+
+        min_x = min_y = 0;
+        max_x = img_w;
+        max_y = img_h;
+    }
+    else {
+        margin= 10;
+
+        scroll_x_dist = max_x - min_x;
+        scroll_y_dist = max_y - min_y;
+        scroll_x_center = 0.5*(max_x + min_x);
+        scroll_y_center = 0.5*(max_y + min_y);
+        
+        scroll_min_x = scroll_x_center - scroll_x_dist * 0.5;
+        scroll_max_x = scroll_x_center + scroll_x_dist * 0.5;
+        scroll_min_y = scroll_y_center - scroll_y_dist * 0.5;
+        scroll_max_y = scroll_y_center + scroll_y_dist * 0.5;
+
+        // The following is a hack around the problem of too thin
+        // data in x or y... It should be solved in the gtk_image_viewer.
+        if (max_x - min_x < max_y-min_y) {
+            double avg_x = 0.5*(max_x+min_x);
+            min_x = avg_x - 0.5*(max_y-min_y);
+            max_x = avg_x + 0.5*(max_y-min_y);
+        }
+        if (max_y - min_y < max_x-min_x) {
+            double avg_y = 0.5*(max_y+min_y);
+            min_y = avg_y - 0.5*(max_x-min_x);
+            max_y = avg_y + 0.5*(max_x-min_x);
+        }
+        
+        gtk_image_viewer_set_scroll_region(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                           min_x, min_y,
+                                           max_x, max_y);
+        // Let the user decide!
+        gtk_image_viewer_set_zoom_range(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                        -1,-1);
+        
+        //    printf("scale c_world_center = %f %f %f\n", x_scale, c_world_center_x, c_world_center_y);
+    }
+    
+#if 0
+    printf("min_x min_y max_x max_y = %f %f %f %f\n",
+           min_x, min_y, max_x, max_y);
+#endif
+    gtk_image_viewer_zoom_to_box(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                 min_x,
+                                 min_y,
+                                 max_x,
+                                 max_y,
+                                 margin,
+                                 TRUE);
+
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(selfp->w_scrolled_win),
+                                   GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
+    // Get rid of block
+    g_signal_handlers_unblock_by_func(selfp->w_imgv, (gpointer)&cb_image_size_alloc, self);
+}
+
+static double sqr(double x) {
+    return x*x;
+}
+
+/** 
+ * Draw the line used for measuring. Done by cairo.
+ * 
+ * @param backstore 
+ * @param image_viewer 
+ * @param x0 
+ * @param y0 
+ * @param x1 
+ * @param y1 
+ */
+static void
+draw_measure_line(giv_backstore_t *back_store,
+                  GtkWidget *image_viewer,
+                  double x0, double y0,
+                  double x1, double y1)
+{
+  double cx0, cy0, cx1, cy1;
+  double lw = 5;
+  double arrow_a = 10;
+  double arrow_b = 10;
+  double arrow_c = 15;
+  double d; // Line distance from arrow to arrow
+  cairo_t *cr = back_store->cairo;
+
+
+#if 0
+  // Under construction
+  if (img_display)
+    y_flip_max = gdk_pixbuf_get_height(img_display);
+  else
+    y_flip_max = global_mark_max_y + global_mark_min_y;
+
+  if (load_transformation == TRANSFORM_VFLIP)
+    {
+      y1 = measure_y1;
+      y2 = measure_y2;
+    }
+  else
+    {
+      y1 = y_flip_max - measure_y1;
+      y2 = y_flip_max - measure_y2;
+    }
+#endif
+    
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           x0, y0,
+                                           &cx0, &cy0);
+  gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                           x1, y1,
+                                           &cx1, &cy1);
+
+  giv_backstore_restore_background (back_store);
+  giv_backstore_store_background_line (back_store,
+                                       (int)cx0,(int)cy0,
+                                       (int)cx1,(int)cy1);
+  cairo_save(cr);
+  // Set up cairo so that we can draw in x-axis only.
+  cairo_translate(cr, 0.5*(cx0+cx1), 0.5*(cy0+cy1));
+  cairo_rotate(cr, atan2(cy1-cy0,cx1-cx0));
+
+  d = sqrt((cx1-cx0)*(cx1-cx0)+(cy1-cy0)*(cy1-cy0));
+
+  // Draw an arrow from (-d/2,0) to (d/2,0) based on the
+  // parameters arrow_a, arrow_b, and arrow_c.
+  cairo_move_to(cr, -(d/2-arrow_a), lw/2);
+  cairo_line_to(cr, -(d/2-arrow_c), arrow_b);
+  cairo_line_to(cr, -d/2, 0);
+  cairo_line_to(cr, -(d/2-arrow_c), -arrow_b);
+  cairo_line_to(cr, -(d/2-arrow_a), -lw/2);
+  
+  cairo_line_to(cr, (d/2-arrow_a), -lw/2);
+  cairo_line_to(cr, (d/2-arrow_c), -arrow_b);
+  cairo_line_to(cr, d/2, 0);
+  cairo_line_to(cr, (d/2-arrow_c), arrow_b);
+  cairo_line_to(cr, (d/2-arrow_a), lw/2);
+  
+  cairo_close_path(cr);
+  cairo_fill(cr);
+  cairo_restore(cr);
+}
+
+static giv_backstore_t *
+create_backstore(GtkWidget *image_viewer)
+{
+  giv_backstore_t *back_store = new_giv_backstore (GTK_WIDGET (image_viewer) );
+  giv_backstore_set_color(back_store,
+                          "magenta",
+                          0.95);
+  giv_backstore_set_line_width(back_store, 4);
+  giv_backstore_set_line_cap_extra_store(back_store, 40);
+  return back_store;
+}
+
+/** 
+ * Reorder the data in a pixbuf to the order needed for a a cairo
+ * surface.
+ * 
+ * @param img 
+ * @param cairo_img 
+ * 
+ * @return 
+ */
+static void pixbuf_to_cairo(GdkPixbuf *img,
+                            // output
+                            GdkPixbuf **cairo_img)
+{
+    int width = gdk_pixbuf_get_width(img);
+    int height = gdk_pixbuf_get_height(img);
+    int stride = gdk_pixbuf_get_rowstride(img);
+    guint8 *buf = gdk_pixbuf_get_pixels(img);
+    bool has_alpha = gdk_pixbuf_get_has_alpha(img);
+    
+    *cairo_img = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
+                                TRUE,
+                                8,
+                                width, height);
+    guint8 *cbuf = gdk_pixbuf_get_pixels(*cairo_img);
+    int cstride = gdk_pixbuf_get_rowstride(*cairo_img);
+        
+    for (int row_idx = 0; row_idx < height; row_idx++) {
+	guchar *p = buf  + row_idx * stride;
+	guchar *pd = cbuf + row_idx * cstride;
+
+	for (int col_idx = 0; col_idx < width; col_idx ++) {
+            guchar r = *p++;
+            guchar g = *p++;
+            guchar b = *p++;
+            guchar a=255;
+            if (has_alpha)
+                p++;
+            
+            *pd++ = b;
+            *pd++ = g;
+            *pd++ = r;
+            *pd++ = a;
+	}
+    }
+}
+
+static gchar *read_pnm_comment(const char *filename)
+{
+    FILE *fh;
+    char str[100];
+    slip comment;
+
+    if ((fh = fopen(filename, "rb")) == NULL)
+        return 0;
+    
+    fgets((char*)str, sizeof(str),fh);
+
+    if (!((str[0]=='P') && (str[1]>='1' && str[1]<= '6'))) {
+        return NULL;
+    }
+    
+    while(1) {
+        int str_start = 1;
+        int len;
+        
+	fgets(str, sizeof(str), fh);
+
+        if (str[0] == '#') {
+            if (str[str_start] == ' ')
+                str_start++;                   /* Skip "# " in the begging of comments */
+            str[sizeof(str)-1]=0;
+            len = strlen(str);
+            comment += str+str_start;
+
+            while ((len == (int)strlen(str)-1) && (str[len-1]!='\n')) { 
+                fgets(str,sizeof(str),fh);
+                len = strlen(str);
+                comment += str;
+            }
+        }
+        else 
+            break;
+    }
+
+    return g_strdup(comment);
+}
+
+bool is_file_ext(const char *filename,
+                 const char *ext_match)
+{
+    gchar *pattern = g_strdup_printf("\\.(%s)$",
+                                     ext_match);
+    bool res = giv_regex_match_simple(pattern,
+                                      filename,
+                                      GIV_REGEX_CASELESS,
+                                      GivRegexMatchFlags(0));
+    g_free(pattern);
+    return res;
+}
+
+gboolean
+cb_load_image_when_idle(gpointer user_data)
+{
+    GivWindow *self = (GivWindow *)user_data;
+    giv_window_set_current_file(self, selfp->idle_index);
+    selfp->idle_handle = -1;
+
+    return false;
+}
+
+%}
+

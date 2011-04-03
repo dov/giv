@@ -1,0 +1,304 @@
+//======================================================================
+//  giv-contrast.gob - A contrast tool
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Mon Oct 19 18:55:34 2009
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include "giv-win.h"
+#include "giv-histo.h"
+#include <gtk/gtk.h>
+%}
+
+%{
+enum {
+    RESPONSE_AUTO = 1
+};
+
+static void cb_histo_contrast_changed(GtkWidget *widget,
+                                      double contrast_min,
+                                      double contrast_max,
+                                      gpointer userdata
+                                      );
+
+static void cb_radio_button_toggled (GtkWidget *togglebutton,
+                                     gpointer   user_data);
+
+static void cb_button_update(GtkWidget *widget,
+                             gpointer user_data);
+static void cb_histo_strength_changed(GtkRange *range,
+                                      gpointer  user_data);
+
+static gint cb_histo_scroll_event(GtkWidget *widget,
+                                  GdkEventScroll *event,
+                                  gpointer *user_data);
+
+%}
+
+class Giv:Contrast from Gtk:Dialog {
+    private GtkWidget *w_giv = NULL;
+    private GtkWidget *w_histo = NULL;
+    private GtkWidget *w_radio_button_minmax = NULL;
+    private GtkWidget *w_histo_strength_slider = NULL;
+    private GivImage *img = NULL;
+
+    public GtkWidget *
+    new(GivWin *w_giv)
+    {
+        GivContrast *self = GIV_CONTRAST(GET_NEW);
+        GtkWidget *w_vbox, *w_frame, *w_table;
+
+        selfp->w_giv = GTK_WIDGET(w_giv);
+        gtk_window_set_transient_for(GTK_WINDOW(self),
+                                     GTK_WINDOW(w_giv));
+        gtk_window_set_destroy_with_parent(GTK_WINDOW(self), TRUE);
+        gtk_window_set_title(GTK_WINDOW(self), "Giv Contrast");
+        gtk_dialog_add_buttons(GTK_DIALOG(self),
+                               "Auto Contrast",
+                               RESPONSE_AUTO,
+                               GTK_STOCK_CLOSE,
+                               GTK_RESPONSE_ACCEPT,
+                               NULL);
+
+        
+        gtk_window_set_default_size (GTK_WINDOW (self), 400, 350);
+        
+        w_vbox = GTK_DIALOG(self)->vbox;
+        w_frame = gtk_frame_new("Contrast");
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           w_frame, FALSE, FALSE, 0);
+        w_table = gtk_table_new(4,2, false);
+        gtk_container_add(GTK_CONTAINER(w_frame),
+                          w_table);
+
+        struct {
+            const char *label;
+            const char *key;
+        } label_keys[] = {
+            { "Min:", "min" },
+            { "Max:", "max" },
+            { "Center:", "center" },
+            { "Window:", "window" }
+        };
+        GtkWidget *radio_button = NULL;
+        for (int row_idx=0; row_idx<2; row_idx++) {
+            radio_button = gtk_radio_button_new_from_widget(GTK_RADIO_BUTTON(radio_button));
+            if (row_idx == 0) {
+                selfp->w_radio_button_minmax = radio_button;
+                g_signal_connect(radio_button, "toggled",
+                                 G_CALLBACK(cb_radio_button_toggled),
+                                 self);
+            }
+            
+            gtk_table_attach(GTK_TABLE(w_table),
+                             radio_button,
+                             0,1,
+                             row_idx, row_idx+1,
+                             GtkAttachOptions(0), GtkAttachOptions(0),
+                             0,0);
+            
+
+            for (int col_idx=0; col_idx<2; col_idx++) {
+                int i = row_idx * 2 + col_idx;
+                int c_idx = col_idx * 2+1;
+                GtkWidget *w_label = gtk_label_new(label_keys[i].label);
+                gtk_misc_set_alignment(GTK_MISC(w_label), 0, 0.5);
+                gtk_table_attach(GTK_TABLE(w_table),
+                                 w_label,
+                                 c_idx, c_idx+1,
+                                 row_idx, row_idx+1,
+                                 GtkAttachOptions(0), GtkAttachOptions(0),
+                                 0,0);
+                GtkWidget *w_entry = gtk_entry_new();
+                gtk_entry_set_text(GTK_ENTRY(w_entry), label_keys[i].key);
+                gtk_table_attach(GTK_TABLE(w_table),
+                                 w_entry,
+                                 c_idx+1, c_idx+2,
+                                 row_idx, row_idx+1,
+                                 GtkAttachOptions(0), GtkAttachOptions(0),
+                                 0,0);
+                g_object_set_data(G_OBJECT(self),
+                                  g_strdup(label_keys[i].key),
+                                  w_entry);
+            }
+        }
+        cb_radio_button_toggled(GTK_WIDGET(selfp->w_radio_button_minmax),
+                                self);
+        GtkWidget *w_hbox = gtk_hbox_new(FALSE, 0);
+        gtk_table_attach(GTK_TABLE(w_table),
+                         w_hbox,
+                         0,20,
+                         5, 6,
+                         GtkAttachOptions(0), GtkAttachOptions(0),
+                         0,0);
+        GtkWidget *w_update_button = gtk_button_new_with_label("Update");
+        g_signal_connect(w_update_button, "clicked",
+                         G_CALLBACK(cb_button_update), self);
+        gtk_box_pack_start(GTK_BOX(w_hbox),
+                           w_update_button, FALSE, FALSE, 0);
+
+        w_frame = gtk_frame_new("Histogram");
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           w_frame, TRUE, TRUE, 0);
+        
+        GtkWidget *w_hbox2 = gtk_hbox_new(0,0);
+        gtk_container_add(GTK_CONTAINER(w_frame),
+                          w_hbox2);
+
+        // TBD - create histo strength slider
+        selfp->w_histo_strength_slider =  gtk_vscale_new_with_range(0,1,0.1);
+        gtk_range_set_value(GTK_RANGE(selfp->w_histo_strength_slider), 1);
+        g_signal_connect(GTK_RANGE(selfp->w_histo_strength_slider), "value-changed",
+                         G_CALLBACK(cb_histo_strength_changed), self);
+        gtk_scale_set_draw_value(GTK_SCALE(selfp->w_histo_strength_slider), FALSE);
+        gtk_box_pack_start(GTK_BOX(w_hbox2), selfp->w_histo_strength_slider, FALSE, FALSE, 0);
+
+        selfp->w_histo = giv_histo_new(giv_win_get_image(GIV_WIN(selfp->w_giv)));
+        g_signal_connect(selfp->w_histo,
+                         "scroll-event",
+                         G_CALLBACK(cb_histo_scroll_event),
+                         self);
+        gtk_box_pack_start(GTK_BOX(w_hbox2),
+                           selfp->w_histo, TRUE, TRUE, 0);
+
+        g_signal_connect(selfp->w_histo, "contrast-changed",
+                         G_CALLBACK(cb_histo_contrast_changed), self);
+
+        gtk_widget_show_all(w_vbox);
+        
+        return GTK_WIDGET(self);
+    }
+
+    public void
+    set_image(self, GivImage *img)
+    {
+        selfp->img = img;
+        giv_histo_set_image(GIV_HISTO(selfp->w_histo), img);
+    }
+    
+    override (Gtk:Dialog) void
+    response (Gtk:Dialog *_self,
+              gint response_id)
+    {
+        GivContrast *self = GIV_CONTRAST(_self);
+
+        if (response_id == RESPONSE_AUTO) {
+            giv_histo_auto_contrast(GIV_HISTO(selfp->w_histo));
+        }
+        else {
+            gtk_widget_destroy(GTK_WIDGET(self));
+        }
+    }
+
+    signal last NONE (DOUBLE, DOUBLE)
+    void contrast_changed(self,
+                          double contrast_min,
+                          double contrast_max);
+}
+
+    
+%{
+static void cb_histo_contrast_changed(GtkWidget *widget,
+                                      double contrast_min,
+                                      double contrast_max,
+                                      gpointer userdata
+                                      )
+{
+    GivContrast *self = GIV_CONTRAST(userdata);
+    gchar *min_format = g_strdup_printf("%g", contrast_min);
+    gchar *max_format = g_strdup_printf("%g", contrast_max);
+    gchar *center_format = g_strdup_printf("%g", (contrast_min+contrast_max)/2.0);
+    gchar *window_format = g_strdup_printf("%g", (contrast_max-contrast_min));
+
+    // TBD - Change the entry fields
+    giv_contrast_contrast_changed(self, contrast_min, contrast_max);
+
+    GObject*obj = G_OBJECT(self);
+    gtk_entry_set_text(GTK_ENTRY(g_object_get_data(obj,"min")), min_format);
+    gtk_entry_set_text(GTK_ENTRY(g_object_get_data(obj,"max")), max_format);
+    gtk_entry_set_text(GTK_ENTRY(g_object_get_data(obj,"center")), center_format);
+    gtk_entry_set_text(GTK_ENTRY(g_object_get_data(obj,"window")), window_format);
+
+
+    g_free(min_format);
+    g_free(max_format);
+    g_free(window_format);
+    g_free(center_format);
+}
+
+static void cb_radio_button_toggled (GtkWidget *togglebutton,
+                                     gpointer         user_data)
+{
+    GivContrast *self = GIV_CONTRAST(user_data);
+    GObject*obj = G_OBJECT(self);
+    gboolean is_active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(togglebutton));
+
+    gtk_widget_set_sensitive(GTK_WIDGET(g_object_get_data(obj,"min")),
+                             is_active);
+    gtk_widget_set_sensitive(GTK_WIDGET(g_object_get_data(obj,"max")),
+                             is_active);
+    gtk_widget_set_sensitive(GTK_WIDGET(g_object_get_data(obj,"center")),
+                             !is_active);
+    gtk_widget_set_sensitive(GTK_WIDGET(g_object_get_data(obj,"window")),
+                             !is_active);
+}
+
+static void cb_button_update(GtkWidget *widget,
+                             gpointer user_data)
+{
+    GivContrast *self = GIV_CONTRAST(user_data);
+    gboolean use_minmax = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_radio_button_minmax));
+
+    GObject*obj = G_OBJECT(self);
+    double min, max;
+    if (use_minmax) {
+        min = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(obj,"min"))));
+        max = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(obj,"max"))));
+    }
+    else {
+        double window = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(obj,"window"))));
+        double center = atof(gtk_entry_get_text(GTK_ENTRY(g_object_get_data(obj,"center"))));
+        min = center - window/2;
+        max = center + window/2;
+    }
+
+    giv_histo_set_contrast_min_max(GIV_HISTO(selfp->w_histo), min, max);
+}
+
+static void cb_histo_strength_changed(GtkRange *range,
+                                      gpointer  user_data)
+{
+    GivContrast *self = GIV_CONTRAST(user_data);
+    double value = gtk_range_get_value(range);
+    double scale_value = pow(1000,1.0-value);
+    giv_histo_set_scale(GIV_HISTO(selfp->w_histo),scale_value);
+}
+ 
+static gint cb_histo_scroll_event(GtkWidget *widget,
+                                  GdkEventScroll *event,
+                                  gpointer *user_data)
+{
+    GivContrast *self = GIV_CONTRAST(user_data);
+    GtkAdjustment *adjustment = GTK_ADJUSTMENT(gtk_range_get_adjustment(GTK_RANGE(selfp->w_histo_strength_slider)));
+    double delta_value = 0.05;
+    if (event->direction == GDK_SCROLL_UP)
+        delta_value = -delta_value;
+    double old_value = gtk_adjustment_get_value(adjustment);
+    double new_value = old_value + delta_value;
+    if (new_value < adjustment->lower)
+        new_value = adjustment->lower;
+    if (new_value > adjustment->upper-adjustment->page_size)
+        new_value = adjustment->upper-adjustment->page_size;
+    
+    if (new_value != old_value) {
+        gtk_adjustment_set_value(adjustment, new_value);
+        gtk_adjustment_changed(adjustment);
+    }
+
+    return 0;
+}
+
+%}

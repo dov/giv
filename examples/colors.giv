@@ -1,0 +1,55 @@
+$color red
+$polygon
+0 0
+1 0
+1 5
+0 5
+0 0
+
+$color green
+$polygon
+1 0
+2 0
+2 5
+1 5
+1 0
+
+$color blue 
+$polygon
+2 0
+3 0
+3 5
+2 5
+2 0
+
+$color #800000
+$polygon
+3 0
+4 0
+4 5
+3 5
+3 0
+
+$color #008000
+$polygon
+4 0
+5 0
+5 5
+4 5
+4 0
+
+$color #000080
+$polygon
+5 0
+6 0
+6 5
+5 5
+5 0
+
+$color white/0.5
+$polygon
+0 1
+6 1
+6 4
+0 4
+0 1

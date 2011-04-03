@@ -1,3 +1,8 @@
+The prefered building system is scons. To build giv with scons run 
+scons.
+
+The instructions below are the generic autooconf based description.
+
 Basic Installation
 ==================
 

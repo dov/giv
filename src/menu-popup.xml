@@ -1,0 +1,44 @@
+<ui>
+  <popup>
+    <menuitem name="View" action="ViewMenuBarAction" />
+    <menu name="FileMenu" action="FileMenuAction">
+      <menuitem name="Open" action="OpenAction" />
+      <menuitem name="Export" action="ExportAction" />
+      <menuitem name="NewWindow" action="NewWindowAction" />
+      <menuitem name="CloseWindow" action="CloseWindowAction" />
+      <menuitem name="ClearAction" action="ClearAction" />
+      <menuitem name="Print" action="PrintAction" />
+      <menuitem name="Preferences" action="PreferencesAction" />
+      <menuitem name="Quit" action="QuitAction" />
+    </menu>
+    <menu name="ViewMenu" action="ViewMenuAction">
+      <menuitem name="Marks" action="ViewMarksAction" />
+      <menuitem name="Sub-pixel" action="ViewSubPixelAction" />
+      <menuitem name="Balloons" action="ViewBalloonAction" />
+      <menuitem name="HorizontalFlip" action="ViewHorizontalFlip" />
+      <menuitem name="VerticalFlip" action="ViewVerticalFlip" />
+      <menuitem name="CrossHair" action="ViewCrossHair" />
+      <menuitem name="AutoResize" action="AutoResize" />
+      <menu name="ColorTableMenu" action="ColorTableMenuAction">
+        <menuitem name="PseudoColorOff" action="PseudoColorNone" />
+        <menuitem name="PseudoColorInvert" action="PseudoColorInvert" />
+        <menuitem name="PseudoColorEqualize" action="PseudoColorEqualize" />
+        <menuitem name="PseudoColorNormalize" action="PseudoColorNormalize" />
+        <menuitem name="PseudoColorLowContrast" action="PseudoColorLowContrast" />
+        <menuitem name="PseudoColorRainbow" action="PseudoColorRainbow" />
+        <menuitem name="PseudoColorRedTemp" action="PseudoColorRedTemp" />
+        <menuitem name="PseudoColorBGRY" action="PseudoColorBGRY" />
+        <menuitem name="PseudoColorGRBW" action="PseudoColorGRBW" />
+      </menu>
+    </menu>
+    <menu name="ToolMenu" action="ToolMenuAction">
+      <menuitem name="MarkBrowser" action="ToolMarkBrowserAction" />
+      <menuitem name="Info" action="ToolInfoAction" />
+      <menuitem name="MeasureDistance" action="ToolMeasureDistanceAction" />
+      <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
+    </menu>
+    <menu name="Help" action="HelpMenuAction" position="bot">
+      <menuitem name="About" action="AboutAction" />
+    </menu>
+  </popup>
+</ui>

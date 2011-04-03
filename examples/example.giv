@@ -1,0 +1,150 @@
+$balloon Circles are great!
+$lw 3
+$noline
+$marks circle
+$scale_marks 1
+$color midnightblue
+$path circles
+110 110
+120 110
+120 120
+110 120
+110 110
+
+$path squares
+$marks square
+$mark_SIZE 12
+$LW 5
+$scale_marks 0
+$path squares
+$color green
+120 120
+150 150
+120 150
+120 120
+
+$PATH Two lines with a move
+$color red
+270 120
+300 150
+m 270 150
+270 120
+
+$PATH Another simple line
+$balloon This line
+$balloon has a multi-line
+$balloon popup!
+$color orange
+320 130
+320 180
+
+$PATH A dashed line 10,5
+$color purple
+$LINEDASH 10,5
+$LW 2
+$ls 1
+350 130
+350 180
+
+$PATH A dashed line 5,3 with an arrow
+$LINEDASH 5,3
+$LW 2
+$ls 2
+$color blue
+$arrow
+380 130
+380 180
+
+# $path an arc
+# $lw 2
+# 450 130
+# 500 250
+# m 450 130
+# arc 500 250 25
+# arc 450 130 25
+
+
+$polygon
+$color pink3
+$outline_color black
+$path A closed polygon 
+$lw 3
+200 300
+250 300
+200 200
+
+$marks fcircle
+$color blue
+0 0
+
+$path blue text
+$color blue
+$font Sans 15
+T 0 0 Origin
+
+$polygon
+$color none
+$outline_color none
+$lw 5
+$balloon Fonts
+0 250
+300 250
+300 400
+0 400
+
+$path font Monospace 
+$color black
+$font Monospace 20
+T 0 300 Monospace
+
+$path font Serif 
+$color black
+$font Sans Bold Italic 18
+T 0 330 Sans Bold Italic 18
+
+$path font Serif 
+$color black
+$font Serif 20
+T 0 360 Serif
+
+$path frame
+$color red
+400 0
+500 0
+500 100
+400 100
+400 0
+
+$path arrow both
+$arrow both 
+$color green
+$lw 2
+410 10
+490 90
+
+$path arrow start
+$arrow start
+$color green
+$lw 2
+445 40
+465 20
+
+$path arrow end
+$arrow end
+$color green
+$lw 1
+455 50
+475 30
+
+$path font Serif 
+$color gray/0.1
+$font Serif Bold 150
+T 40 100 GIV
+
+$path font Serif 
+$color purple3/0.1
+$font Serif Bold 150
+T 36 104 GIV
+
+
+

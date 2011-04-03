@@ -1,0 +1,7 @@
+Import('env')
+
+env.Library("plisx",
+            ["plis.cc"],
+            CPPDEFINES=[],
+            LIBS=['pcre'])
+

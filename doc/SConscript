@@ -1,0 +1,6 @@
+Import('env')
+
+env.Command("giv.html",
+            "giv.phtml",
+            "perl eperl ${SOURCE.file} > ${TARGET.file}",
+            chdir=1)

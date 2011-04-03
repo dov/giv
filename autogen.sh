@@ -1,6 +1,13 @@
 #!/bin/sh
 # Run this to generate all the initial makefiles, etc.
 
+# If build fails do:
+#
+#   libtoolize --copy --force
+#
+# or
+#
+#   autoreconf --force --install --symlink
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
@@ -8,7 +15,7 @@ ORIGDIR=`pwd`
 cd $srcdir
 PROJECT=Giv
 TEST_TYPE=-f
-FILE=giv/giv.c
+FILE=src/giv.cc
 
 DIE=0
 

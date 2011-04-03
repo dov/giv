@@ -1,0 +1,39 @@
+env = Environment()
+
+variant = "Debug"
+
+if ARGUMENTS.get('mingw', 0):
+    env['CC']='i686-pc-mingw32-gcc'
+    env['CXX']='i686-pc-mingw32-g++'
+    env['AR']='i686-pc-mingw32-ar'
+    env['RANLIB']='i686-pc-mingw32-ranlib'
+    env['OBJSUFFIX']=".obj"
+    env['PROGSUFFIX'] = ".exe"
+    env['SHOBJSUFFIX']=".obj"
+    env['LIBSUFFIX'] = ".lib"
+    env['LIBPREFIX'] = ""
+    env['SHLIBSUFFIX'] = ".dll"
+    env['SHLIBPREFIX'] = ""
+    env.Append(LIBS=["ws2_32"])
+    env['OUTLIBDIR'] = "#/mingw32/" + variant
+    env['OUTBINDIR'] = "#/mingw32/" + variant
+else:
+    env.Append(LIBS=['pthread'])
+    env['OUTLIBDIR'] = "#/linux/" + variant
+    env['OUTBINDIR'] = "#/linux/" + variant
+
+env.Append(CPPPATH=["#/config/include",
+                    "#/ofstd/include",
+                    "#/dcmdata/include",
+                    "#/dcmimage/include",
+                    "#/dcmimgle/include",
+                    ],
+           LIBPATH = env['OUTLIBDIR'],
+           )
+
+SConscript(["dcmimage/SConscript",
+            "dcmimgle/SConscript",
+            "dcmdata/SConscript",
+            "ofstd/SConscript"],
+           exports = 'env')
+

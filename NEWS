@@ -1,1 +1,29 @@
-* Now compiles under Windows.
+Version 0.9.16: This is a major upgrade of giv with the following new
+futures:
+
+* Floating point, 16-bit images, and 32-bit images are now supported.
+* Added a color bar widget that is shown for high bit rate images.
+* Created a plugin structure for external loaders.
+* Includes loaders for the npy-format, FITS-format, and a simple DICOM 
+  reader.
+* A new contrast tool has been written that allows interactively changing
+  contrast and brightness.
+
+Version 0.9.12 : Added alpha support by adding a trailing /alpha after
+the color name. E.g. "red/0.5" 
+
+
+Version 0.9.10 : Interactive quiver zoom has now been implemented. To
+a quiver arrowto a datapoint, use the "Q dx dy" privitive. E.g. if a
+point at 100,100 has a quiver vector of 0.1 use the following syntax:
+
+    100 100
+    Q 0.1 0.1
+
+The original scale of the quiver plot is determined by the $quiver_scale
+keyword. The color of the quiver arrow is set by $quiver_color. 
+
+When the data is viewed the scaling of the quiver arrows may be changed 
+interactively by using pressing Shift+Scroll Wheel.
+
+See the example examples/quiver.giv for an example.

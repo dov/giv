@@ -1,22 +1,15 @@
-SUBDIRS = giv 
+SUBDIRS = examples src doc
 
-EXTRA_DIST = AUTHORS   \
-             COPYING   \
-             ChangeLog \
-             INSTALL   \
-             README    \
-             TODO      \
-             giv.lsm   \
+EXTRA_DIST = AUTHORS    \
+             COPYING    \
+             ChangeLog  \
+             INSTALL    \
+             README     \
+             TODO       \
+             BUGS       \
+             NEWS       \
+             giv.wine.nsi.in \
+             SConstruct \
+             giv.lsm    \
              autogen.sh \
-             doc/giv.phtml \
-             doc/giv.html \
-             doc/giv-maja.jpg \
-             doc/giv-zoom-in.jpg \
-             doc/marks-view-1.png \
-             doc/marks-view-2.png \
-             doc/example.giv \
-             doc/giv-logo.svg \
-             doc/giv-logo.png
-
-
-
+	     giv-logo-install.ico

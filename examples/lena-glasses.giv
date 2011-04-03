@@ -1,0 +1,24 @@
+#$image lena.pgm
+
+$marks circle
+$color red/0.3
+$lw 10
+$mark_size 30
+$scale_marks 1
+$noline
+265 265
+
+$marks circle
+$color green/0.3
+$lw 10
+$mark_size 30
+$scale_marks 1
+$noline
+328 266
+
+$color blue/0.3
+$lw 10
+$line
+280 265
+313 266
+

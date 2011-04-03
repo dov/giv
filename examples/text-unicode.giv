@@ -1,0 +1,26 @@
+$color green
+0 0
+200 0
+200 200
+0 200
+0 0
+
+$font sans
+$text_size 50
+$scale_font 1
+$color blue
+T5 100 100 α=30°
+
+$font serif
+$text_size 50
+$scale_font 0
+$color purple
+T5 100 150 β=30°
+
+$pango_markup 
+$color grey20
+$scale_font 1
+$color red/80
+T5 100 50 <span size="xx-large">x<sup>2</sup>+y<sup>2</sup>=z<sub>2</sub></span>
+T5 100 20 <u><span color="red">R</span><span color="green">G</span><span color="blue">B</span></u>
+

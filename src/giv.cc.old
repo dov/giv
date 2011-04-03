@@ -1,0 +1,29 @@
+//======================================================================
+//  giv.cpp - This is a new version of giv. 
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Thu Aug 16 20:16:23 2007
+//----------------------------------------------------------------------
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include "gtk/gtk.h"
+#include "giv-window.h"
+
+#define CASE(s) if (!strcmp(s, S_))
+
+int main(int argc, char **argv)
+{
+    GtkWidget *giv;
+    gtk_init(&argc, &argv);
+
+    giv = giv_window_new(argc, argv);
+
+    gtk_widget_show(giv);
+
+    gtk_main();
+    
+    exit(0);
+    return(0);
+}

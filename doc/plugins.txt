@@ -1,0 +1,56 @@
+Monday 2010-01-11 19:19 
+Dov Grobgeld <dov.grobgeld@gmail.com>
+
+A giv plugin resides in the $(PREFIX)/giv-1.0/plugins/ directory and
+is a shared object file. On windows the plugins are installed in
+$(INSTALL)/plugins .
+
+The plugins are offered the file in an arbitrary order and the first
+plugin that recognizes the file has its loader called to load the
+file. In a future version the order of the plugins will be configured
+in a configuration file.
+
+There are currently two functions that must be defined in every plugin file:
+
+gboolean giv_plugin_supports_file(const char *filename,
+                                  guchar *start_chunk,
+                                  gint start_chunk_len)
+
+and
+
+GivImage *giv_plugin_load_file(const char *filename,
+                               GError *error)
+
+The giv_plugin_supports_file() answes the question on whether the
+plugin supports the file. The decision has to be based on either
+the filename or the chunk in the beginning of the file.
+
+FUTURE
+
+In a future version the giv_plugin_supports_file() will not be used. 
+Instead the following function will be used:
+
+giv_plugin_support_t giv_plugin_get_support()
+
+where giv_plugin_support_t is defined as follows:
+
+// A structure for matching contents.
+typedef struct {
+    // Can the format be matched by contents?
+    gboolean by_contents;
+
+    // Start of matching
+    gint contents_offset;
+
+    // Regular expression for matching
+    const gchar *content_match_expression;
+
+    // Can the format be matched by filename
+    gboolean by_filename;
+
+    const gchar *filename_match_expression;
+} giv_plugin_support_t;    
+
+It is recommended that all external plugin writers support both of these
+functions until the next version of giv is released.
+

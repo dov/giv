@@ -1,0 +1,120 @@
+$scale_marks 1
+$color red
+
+$scale_marks 1
+$color red
+$mark_size 30.778080
+$marks circle
+307.358613 210.369650
+
+
+$scale_marks 1
+$color red
+$mark_size 30.840070
+$marks circle
+384.859009 210.358587
+
+
+$scale_marks 1
+$color red
+$mark_size 30.840070
+$marks circle
+462.410916 210.361888
+
+
+$scale_marks 1
+$color red
+$mark_size 30.778080
+$marks circle
+307.358663 287.852225
+
+
+$scale_marks 1
+$color red
+$mark_size 30.819421
+$marks circle
+384.875353 287.874709
+
+
+$scale_marks 1
+$color red
+$mark_size 30.798757
+$marks circle
+462.420554 287.850922
+
+
+$scale_marks 1
+$color red
+$mark_size 30.819421
+$marks circle
+307.363212 365.398203
+
+
+$scale_marks 1
+$color red
+$mark_size 30.819421
+$marks circle
+384.873691 365.425540
+
+
+$scale_marks 1
+$color red
+$mark_size 30.819421
+$marks circle
+462.387467 365.404330
+
+
+$path neighbors/0
+$color orange
+$nomarks
+m 384.359009 209.858587
+461.910916 209.861888
+
+$path neighbors/1
+$color orange
+$nomarks
+m 306.858613 209.869650
+384.375353 287.374709
+
+$path neighbors/2
+$color orange
+$nomarks
+m 306.858663 287.352225
+306.863212 364.898203
+
+$path neighbors/3
+$color orange
+$nomarks
+m 306.863212 364.898203
+384.375353 287.374709
+
+$path neighbors/4
+$color orange
+$nomarks
+m 384.373691 364.925540
+384.375353 287.374709
+
+$path neighbors/5
+$color orange
+$nomarks
+m 461.910916 209.861888
+384.375353 287.374709
+
+$path neighbors/6
+$color orange
+$nomarks
+m 461.920554 287.350922
+461.887467 364.904330
+
+$path neighbors/7
+$color orange
+$nomarks
+m 384.375353 287.374709
+461.920554 287.350922
+
+$path neighbors/8
+$color orange
+$nomarks
+m 461.887467 364.904330
+384.375353 287.374709
+

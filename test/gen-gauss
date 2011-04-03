@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import numpy
+
+def gaussian(sigma=0.5, shape=None):
+  """
+  Gaussian kernel numpy array with given sigma and shape.
+
+  The shape argument defaults to ceil(6*sigma).
+  """
+  sigma = max(abs(sigma), 1e-10)
+  if shape is None:
+    shape = max(int(6*sigma+0.5), 1)
+  if not isinstance(shape, tuple):
+    shape = (shape, shape)
+  x = numpy.arange(-(shape[0]-1)/2.0, (shape[0]-1)/2.0+1e-8, dtype=numpy.float32)
+  y = numpy.arange(-(shape[1]-1)/2.0, (shape[1]-1)/2.0+1e-8, dtype=numpy.float32)
+  Kx = numpy.exp(-x**2/(2*sigma**2))
+  Ky = numpy.exp(-y**2/(2*sigma**2))
+  ans = numpy.outer(Kx, Ky) / (2.0*numpy.pi*sigma**2)
+#  ans = numpy.outer(Kx, Ky) 
+  return ans/sum(sum(ans))
+
+g = gaussian(1.5, (4,3))
+g = (g*1e4).astype(numpy.uint8)
+print g
+print "min max = ", g.min(), g.max()
+numpy.save('gauss.npy',g)

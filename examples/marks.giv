@@ -1,0 +1,15 @@
+$marks fcircle
+$color red
+50 50 
+
+$marks circle
+$color green
+100 50
+
+$marks fsquare
+$color blue
+50 100
+
+$marks square
+$color cyan
+100 100

@@ -1,0 +1,6 @@
+Import('env')
+
+src = env.Glob("*.cc")
+
+env.Library('${OUTLIBDIR}/ofstd',
+            src)

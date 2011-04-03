@@ -1,3 +1,430 @@
+2011-03-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-image.gob : Automatically convert monochrome gdkpixbuf images to monochrome GivImage. This fixes problem that autocontrast wasn't working for these images.
+
+        * giv-histo.gob, giv-contrast.gob : Added interactive display of the gray level.
+
+        * SConstruct: Added install of documentation to giv for 'scons install' under Linux.
+
+        * giv-win.cc: Update date to 2011.
+
+2011-03-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * SConstruct: Made win32 plugin path absolute ./plugins relative to installation directory.
+
+        * giv.wine.nsi.in: Fixed bug that excluded loaders in installer.
+
+2011-03-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-contrast.gob, giv-histo.gob: Added histogram scale.
+
+2011-03-25  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * Sconstruct: Rewritten installed to use fedora mingw installation.
+
+        * tiff.c: Added tiff plugin.
+
+        * fits.c, image.c, giv-win.gob: Support loading 3D fits files.
+        They may be traversed with the Up/Down keys.
+
+2010-02-25  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * dicom.c : Support loading of dicom images with the extension
+        dcm even though they have not the bytes DICM at pos 80.
+
+2010-02-10  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Hide the colorbar for 8-bit RGBA images.
+
+        * givimage.c : Fixed get_value_rgb and get_value_rgba that returned
+        info for the wrong pixel.
+
+2010-02-09  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Only open regular files for file type testing.
+
+2010-01-16  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/plis/plis.cc: Fixed bug in use of vsnprintf in plis.cc
+        discovered by Sebastien Dinot.
+
+2010-01-14  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/plugins/dcmtk: Added subset of dcmtk to improve dicom support!
+
+        * Released version 0.9.16
+
+2010-01-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-histo.c : Finally did some work for interactively
+        changing the histogram.
+
+2009-12-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/givimage.c: Added support for loading png files
+        with alpha channel.
+
+2009-11-09  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-win.gob : Add files supported by a plugin to the
+        round-robin list of files for the directory.
+
+        * src/plugins/dicom.c : A first go at a useful dicom plugin.
+
+        * src/plugins/pgm.c : A dummy plugin.
+
+2009-11-07  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-plugin.[ch]: Start of plugin architecture for giv.
+
+2009-10-19  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-win.gob : Added auto reload of images.
+
+        * src/giv-win.gob : Rewrite to support GivImage.
+
+        * src/givimage.c, src/givimage.h : Support for float
+        and 32-bit images.
+
+2009-10-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/Makefile.am: Fixed make distcheck errors.
+
+        * src/giv-parser.cc, GivRenderer.cc : Added option $scale_font
+        that makes font scale with the data.
+
+        * src/giv-parser.cc, GivRenderer.cc : Added option $pango_markup
+        that makes its possible to add rich markup to text strings.
+
+2009-10-12  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-parser.cc: Fixed bug in string parsing that effected
+        "$scale_marks 0" etc.
+
+        * src/giv-win.gob: Added option to scale fonts when zooming.
+
+        * src/giv-win.gob: Added keypress Return to reread the current
+        displayed image.
+
+        * src/giv-parser.cc, src/GivPainter*: Added support for text
+        alignment.
+
+2009-07-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * src/giv-win.gob : Fixed old bug due to which giv would
+        not load the first file but another file in the directory.
+
+2009-04-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* src/GivPainterCairo.cc: Changed minimum line width
+	to 3 for paint_by_index in order to make it easier
+	to hit a dataset with the mouse.
+
+2009-04-07  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* src/giv-widget.gob : Created a new "giv-in-a-widget"
+	widget. Still need to port giv-window to use it. Meanwhile,
+	it is a great solution for standalone programs that
+	want giv functionality.
+
+	* src/giv-window.gob : Renamed giv-widget to giv-window
+	in preparation of new giv-widget class.
+
+2009-03-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* src/giv-widget.gob : Added command line option for
+	doing export to image.
+
+	* src/giv-widget.gob : Added several command line options
+	for controlling initial zoom.
+
+2009-03-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* src/giv-widget.gob : Draw cross hair even if scrolling.
+
+2009-03-12  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Released version 0.9.14.
+
+	* doc/giv.phtml : Added documentation for new 'c' command.
+
+	* src/giv-widget.gob : Added 'c' for toggling cross hair display.
+
+	* src/giv-widget.gob : Fixked drawing of cross hair that
+	was broken.
+
+2009-03-10  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* src/gtk_image_viewer/gtk-image-viewer.gob : Bug work around
+	for zooms larger than 30 by calling a simple floating point
+	C-implementation that is slow, but correct.
+
+2009-02-10  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Makefile.am : Added scons files to EXTRA_DIST.
+
+2009-02-06  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Released version 0.9.13
+
+	* giv-widget.cc : Fixed pile-up of multiple image loading
+	events.
+
+	* giv-widget.cc: Change title to reflect current image shown
+	in multiple image files.
+
+	* giv-widget.cc: Popup an error dialog on failure on loading image
+	given on command line.
+
+	* doc : Updated documentation to new features.
+
+	* giv-widget.cc : Added export to svg, pdf, ps, and png.
+
+	* GivRenderer.cc: Fixed bug that line widths of marks
+	were no longer effected by $lw. The bug was due to bad
+	interaction with the quiver plots.
+
+	* src/dov_image_viewer/Makefile.am : Changed to use
+	dov-image-viewer-fixed.cc that gets around gob bug.
+
+2009-02-04  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Released version 0.9.12
+
+	* GivPainterAgg.cc, GivParser.cc : Added alpha support.
+
+	* Fixed warning in DovImageViewer related to scrolling.
+
+2008-11-21  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv.nsi.in: Added svg viewer for windows.
+
+	* giv-widget.gob : Fixed reading of svg files.
+
+2008-11-02  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Released version 0.9.11
+
+	* giv-widget.gob : Fixed crash due to the fact that the
+	adjustments were not propagated automatically from the
+	gtk_scrolled_window to the gtkimage_viewer in gtk-2.14
+	on Windows.
+
+2008-10-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Released version 0.9.10
+
+	* giv-widget.gob : Added Quiver Zoom to tools menu.
+
+	* GivParser.cpp : Added proxy for setting quiver_scale of all
+	datasets.
+
+2008-10-24  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* GivRenderer.cpp : Added preliminary support for quiver
+	drawing.
+
+2008-10-13  Dov Grobgeld  <dov@grower.grobnet>
+
+	* giv-widget.gob : Returned Win32 printing backend to draw
+	vector graphics as the earlier cairo bug has been resolved.
+
+	* Updated the Windows gtk runtime libraries to the latest
+	available versions. (cairo 1.8.0, gtk+ 2.14.3, etc)
+
+2008-10-02  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.9
+
+	* Fixed bug in info window due to which not all filenames
+	were being displayed in the info window.
+
+	* giv-widget.gob : Fixed bug in info window which caused 
+	current file not to be displayed in the info window title.
+	
+	* giv-widget.gob : Display comment in info box.
+
+	* giv-widget.gob : Added function to read comments from
+	pnm files.
+
+2008-09-29  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob : Created callback to handle flip callbacks.
+
+	* GivParser.cc, GivParser.h : Added callback method
+	and parsing for orientation change ($VFLIP, $NOVFLIP, $HFLIP, 
+	$NOHFLIP).
+
+2008-09-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.8
+
+2008-09-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob : Added support for Up and Down 
+
+2008-09-17  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob: Fixed crash when running giv without 
+	any filenames.
+
+2008-09-16  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.6
+
+	* giv-widget.gob, dov-image-viewer.gob : Much improved
+	(if still not totally solved) flickering and redrawing
+	problems.
+
+	* giv-widget.gob: Workaround for bug when one dimension is
+	too narrow.
+
+2008-08-03  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob: Made printing on windows use drawing of 
+	image only to get around vector drawing bug in cairo win32
+	backend.
+
+2008-08-01  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv.wine.nsi.in : Added several missing files that made 
+	the running of gdk-pixbuf-query during installation fail.
+
+2008-07-31  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.5
+
+	* giv-widget.gob: Added printing of images.
+
+	* giv-widget.gob: Added cropping and outer rectangle for printing.
+
+2008-07-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob : Added flag -join that joins all giv and image
+	files read on the command line.
+
+2008-07-23  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.4
+
+	* GivRenderer.cc : Fixed bug in clipping due to negative scales.
+
+2008-07-22  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* GivParser.cc, giv-backstore.cc, giv-widget.cc : Initialized
+	GdkColor. This solved crash in printing.
+
+	* GivPainterCairo.cc : Added arrow drawing support.
+
+2008-07-20  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* GivPainterCairo.cc : Added text support (copied from
+	GivPainterAgg.cc).
+
+	* GivPainterCairo.cc : Dropped path in fill and stroke
+	when color is transparant.
+
+	* GivRenderer.cc : Fixed color of outline when color=none.
+
+2008-07-18  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* GivParser.cc : Fixed data bounding box with respect to 
+	negative coordinates.
+
+	* giv-widget.gob : Added option '-n' that turns off auto fit.
+	This is nice for images.
+
+	* dov-image-viewer.gob : Swapped zoom in and zoom out with
+	mouse wheel to mirror behavior of google earth.
+
+	* GivRenderer.cpp : Clipped marks which solves render problem
+	and speeds up drawing.
+
+2008-06-15  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-mark-tree-dialog.gob: Applied casting patch from Pascal
+	Bleser <pascal.bleser@opensesu.org> to support 64bit architecture.
+
+2008-06-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.3
+
+        * giv.wine.nsi.in: Reduced size of windows installation. Added
+	support for svg.
+
+2008-05-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* dov-image-viewer.gob: Fixed bug in non-continous scaling
+	when scrollbars appear.
+
+2008-05-21  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.2.
+
+	* giv-widget.gob: Added program icon on Posix systems.
+
+	* dov-image-viewer.gob: Added checkerboard behind transparent
+	pixbufs.
+
+	* GivRenderer.cc: Don't clip filled polygon lines at all since
+	that is much more difficult than clipping lines.
+
+	* GivPainterAgg.cc: Fixed bug due to which some line segments 
+	were not drawn.
+
+	* dov-image-viewer.gob : Changed behaviour of zooming through
+	keyboard and mouse wheel to zoom around center of window and 
+	not around mouse position.
+
+	* gtk-widget.gob: Fixed problem that scrollbars are never shown.
+
+	* configure.in: Fixed erroneous dependancy on gtkimageviewer.
+
+2008-05-19  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* dov_image_viewer.gob : Added method set_fill_on_resize() to
+	control the auto resizing.
+
+	* dov_image_viewer.gob : Made autofill integral to resizing
+	the widget. 
+
+2008-05-16  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Added: normalize, and equalize, fixed bug in color table.
+
+	* Made resizing window do autofill. Should probably show
+	  same data instead...
+
+2008-05-09  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Release of version 0.9.0.
+
+2008-05-07  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* examples/arrowsAdded arrow example
+
+	* giv-parser.h, giv-parser.cc, GivPainter.h, GivPainter.cc:
+	Added support for drawing arrows.
+
+2008-03-31  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* giv-widget.gob : Added Key right and left for moving backwards
+	and forwards in files.
+
+	* GivParser.cc: Added the word $hide that initially hides
+	the dataset.
+
+2008-01-15  Dov Grobgeld  <dov.grobgeld@orbotech.com>
+
+	* Fixed registry installation under then name givagg instead of
+	gem-tcl.
+
+2008-01-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+	* Initial support for using space and backspace for stepping
+	between files in a directory.
+
+
 2006-12-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
 	* giv.c: Erased debug stuff that I forgot in the code.

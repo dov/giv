@@ -1,0 +1,15 @@
+Import('env')
+
+env['OUTLIBDIR'] = "#/src/plugins/dcmtk/${arch}/${VARIANT}"
+
+env.Append(CPPPATH=["#/src/plugins/dcmtk/config/include",
+                    "#/src/plugins/dcmtk/ofstd/include",
+                    "#/src/plugins/dcmtk/dcmdata/include",
+                    ] + env['CPPPATH'],
+           LIBPATH = env['OUTLIBDIR'],
+           )
+
+SConscript(["dcmdata/SConscript",
+            "ofstd/SConscript"],
+           exports = 'env')
+

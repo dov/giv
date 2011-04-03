@@ -1,0 +1,156 @@
+//======================================================================
+//  giv-info.gob - An info window
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Sat Jan 19 20:48:24 2008
+//----------------------------------------------------------------------
+requires 2.0.0
+
+%headertop{
+#include <gtk/gtk.h>
+#include "giv-win.h"
+%}
+
+%{
+static void on_changed(GtkAdjustment *adjustment,
+                       gpointer       user_data);
+static void on_value_changed(GtkAdjustment *adjustment,
+                             gpointer       user_data);
+
+%}
+
+class Giv:Info from Gtk:Dialog
+{
+    private GtkWidget *w_giv;
+    private GtkWidget *w_text_view;
+    private GtkWidget *w_scrolled_window;
+    private GtkAdjustment *vadj;
+    private gboolean need_readjust_vadj = FALSE;
+    private gdouble preserve_vadj_value = 0;
+    
+    public GtkWidget *
+    new (GivWin *w_giv)
+    {
+        GivInfo *self = GIV_INFO(GET_NEW);
+        GtkWidget *vbox;
+
+        gtk_window_set_default_size (GTK_WINDOW (self), 400, 350);
+        selfp->w_giv = GTK_WIDGET(w_giv);
+        gtk_window_set_transient_for(GTK_WINDOW(self),
+                                     GTK_WINDOW(w_giv));
+        gtk_window_set_destroy_with_parent(GTK_WINDOW(self), TRUE);
+        gtk_dialog_add_buttons(GTK_DIALOG(self),
+                               GTK_STOCK_CLOSE,
+                               GTK_RESPONSE_ACCEPT,
+                               NULL);
+
+        vbox = GTK_DIALOG(self)->vbox;
+        selfp->w_scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+        selfp->vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(selfp->w_scrolled_window));
+        g_signal_connect(selfp->vadj, "changed",
+                         G_CALLBACK(on_changed), self);
+        g_signal_connect(selfp->vadj, "value-changed",
+                         G_CALLBACK(on_value_changed), self);
+
+        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (selfp->w_scrolled_window),
+                                        GTK_POLICY_AUTOMATIC,
+                                        GTK_POLICY_AUTOMATIC);
+        gtk_box_pack_start (GTK_BOX (vbox), selfp->w_scrolled_window, TRUE, TRUE, 0);
+        selfp->w_text_view = gtk_text_view_new();
+        gtk_text_view_set_editable(GTK_TEXT_VIEW(selfp->w_text_view),
+                                   false);
+        gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(selfp->w_text_view),
+                                         false);
+        GtkTextBuffer *text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(selfp->w_text_view));
+
+        gtk_text_buffer_create_tag(text_buffer,
+                                   "monospace",
+                                   "font", "Monospace",
+                                   NULL);
+        
+        PangoTabArray *tab_ary = pango_tab_array_new_with_positions(1,
+                                                                    TRUE,
+                                                                    PANGO_TAB_LEFT,
+                                                                    120
+                                                                    );
+        gtk_text_view_set_tabs(GTK_TEXT_VIEW(selfp->w_text_view),
+                               tab_ary);
+        pango_tab_array_free(tab_ary);
+
+        gtk_container_add(GTK_CONTAINER(selfp->w_scrolled_window),
+                          selfp->w_text_view);
+        
+        return GTK_WIDGET(self);
+    }
+
+    public void
+    set_info(self,
+             const gchar *window_name,
+             const gchar *info_text)
+    {
+        GtkTextBuffer *text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(selfp->w_text_view));
+        gtk_window_set_title(GTK_WINDOW(self),
+                             window_name);
+
+
+        // Get scroll position before text insertion and return it
+        // to same position after insertion.
+        selfp->preserve_vadj_value = gtk_adjustment_get_value(selfp->vadj);
+
+        GdkRectangle visible_rect;
+        gtk_text_view_get_visible_rect(GTK_TEXT_VIEW(selfp->w_text_view),
+                                       &visible_rect);
+
+        // Turn text into valid utf-8 by putting question marks instead
+        // of junk.
+        GString *clean_text = g_string_new("");
+        const gchar *str = info_text;
+        const gchar *end = NULL;
+        while(!g_utf8_validate(str, -1, &end)) {
+            g_string_append_len(clean_text, str, end-str);
+            str = end+1;
+            g_string_append(clean_text, "?");
+        }
+        g_string_append(clean_text, str);
+
+        gtk_text_buffer_set_text(text_buffer,
+                                 clean_text->str,
+                                 -1);
+        g_string_free(clean_text, TRUE);
+
+        // Make text monospace
+        GtkTextIter iter_start, iter_end;
+        gtk_text_buffer_get_start_iter(text_buffer, &iter_start);
+        gtk_text_buffer_get_end_iter(text_buffer, &iter_end);
+        gtk_text_buffer_apply_tag_by_name(text_buffer,
+                                          "monospace",
+                                          &iter_start, &iter_end);
+    }
+
+    override (Gtk:Dialog) void
+    response (Gtk:Dialog *self,
+              gint response_id)
+    {
+        gtk_widget_destroy(GTK_WIDGET(self));
+    }
+}
+
+
+%{
+// Hacks to get vertical adjustment stay in the same place on scrolling.
+static void on_changed(GtkAdjustment *adjustment,
+                       gpointer       user_data)
+{
+    GivInfo *self = GIV_INFO(user_data);
+    if (selfp->need_readjust_vadj)
+        gtk_adjustment_set_value(selfp->vadj, selfp->preserve_vadj_value);
+}
+
+static void on_value_changed(GtkAdjustment *adjustment,
+                             gpointer       user_data)
+{
+    GivInfo *self = GIV_INFO(user_data);
+    selfp->need_readjust_vadj = fabs(selfp->vadj->value - selfp->preserve_vadj_value) >= selfp->vadj->step_increment/2;
+}
+
+%}

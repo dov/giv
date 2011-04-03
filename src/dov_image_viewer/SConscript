@@ -1,0 +1,47 @@
+# -*- python -*-
+import re
+Import('env')
+
+#env.ParseConfig("env PKG_CONFIG_PATH=${PKG_CONFIG_PATH} pkg-config --cflags --libs gtk+-2.0")
+
+# The following python subroutine and the subsequent scons command
+# shows how to do general template filling. This system should perhaps
+# be put in a separate directory, or even be made part of scons.
+def patch_src(env, target, source):
+    out = open(str(target[0]), "wb")
+    inp = open(str(source[0]), "r")
+
+    in_area = 0
+    for line in inp.readlines():
+        if in_area:
+            line = re.sub('G_TYPE_OBJECT',
+                          'GTK_TYPE_ADJUSTMENT',
+                          line)
+            if re.search(r'\);', line):
+                in_area=0
+        else:
+            if re.search(r"object_signals\[SET_SCROLL_ADJUSTMENTS_SIGNAL\]",line):
+                in_area=1
+
+        out.write(line)
+        
+    out.close()
+    inp.close()
+
+env.Library("dov-image-viewer",
+            "dov-image-viewer-fixed.cc")
+
+env.Command("dov-image-viewer-fixed.cc",
+            ["dov-image-viewer.cc"],
+            patch_src)
+
+for gob in ("dov-image-viewer",
+            ) :
+    env.Command([gob + ".cc",
+                 gob + ".h",
+                 gob + "-private.h"
+                 ],
+                [gob + ".gob"],
+                ["gob2 -o ${SOURCES.dir} --for-cpp $SOURCES"]
+                )
+

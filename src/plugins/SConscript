@@ -1,0 +1,37 @@
+Import('env')
+libs=['giv-widget','gtkimageviewer_local','aggx','plis','pcrex']
+for p in [#'pgm.c',
+          'npy.c',
+#          'simple_dicom.c'
+          ]:
+    env.SharedLibrary(p,
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis']+env['LIBPATH'],
+                      LIBS = ['giv-image']+env['LIBS']
+                      )
+
+# Change this to Maemo
+if not env['SBOX']:
+    env.ParseConfig('${PKGCONFIG} --cflags --libs cfitsio')
+    env.SharedLibrary('fits',
+                      ['fits.c'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis']+env['LIBPATH'],
+                      LIBS=['cfitsio','giv-image']+env['LIBS'],
+                      )
+    
+    env.SharedLibrary('dicom',
+                      ['dicom.cc'],
+                      CPPPATH=['dcmtk/dcmdata/include',
+                               'dcmtk/ofstd/include',
+                               'dcmtk/config/include',
+                               '..'
+                               ] + env['CPPPATH'],
+                      LIBPATH=['..','#/src/plugins/dcmtk/${arch}/${VARIANT}'] + env['LIBPATH']+env['LIBPATH'],
+                      LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
+    env.SharedLibrary('tiff',
+                      ['tiff.c'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
+                      LIBS=['libtiff','giv-image']+env['LIBS'],
+                      )
+    
+    SConscript('dcmtk/SConscript',
+               exports='env')

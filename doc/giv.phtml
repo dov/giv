@@ -1,9 +1,9 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<!-- process with eperl (from CPAN) to produce html file>
+<!-- process with eperl (from http://marginalhacks.com/Hacks/ePerl/) to produce html file> -->
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld, 20-Nov-2006 -->
+<!-- Changed by: Dov Grobgeld, 18-Jul-2008 -->
 </head>
 <:
 
@@ -84,39 +84,46 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 :>
 
 <body bgcolor=white>
-<h1 align=center>A Manual for Giv<br>
+<h1 align=center>A Manual for Giv<br></h1>
+<center>
+  <font size=+2>The</font>
+  <font size=+4 color=#000080>G</font><font size=+2>(reat|tk|NU)</font>
+  <font size=+4 color=#000080>I</font><font size=+2>mage and</font>
+  <font size=+4 color=#000080>V</font><font size=+2>ector viewer</font><br>
+  </font>
+</center>
+<h2 align=center>
+    <img src="giv-logo-150.png"><br>
+    <font size=+2>Version 0.9.17</font><br>
     <font size=-1>Dov Grobgeld</font><br>
-    <font size=-1><a href="mailto:dov.grobgeld@weizmann.ac.il">dov.grobgeld@weizmann.ac.il</a></font><br>
-    <font size=-1>Last modified: 2006-11-20</font>
-</h1>
-
-<: section("Name") :>
-<blockquote>
-  giv - The 
-  <font size=+2 color=#000080>G</font>(reat|tk|NU)
-  <font size=+2  color=#000080>I</font>mage
-  <font size=+2  color=#000080>V</font>iewer
-</blockquote>
-
-<: section("Syntax") :>
-<blockquote>
-  <pre>
-    giv {options} img
-  </pre>
-</blockquote>
+    <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
+    <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
+    <font size=-1>Last modified: 2010-02-25   </font>
+</h2>
 
 <: section("Description") :>
 <blockquote>
-  giv is an image viewer with the following advantages:
+  giv is an image viewer with the following features:
   <UL>
-    <LI> Based on the gtk_image_viewer widget. </LI>
-    <LI> It doesn't suffer from the commercial restrictions of xv. </LI>
-    <LI> It can display marks on top of an image. </LI>
-    <LI> It can display monochrome components of a color image.</LI>
-    <LI> In the future it should show histograms on top of images. </LI>
-    
+    <LI> Based on the dov_image_viewer gtk widget (included), which
+      provides small-memory zoomup of images.</LI>
+    <li>Support for 8-bit, floating point, 16-bit, and 32-bit gray and color images.
+    <li>Plugin support for external loaders.
+    <li>Includes loaders for the npy-format, FITS-format, and a simple DICOM 
+  reader.
+    <li>A contrast tool  allows interactively changing
+  contrast and brightness.
+    <LI> It can display lines and marks on top of an image with sub
+      pixel accuracy. </LI>
+    <LI> Pseudo coloring of gray level images.</LI>
     <LI> It is especially suited for computational geometry and vision
-    scientific and educational applications.</LI>
+      scientific and educational applications.</LI>
+    <LI> Hierarchical layering of data sets that can be turned on and off.</LI>
+    <LI> Measuring distance in image. </LI>
+    <LI> Using agg - Anti-Grain Geometry - for fast and accurate on 
+      screen drawing. </LI>
+    <li> Export and print to png, svg, postscript, and pdf thanks to cairo.
+    <LI> Cross platform on posix and Windows through gtk. </LI>
   </UL>
 </blockquote>
 
@@ -138,15 +145,20 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     
 </blockquote>
 
-<: subsection("Marks") :>
+<: subsection("The giv files") :>
 <blockquote>
-  giv has the cabability to read marks files describing annotations that
-  are drawn on top of the image. The annotations are loaded in marks files.
-  The marks files contains one or more data sets. The data sets consist of
+  giv has the cabability to read files describing vector annotations that
+  are drawn on top of the image, or make up a drawing on their own.
+  The annotations are loaded in file known as giv files.
+  The giv files contains one or more data sets. A data set consists of
   properties, followed by the list of data points.
   <p>
-  The properties all start with the $ sign. Here is a list of the properties
-  supported:<p>
+    A few of the properties are global and they effect not only
+    the dataset, e.g. the <tt>$image</tt> property that is used to
+    load a different image.
+  <p>
+  The properties all start with the $ sign. Here is a list of all
+  the properties supported:<p>
   <: $row_idx=0;
      sub td {
         my @colors = ("#ffeeee", "#fbf2ee");
@@ -162,20 +174,23 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 	<th bgcolor=#eeeeff>Example
 	<th bgcolor=#eeeeff>Description
     <:TR():><: td() :>$color
-        <: td() :>$color pink3
-	<: td() :>The color of the data set
-	  
-    <:TR():><: td() :>$marks
-        <: td() :>$marks
-	<: td() :>Indicates that the no lines should be drawn
-			    for the data set.
+        <: td() :>$color pink3<br>$color gold/0.2<br>$color #ff0080/0.5
+	<: td() :>The color of the data set. If the color has a trailing "/<i>num</i>" then it is considered to be the alpha transperancy of the color.
+    <:TR():><: td() :>$outline_color
+        <: td() :>$color green
+	<: td() :>The outline color of a polygon
+    <:TR():><: td() :>$noline
+        <: td() :>$noline
+	<: td() :>Indicates that the no lines should be drawn for the data set.
 			    
     <:TR():><: td() :>$marks
         <: td() :>$marks circle
 	<: td() :>The type of the mark. Valid marks are:
 	    <ul>
 	      <li>circle
+	      <li>fcircle
 	      <li>square
+	      <li>fsquare
 	    </ul>
 	  
     <:TR():><: td() :>$scale_marks
@@ -194,47 +209,80 @@ sub code_snippet {   # usage: code_snippet($filename, title)
         <: td() :>$mark_size 15
         <: td() :>Specify the size of the marks in pixels.
 
-    <:TR():><: td() :>$line
-        <: td() :>$line
-        <: td() :>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
-
     <:TR():><: td() :>$lw
         <: td() :>$lw 3
-        <: td() :>Line width.
+        <: td() :>Line width. This also affects the width of the outline marks (e.g. circle and square).
+    <:TR():><: td() :>$image
+        <: td() :>$image maja.pgm
+        <: td() :>Reference image to be shown below the image. Several images lines may be given. The user may rotate between the different images through the shift-Up and shift-down key bindings.
+    <:TR():><: td() :>$arrow
+        <: td() :>$arrow start
+        <: td() :>Indicate that arrows should be added to the lines. Arrows may be drawn at the start, of the line, the end of the line, or both by giving the keywords "start", "end", "both" after $arrow.
+    <:TR():><: td() :>$font
+        <: td() :>$font Monospace 24
+        <: td() :>Font to be used for drawing text. The name of the font
+          is according to requirements of pango font string representation.
+    <:TR():><: td() :>$balloon
+        <: td() :>$balloon Suspect
+        <: td() :>Adds another line to the popup balloon that is shown
+          when the balloon popups have been turned on (in the view menu)
+          and the mouse hovers over the dataset. 
+    <:TR():><: td() :>$polygon
+        <: td() :>$polygon
+        <: td() :>Indicates that the dataset should be filled.
+    <:TR():><: td() :>$def_style
+        <: td() :>$def_style Ref $color green
+        <: td() :>Defines a new style that may be referenced through the $style keyword.
+    <:TR():><: td() :>$style
+        <: td() :>$style Ref
+        <: td() :>Imports all dataset properties from the names style. This is simply a shortcut to explicitely writing all style properties.
+    <:TR():><: td() :>$path
+        <: td() :>$path reference/pads
+        <: td() :>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the name.
+    <:TR():><: td() :>$quiver_color
+        <: td() :>$color green
+	<: td() :>The color of a quiver arrow
+    <:TR():><: td() :>$quiver_scale
+        <: td() :>$quiver_scale 100
+	<: td() :>The original scale of the quiver plot
   </table>
   
 </blockquote>
 
-<: subsection("Mark example") :>
+<: subsection("Text annotations") :>
 <blockquote>
-<: code_snippet("example.marks") :>
+Text is drawn by adding the "T" control character in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left.
+<p>
+The following example illustrates the various anchor options.
+<: code_snippet("text-align.giv") :>
+<p>
+The following screenshot shows the various alignments relative to the
+anchor points.
+<center>
+  <table>
+    <tr><td><img src="text-align-screenshot.png">
+    </tr>
+  </table>
+<center>
+</blockquote>
+
+<: subsection("Giv file example") :>
+<blockquote>
+Here is an extensive giv file example showing off the various features of
+giv. The result is shown in the screenshow below.
+
+<: code_snippet("example.giv") :>
+<br><br>
   <table>
     <tr><td><img src="marks-view-1.png">
 	<td><img src="marks-view-2.png">
     </tr>
-    <tr><th>Marks at default zoom
-	  <th>Marks zoomed in by 4
+    <tr><td align=center>Marks at default zoom
+	<td align=center>Marks zoomed in. The balloon popup has been turn on.
     </tr>
   </table>
 	    
-  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations is the physical memory and the speed of the CPU.
-</blockquote>
-
-<: section("Command line options") :>
-<blockquote>
-  <: $row_idx = 0 :>
-<table>
-    <: TR() :><th bgcolor=#eeeeff>Option
-	<th bgcolor=#eeeeff>Description
-  
-<: TR() :><: td() :>-marks markfile<: td() :>Specify a marks file.
-<: TR() :><: td() :>-nl<: td() :>Don't draw lines by default.
-<: TR() :><: td() :>-ms ms<: td() :>Specify default mark size.
-<: TR() :><: td() :>-sm<: td() :>Marks should scale by default.
-<: TR() :><: td() :>-P<: td() :>Draw marks by default.
-<: TR() :><: td() :>-lw lw<: td() :>Default line width.
-<: TR() :><: td() :>-expand e<: td() :>Initial expansion.
-</table>
+  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations are the physical memory and the speed of the CPU.
 </blockquote>
 
 <: section("Interaction") :>
@@ -246,20 +294,102 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 <: TR() :><: td() :>q
 	  <: td() :>Quit
 <: TR() :><: td() :>=<br>Ctrl-B1
-	  <: td() :>Zoom in
+	  <: td() :>Zoom in by a factor of 2
 <: TR() :><: td() :>-<br>Ctrl-B3
-	  <: td() :>Zoom out
-<: TR() :><: td() :>t
-	  <: td() :>Shrink wrap
-<: TR() :><: td() :>h
-	  <: td() :>Histogram equalization
-<: TR() :><: td() :>n
-	  <: td() :>Normal view.
-<: TR() :><: td() :>N
-	  <: td() :>Normalize histogram.
-<: TR() :><: td() :>r
-	  <: td() :>Reset histogram
+	  <: td() :>Zoom out by a factor of 2
+<: TR() :><: td() :>Scroll wheel up
+	  <: td() :>Zoom in by a factor of 1.1
+<: TR() :><: td() :>Scroll wheel down
+	  <: td() :>Zoom out by a factor of 1.1
+<: TR() :><: td() :>Shift+scroll wheel up
+	  <: td() :>Zoom in of quiver vectors by a factor of 1.1
+<: TR() :><: td() :>Shift+Scroll wheel down
+	  <: td() :>Zoom out of quiver vectors by a factor of 1.1
+<: TR() :><: td() :>f
+	  <: td() :>Fill data to window
 <: TR() :><: td() :>B3
 	  <: td() :>Popup options menu.
+<: TR() :><: td() :>c
+	  <: td() :>Toggle cross hair.
+<: TR() :><: td() :>m
+	  <: td() :>Toggle overlay.
+<: TR() :><: td() :>o
+	  <: td() :>Popup dataset browser.
+<: TR() :><: td() :>1
+	  <: td() :>Sets one image pixel equal to one screen pixel.
+<: TR() :><: td() :>s
+	  <: td() :>Shrink wrap
+<: TR() :><: td() :>v
+	  <: td() :>Vertical flip
+<: TR() :><: td() :>h
+	  <: td() :>Horizontal flip
+<: TR() :><: td() :>i
+	  <: td() :>Show information window
+<: TR() :><: td() :>Left/Space
+	  <: td() :>Show next image in directory.
+<: TR() :><: td() :>Right/BackSpace
+	  <: td() :>Show previous image in directory.
+<: TR() :><: td() :>Shift-Down
+	  <: td() :>Choose next image when several $image references are given
+<: TR() :><: td() :>Shift-Up
+	  <: td() :>Choose previous $image image
 </table>
+</blockquote>
+
+<: section("Gallery") :>
+<blockquote>
+  <table>
+    <tr><td align=center><img src="gallery-europe.jpg">
+	<td align=center><img src="gallery-europe-zoom.jpg">
+    </tr>
+    <tr><td align=center width=25%>A heavy dataset from the CIA world map data of Europe comprising more than 400,000 vector elements.<br><br>
+	<td align=center width=25%>Zoom-in of Shetland and Orkney islands off the coast of Scotland.<br><br>
+    </tr>
+    <tr>
+	<td align=center><img src="gallery-cat-contour.jpg">
+        <td align=center><img src="gallery-cat-contour-sub-pixel.png">
+    </tr>
+    <tr> <td align=center width=25%>The result of a contour finding algorithm
+          shown on top of the image. The overlay may be toggled by
+          the key 'm'.<br><br>
+	<td align=center width=25%>Zoom in of image shows contour
+          sub pixel accuracy.<br><br>
+    </tr>
+    <tr><td align=center><img src="gallery-quiver.jpg">
+        <td align=center><img src="gallery-voronoi.png">
+    </tr>
+    <tr><td align=center valign=top>A quiver plot.
+         <td align=center width=25%>giv showing a Voronoi diagram.
+           The dataset browser is also shown. <br><br>
+    </tr>
+    <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
+        <td align=center><img src="alpha-example.jpg">
+    </tr>
+    <tr>
+      <td align=center valign=top>Pseudo color of a gray level image.
+      <td>Overlays may be painted with transparency as in this "annotation"
+        of the Lena image.
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><img src="giv-m51-with-contrast-tool-screenshot.png" width=600></td>
+    </tr>
+    <tr>
+    <td colspan="2" align="center">The Contrast Tool with a 16-bit image</td>
+    </tr>
+  </table>
+</blockquote>
+
+<: section("Future plans") :>
+<blockquote>
+  Here is a list of possible future development. The direction taken
+  depends on user feedback!
+  <UL>
+    <LI> Support 16-bit, 32-bit, float, and double images. </LI>
+    <LI> Create a framework for external image loader DLL's. </LI>
+    <LI> Create loaders for HDF5 and Dicom. </LI>
+    <LI> Create a property window to show meta data. E.g. data from a dicom file. </LI>
+    <LI> Speed up dealing with huge datasets. </LI>
+    <LI> Create a measuring tool for measuring areas, histograms, etc. </LI>
+    <LI> xmlrpc interface for remote control. </LI>
+  </UL>  
 </blockquote>

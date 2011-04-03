@@ -1,0 +1,12 @@
+import glob
+
+Import('env')
+
+env.Library('pcrex',
+            glob.glob('*.c'),
+            CPPDEFINES=['PCRE_STATIC',
+                        'HAVE_CONFIG_H'])
+#env.Program("test-pcre",
+#            "test-pcre.c",
+#            LIBPATH=["."],
+#            LIBS = ["pcrex"])

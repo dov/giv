@@ -1,0 +1,31 @@
+$path frame
+$color red
+0 0
+100 0
+100 100
+0 100
+0 0
+
+$path arrow both
+$arrow both 
+$color green
+$lw 2
+10 10
+90 90
+
+$path arrow start
+$arrow start
+$color green
+$lw 2
+45 40
+65 20
+
+$path arrow end
+$arrow end
+$color green
+$lw 1
+55 50
+75 30
+
+
+

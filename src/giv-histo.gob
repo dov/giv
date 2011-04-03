@@ -1,0 +1,439 @@
+//======================================================================
+//  giv-histo.gob - A histogram widget.
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Mon Oct 19 19:44:25 2009
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include "giv-win.h"
+#include <gtk/gtk.h>
+%}
+
+%privateheader{
+enum FocusPos {
+    FOCUS_NONE,
+    FOCUS_LEFT,
+    FOCUS_RIGHT,
+    FOCUS_CENTER
+};
+%}
+
+%{
+%}
+
+class Giv:Histo from Gtk:Drawing:Area {
+    private GivImage *img;
+    private gdouble cursor_x1 = 50;
+    private gdouble cursor_x2 = 200;
+    private FocusPos focus_pos = FOCUS_NONE;
+    private gboolean dragging = FALSE;
+    private gdouble dragging_x = -1;
+    private gdouble dragging_y = -1;
+    private double contrast_gl_min = -1;
+    private double contrast_gl_max = -1;
+    private double img_gl_min = -1;
+    private double img_gl_max = -1;
+    private double scale = 1.0;
+    private double cursor_gl = 0;                              
+
+    private gint *histo = NULL
+        destroy {
+            if (histo)
+                g_free(histo);
+        };
+    private gint histo_max;
+    private gint margin = 20;
+
+    public GtkWidget *
+    new(GivImage *image)
+    {
+        GivHisto *self = GIV_HISTO(GET_NEW);
+        selfp->histo = g_new0(gint, 256);
+
+        gtk_widget_set_events(GTK_WIDGET(self),
+                              GDK_EXPOSURE_MASK
+                              | GDK_STRUCTURE_MASK
+                              | GDK_SUBSTRUCTURE_MASK
+                              | GDK_PROPERTY_CHANGE_MASK
+                              | GDK_POINTER_MOTION_MASK 
+                              | GDK_BUTTON_PRESS_MASK
+                              | GDK_BUTTON_RELEASE_MASK
+                              | GDK_KEY_PRESS_MASK
+                              | GDK_LEAVE_NOTIFY_MASK
+                              | GDK_SCROLL_MASK);
+
+        giv_histo_set_image(self, image);
+        return GTK_WIDGET(self);
+    }
+
+    public void
+    set_image(self, GivImage *image)
+    {
+        if (!image)
+            return;
+        // calculate the histogram
+        giv_image_get_min_max(image,
+                              &selfp->img_gl_min, &selfp->img_gl_max);
+        selfp->contrast_gl_min = selfp->img_gl_min;
+        selfp->contrast_gl_max = selfp->img_gl_max;
+
+        // short cuts
+        double min = selfp->contrast_gl_min;
+        double max = selfp->contrast_gl_max;
+
+        selfp->histo_max = 0;
+        for (int i=0; i<256; i++) 
+            selfp->histo[i] = 0;
+
+        // Calculate histogram
+        for (int z_idx=0; z_idx<image->depth; z_idx++) {
+            for (int row_idx=0; row_idx<image->height; row_idx++) {
+                for (int col_idx=0; col_idx<image->width; col_idx++) {
+                    double gl = giv_image_get_value(image, row_idx, col_idx, z_idx);
+                    int idx = int(floor((gl-min)/(max-min)*255));
+                    if (idx < 256
+                        && idx >= 0)
+                    selfp->histo[idx]++;
+                }
+            }
+        }
+
+        for (int i=0; i<256; i++) 
+            if (selfp->histo[i] > selfp->histo_max)
+                selfp->histo_max = selfp->histo[i];
+
+        selfp->cursor_x1 = giv_histo_gl_to_canvas_x(self, min);
+        selfp->cursor_x2 = giv_histo_gl_to_canvas_x(self, max);
+
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
+    
+    override (Gtk:Widget) gboolean
+    expose_event (Gtk:Widget *_self,
+                  Gdk:Event:Expose *event)
+    {
+        GivHisto *self = GIV_HISTO(_self);
+        cairo_t *cr = gdk_cairo_create(GTK_WIDGET(self)->window);
+        int width = GTK_WIDGET(self)->allocation.width;
+        int height = GTK_WIDGET(self)->allocation.height;
+        double histo_width = width - 2*selfp->margin;
+        double histo_height = height - 2*selfp->margin;
+        
+        cairo_rectangle(cr, event->area.x, event->area.y,
+                        event->area.width, event->area.height);
+        cairo_clip(cr);
+
+        cairo_set_source_rgb(cr, 0.4,0.4,0.5);
+
+        // short cuts
+        double min = selfp->img_gl_min;
+        double max = selfp->img_gl_max;
+        cairo_set_line_width(cr, 1.0*histo_width/256);
+        for (int i=0; i<256; i++) {
+            double gl = min + i * (max-min)/256.0;
+            double x = giv_histo_gl_to_canvas_x(self, gl);
+            cairo_rectangle(cr,
+                            // selfp->margin+1.0*histo_width/256*i,
+                            x,
+                            height-selfp->margin,
+                            1.0*histo_width/256,
+                            -histo_height * selfp->histo[i] * selfp->scale/ selfp->histo_max);
+        }
+        cairo_fill(cr);
+
+        // Draw the cursors
+        giv_histo_draw_cursor(self, cr);
+
+        // Only notify listeners of the contrast change after
+        // we have redrawn the histogram!
+        giv_histo_contrast_changed(self,
+                                   selfp->contrast_gl_min,
+                                   selfp->contrast_gl_max);
+
+        // Draw the gl cursor
+        PangoLayout *layout = pango_cairo_create_layout(cr);
+        gchar *markup = g_markup_printf_escaped( "<span foreground='#151B54' size='small'>%.0f</span>", selfp->cursor_gl);
+        pango_layout_set_markup( layout, markup, strlen(markup) );
+        cairo_save(cr);
+        cairo_translate(cr,
+                        giv_histo_gl_to_canvas_x(self,selfp->cursor_gl),
+                        height-selfp->margin);
+        // Draw a small triangle
+        cairo_set_source_rgb(cr, 0.2,0.2,0.5);
+        cairo_move_to(cr,0,1);
+        cairo_line_to(cr,10,5);
+        cairo_line_to(cr,-10,5);
+        cairo_close_path(cr);
+        cairo_fill(cr);
+        
+        PangoRectangle ink_rect, logical_rect;
+        pango_layout_get_extents(layout,
+                                 &ink_rect,
+                                 &logical_rect);
+        cairo_translate(cr,
+                        -1.0/PANGO_SCALE * logical_rect.width/2.0,
+                        3);
+        pango_cairo_show_layout(cr,layout);
+        cairo_restore(cr);
+        g_object_unref(layout);
+
+        cairo_destroy(cr);
+        return TRUE;
+    }
+
+    public void
+    draw_cursor(self, cairo_t *cr)
+    {
+        // TBD get rid of cursor_x1 and cursor_x2 as object varibles
+        double min = selfp->contrast_gl_min;
+        double max = selfp->contrast_gl_max;
+        selfp->cursor_x1 = giv_histo_gl_to_canvas_x(self, min);
+        selfp->cursor_x2 = giv_histo_gl_to_canvas_x(self, max);
+
+        double x1 = selfp->cursor_x1;
+        double x2 = selfp->cursor_x2;
+        double xc = 0.5*(x1+x2);
+        int height = GTK_WIDGET(self)->allocation.height;
+        double h1 = 5;
+        double w1 = 5;
+        double r = 5;
+
+        cairo_move_to(cr, x1, height/2-3*h1);
+        cairo_line_to(cr, x1+2*w1, height/2-h1);
+        cairo_line_to(cr, x2-2*w1, height/2-h1);
+        cairo_line_to(cr, x2, height/2-3*h1);
+        cairo_line_to(cr, x2, height/2+3*h1);
+        cairo_line_to(cr, x2-2*w1, height/2+h1);
+        cairo_line_to(cr, x1+2*w1, height/2+h1);
+        cairo_line_to(cr, x1, height/2+3*h1);
+        cairo_close_path(cr);
+        cairo_set_source_rgba(cr, 0.5,0,0,0.5);
+        cairo_fill(cr);
+
+        // This could be cleaned up...
+        for (int i=0; i<2; i++) {
+            if (i==1)
+                cairo_set_source_rgba(cr, 0, 0,0,0.8);
+
+            cairo_rectangle(cr,
+                            x1-r, height/2-r,
+                            2*r,2*r);
+            if (i==0) {
+                if (selfp->focus_pos == FOCUS_LEFT) 
+                    cairo_set_source_rgba(cr, 1, 0,0,0.8);
+                else
+                    cairo_set_source_rgba(cr, 0.5, 0.5,0.5,0.8);
+
+                cairo_fill(cr);
+            }
+            else
+                cairo_stroke(cr);
+
+            cairo_rectangle(cr,
+                            xc-r, height/2-r,
+                            2*r,2*r);
+            
+            if (i==0) {
+                if (selfp->focus_pos == FOCUS_CENTER) 
+                    cairo_set_source_rgba(cr, 1, 0,0,0.8);
+                else
+                    cairo_set_source_rgba(cr, 0.5, 0.5,0.5,0.8);
+
+                cairo_fill(cr);
+            }
+            else
+                cairo_stroke(cr);
+
+            cairo_rectangle(cr,
+                            x2-r, height/2-r,
+                            2*r,2*r);
+            
+            if (i==0) {
+                if (selfp->focus_pos == FOCUS_RIGHT) 
+                    cairo_set_source_rgba(cr, 1, 0,0,0.8);
+                else
+                    cairo_set_source_rgba(cr, 0.5, 0.5,0.5,0.8);
+
+                cairo_fill(cr);
+            }
+            else
+                cairo_stroke(cr);
+
+        }
+
+#if 0
+        // Draw a black triangle around the left side
+        if (selfp->focus_pos == FOCUS_LEFT) {
+            cairo_move_to(cr, x1, height/2-3*h1);
+            cairo_line_to(cr, x1+2*w1+h1, height/2);
+            cairo_line_to(cr, x1, height/2+3*h1);
+            cairo_close_path(cr);
+            cairo_set_source_rgba(cr, 0, 0,0,0.9);
+            cairo_set_line_width(cr, 1);
+            cairo_stroke(cr);
+        }
+        if (selfp->focus_pos == FOCUS_RIGHT) {
+            cairo_move_to(cr, x2, height/2-3*h1);
+            cairo_line_to(cr, x2-2*w1-h1, height/2);
+            cairo_line_to(cr, x2, height/2+3*h1);
+            cairo_close_path(cr);
+            cairo_set_source_rgba(cr, 0, 0,0,0.9);
+            cairo_set_line_width(cr, 1);
+            cairo_stroke(cr);
+        }
+        if (selfp->focus_pos == FOCUS_CENTER) {
+            double xc = 0.5*(x1+x2);
+            cairo_move_to(cr, xc, height/2-3*h1);
+            cairo_line_to(cr, xc+w1+h1, height/2);
+            cairo_line_to(cr, xc, height/2+3*h1);
+            cairo_line_to(cr, xc-w1-h1, height/2);
+            cairo_close_path(cr);
+            cairo_set_source_rgba(cr, 0, 0,0,0.9);
+            cairo_set_line_width(cr, 1);
+            cairo_stroke(cr);
+        }
+#endif
+
+    }
+
+    private FocusPos xy_to_focus(self,
+                                 double x, double y)
+    {
+        double x1 = selfp->cursor_x1;
+        double x2 = selfp->cursor_x2;
+        int height = GTK_WIDGET(self)->allocation.height;
+        double h1 = 5;
+        double w1 = 5;
+        double xc = 0.5*(x1+x2);
+
+        if (x>=xc-2*w1 && x<=xc+2*w1
+            && y>height/2-3*h1
+            && y<height/2+3*h1) {
+            return FOCUS_CENTER;
+        }
+        else if (x>=x1-2*w1 && x<x1+2*w1
+            && y>height/2-3*h1
+            && y<height/2+3*h1) {
+            return FOCUS_LEFT;
+        }
+        else if (x>=x2-2*w1 && x<x2+2*w1
+            && y>height/2-3*h1
+            && y<height/2+3*h1) {
+            return FOCUS_RIGHT;
+        }
+        else
+            return FOCUS_NONE;
+    }
+    
+    public void set_contrast_min_max(self,
+                                     double min,
+                                     double max)
+    {
+        selfp->contrast_gl_min = min;
+        selfp->contrast_gl_max = max;
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
+
+    public void auto_contrast(self)
+    {
+        selfp->contrast_gl_min = selfp->img_gl_min;
+        selfp->contrast_gl_max = selfp->img_gl_max;
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
+
+    private double canvas_x_to_gl(self,
+                                  double x)
+    {
+        int width = GTK_WIDGET(self)->allocation.width;
+        double histo_width = width - 2*selfp->margin;
+        // short cuts
+        double min = selfp->img_gl_min;
+        double max = selfp->img_gl_max;
+
+        return min+ (x-selfp->margin) * (max-min)/histo_width;
+    }
+
+    private double gl_to_canvas_x(self,
+                                  double gl)
+    {
+        int width = GTK_WIDGET(self)->allocation.width;
+        double histo_width = width - 2*selfp->margin;
+        // short cuts
+        double min = selfp->img_gl_min;
+        double max = selfp->img_gl_max;
+
+        return selfp->margin+1.0*histo_width/(max-min)*(gl-min);
+    }
+
+    public void set_scale(self, double scale)
+    {
+      selfp->scale = scale;
+      gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
+    
+    override (Gtk:Widget) gboolean
+    motion_notify_event (GtkWidget *_self,
+                         GdkEventMotion *event)
+    {
+        GivHisto *self = GIV_HISTO(_self);
+        FocusPos focus_pos = giv_histo_xy_to_focus(self,
+                                                   event->x,event->y);
+        selfp->cursor_gl = giv_histo_canvas_x_to_gl(self, event->x);
+
+        if (selfp->dragging) {
+            double dx = event->x - selfp->dragging_x;
+            if (selfp->focus_pos == FOCUS_LEFT || selfp->focus_pos == FOCUS_CENTER)
+                selfp->cursor_x1 += dx;
+            if (selfp->focus_pos == FOCUS_RIGHT || selfp->focus_pos == FOCUS_CENTER)
+                selfp->cursor_x2 += dx;
+            gtk_widget_queue_draw(GTK_WIDGET(self));
+            selfp->dragging_x = event->x;
+            selfp->dragging_y = event->y;
+
+            // Convert cursor min and max to gl min and max and
+            // send event.
+            selfp->contrast_gl_min = giv_histo_canvas_x_to_gl(self,
+                                                              selfp->cursor_x1);
+            selfp->contrast_gl_max = giv_histo_canvas_x_to_gl(self,
+                                                              selfp->cursor_x2);
+        }
+        else if (focus_pos != selfp->focus_pos) 
+            selfp->focus_pos = focus_pos;
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+            
+        return true;
+    }
+
+    override (Gtk:Widget) gboolean
+    button_press_event (GtkWidget *_self,
+                        GdkEventButton *event)
+    {
+        GivHisto *self = GIV_HISTO(_self);
+
+        if (selfp->focus_pos != FOCUS_NONE) {
+            selfp->dragging = TRUE;
+            selfp->dragging_x = event->x;
+            selfp->dragging_y = event->y;
+            return TRUE;
+        }
+        return TRUE;
+    }
+
+    override (Gtk:Widget) gboolean
+    button_release_event (GtkWidget *_self,
+                          GdkEventButton *event)
+    {
+        GivHisto *self = GIV_HISTO(_self);
+        selfp->dragging = FALSE;
+        return true;
+    }
+
+    
+    signal last NONE (DOUBLE, DOUBLE)
+    void contrast_changed(self,
+                          double contrast_min,
+                          double contrast_max);
+}

@@ -1,0 +1,20 @@
+$def_style my-frame color blue
+$def_style s1 color red
+$def_style s1 lw 10
+$def_style s2 color green
+$def_style s2 lw 2
+
+$style my-frame
+0 0
+0 200
+200 200
+200 0
+0 0
+
+$style s1
+0 50
+200 50
+
+$style s2
+0 150
+200 150

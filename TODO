@@ -1,18 +1,19 @@
+Last edited: Thursday 2010-01-14 08:43 
+
+List of things to do.
+
 * Major cleanup of source.
-
-* Support for several views.
-
 * Support for an image browser.
-
-* Improve histogram.
-
-* Support for scientific image formats, e.g. Dicom and FITS.
-
-* Support for saving.
-
-* Printing of the image as well as the vector graphics.
-
-* Online help.
-
-* Text annotation.
-
+* Add save to plugins.
+* Support contrast changing also for color images.
+* Add plugins for:
+** HDF5
+** 16-bit png through libpng
+* Explore other libraries to build plugins uponin order to use their importers, e.g:
+** OpenCV - 
+** The CImg Library - http://cimg.sourceforge.net/
+** Other
+* Support high-bit color.
+* Fix annoying resize bugs on reload. Fix flickering!
+* Add 3d support to npy plugin.
+* Add zoom of histogram.

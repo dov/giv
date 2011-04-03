@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+
+$num = "\\d+\.\\d+";
+
+while(<>) {
+    if (!/^\$/) {
+        s/$num/sprintf("%f",$&*5.12)/ge;
+    }
+    print;
+}

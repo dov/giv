@@ -1,0 +1,2 @@
+; /usr/local/mingw32/bin/mingw32-dlltool --base-file /tmp/ccMPSh62.base --output-exp libagg.exp --dllname libagg.dll --as=/usr/local/mingw32/bin/mingw32-as --output-def agg/src/libagg.def --exclude-symbol=DllMainCRTStartup@12 --def /tmp/ccAgaL5T.def --output-lib agg/src/libagg.lib
+EXPORTS

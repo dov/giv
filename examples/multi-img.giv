@@ -1,0 +1,10 @@
+$image text1.png
+$image text2.png
+$image text3.png
+
+$color red
+50 50
+200 50
+200 200
+50 200
+50 50

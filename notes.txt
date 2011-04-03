@@ -1,0 +1,16 @@
+Saturday 2010-10-30 19:21 
+
+== Maemo installation ==
+
+* Don't install "complex plugins".
+* libpcre3 dependancy.
+* Have to get around vala and gob2 dependancy by adding generated files to git!
+* autoconf is badly broken.
+* Created if's in scons to not run vala or gob2 in sbox.
+* Optify requires:
+
+ cd /usr/lib
+ ln -s /opt/maemo/usr/lib/libgiv-image.so 
+ cd /usr/bin
+ ln -s /opt/maemo/usr/bin/giv
+ 
