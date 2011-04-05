@@ -38,6 +38,7 @@
       <menuitem name="MarkBrowser" action="ToolMarkBrowserAction" />
       <menuitem name="Contrast" action="ToolContrast" />
       <menuitem name="Info" action="ToolInfoAction" />
+      <menuitem name="Calibrate" action="ToolCalibrateAction" />
       <menuitem name="MeasureDistance" action="ToolMeasureDistanceAction" />
       <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
     </menu>

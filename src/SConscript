@@ -33,7 +33,9 @@ src_giv_exe = ["giv.cc",
                "giv-mark-tree-dialog.cc",
                "giv-contrast.cc",
                "giv-histo.cc",
-               "giv-color-map.c"
+               "giv-color-map.c",
+               "giv-calibrate-dialog.cc",
+               "dovtk-lasso.c",
                ]
 
 if ARGUMENTS.get('mingw', 0):
@@ -93,7 +95,8 @@ for gob in ("giv-win",
             "giv-info",
             "giv-widget",
             "giv-contrast",
-            "giv-histo"
+            "giv-histo",
+            "giv-calibrate-dialog"
             ) :
     env.Command([gob + ".cc",
                  gob + ".h",

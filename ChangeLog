@@ -1,3 +1,7 @@
+2011-04-05  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Changed measure tool to a caliper.
+
 2011-03-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-image.gob : Automatically convert monochrome gdkpixbuf images to monochrome GivImage. This fixes problem that autocontrast wasn't working for these images.

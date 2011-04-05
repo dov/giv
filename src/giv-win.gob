@@ -40,6 +40,7 @@ requires 2.0.0
 #include "time.h"
 #include <sys/stat.h>
 #include "givregex.h"
+#include "giv-calibrate-dialog.h"
 
 using namespace std;
 using namespace plis;
@@ -95,6 +96,7 @@ static void cb_view_cross_hair (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
 static void cb_view_auto_reload (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance (GtkAction *action, gpointer data);
+static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
 static void cb_menu_default (GtkAction *action, gpointer data);
 static void cb_menu_new_window (GtkAction *action, gpointer data);
@@ -177,6 +179,7 @@ static void
 apply_color_map(GivWin *self);
 
 static double sqr(double x);
+#if 0
 static void
 draw_measure_line(giv_backstore_t *backstore,
                   GtkWidget *image_viewer,
@@ -184,6 +187,7 @@ draw_measure_line(giv_backstore_t *backstore,
                   double x1, double y1);
 
 static giv_backstore_t *create_backstore(GtkWidget *image_viewer);
+#endif
 
 static void pixbuf_to_cairo(GdkPixbuf *img,
                             // output
@@ -218,6 +222,10 @@ cb_image_annotate(GivWidget *imgv,
                   gdouble scale_y,
                   gpointer user_data
                   );
+static void
+my_lasso_draw(cairo_t *cr,
+              gboolean do_mask,
+              gpointer user_data);
 
 // The following tables contain all the actions for both the menubar
 // and the popup menus.
@@ -301,7 +309,12 @@ static GtkActionEntry entries[] =
     NULL,
     "_Shrink Wrap", NULL,
     "Shrink Wrap",
-    G_CALLBACK (cb_menu_shrink_wrap) }
+    G_CALLBACK (cb_menu_shrink_wrap) },
+  { "ToolCalibrateAction",
+    NULL,    
+    "_Calibrate pixel size", NULL,
+    "Calibrate",
+    G_CALLBACK (cb_menu_calibrate) }
 };
 
 static GtkToggleActionEntry toggle_entries[] =
@@ -390,8 +403,8 @@ static gchar *last_export_image_path = NULL;
 
 %privateheader{
 #include "giv-mark-tree-dialog.h"
-#include "giv-backstore.h"
 #include "giv-contrast.h"
+#include "dovtk-lasso.h"
 %}
 
 class Giv:Win from Gtk:Window
@@ -403,6 +416,7 @@ class Giv:Win from Gtk:Window
     private GtkWidget *w_filechooser = NULL;
     private GtkWidget *w_mark_tree_dialog = NULL;
     private GtkWidget *w_contrast_view = NULL;
+    private GtkWidget *w_calibrate = NULL;
     private GtkWidget *w_info_dialog = NULL;
     private GtkWidget *w_balloon_window = NULL;
     private GtkWidget *w_balloon_label = NULL;
@@ -467,7 +481,8 @@ class Giv:Win from Gtk:Window
         destroy {
             giv_string_array_free(cb_names);
         };
-    private giv_backstore_t *back_store = NULL;
+    //   private giv_backstore_t *back_store = NULL;
+    private DovtkLasso *lasso = NULL;
     private gboolean is_measuring_distance = FALSE;
     private gboolean is_quiver_zoom = FALSE;
     private gint measure_point_index = 0;
@@ -486,6 +501,9 @@ class Giv:Win from Gtk:Window
     private gint idle_handle = -1;
     private time_t cached_mtime = 0;
     private gint current_slice = 0;
+    private double pixelsize =  1;
+    private gchar *pixelsize_unit = NULL;
+    private double last_measure_distance_in_pixels = -1;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -556,6 +574,7 @@ class Giv:Win from Gtk:Window
 
         selfp->cb_names = g_ptr_array_new();
         selfp->filename_list = g_ptr_array_new();
+        selfp->pixelsize_unit = g_strdup("");
 
         gtk_window_set_resizable(GTK_WINDOW(self), true);
         g_object_set(G_OBJECT(self),
@@ -1024,8 +1043,10 @@ class Giv:Win from Gtk:Window
         int img_in_list_idx = -1;
 
         giv_widget_popdown_balloon(GIV_WIDGET(selfp->w_imgv));
+#if 0
         if (selfp->back_store)
             giv_backstore_invalidate(selfp->back_store);
+#endif
         if (display_index < 0)
             return;
 
@@ -1625,11 +1646,21 @@ cb_motion_event(GtkWidget *widget,
         if (selfp->measure_point_index == 1) {
           // Calculate distance
           double m_dist = sqrt(sqr(selfp->measure_x1 - x) + sqr((selfp->measure_y1-y)));
-  
+          selfp->last_measure_distance_in_pixels = m_dist;
+          if (selfp->w_calibrate)
+              giv_calibrate_dialog_set_last_measure_distance_in_pixels(
+                GIV_CALIBRATE_DIALOG(selfp->w_calibrate),
+                m_dist);
+
+          selfp->measure_x2 = x;
+          selfp->measure_y2 = y;
+#if 0
           draw_measure_line(selfp->back_store,
                             widget,
                             selfp->measure_x1, selfp->measure_y1,
                             x,y);
+#endif
+          dovtk_lasso_update(selfp->lasso);
           if (!selfp->do_show_sub_pixel)
               g_string_sprintf(info_label, " (%.0f,%.0f) dist=%.3f (%.2f,%.2f)",
                                x,y,
@@ -2005,18 +2036,69 @@ cb_menu_measure_distance (GtkAction *action, gpointer data)
     
     selfp->is_measuring_distance = !selfp->is_measuring_distance;
     if (selfp->is_measuring_distance) {
-        selfp->back_store = create_backstore(selfp->w_imgv);
+      //        selfp->back_store = create_backstore(selfp->w_imgv);
+        selfp->measure_x1=-1;
+        selfp->measure_y1=-1;
+        selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
+                                          &my_lasso_draw,
+                                          self);
         if (!selfp->cursor_plus) {
             selfp->cursor_plus = gdk_cursor_new(GDK_TCROSS);
         }
         gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
     }
     else {
-        free_giv_backstore (selfp->back_store);
-        selfp->back_store = NULL;
+        //free_giv_backstore (selfp->back_store);
+        //selfp->back_store = NULL;
+        dovtk_lasso_destroy(selfp->lasso);
+        selfp->lasso = NULL;
         gdk_window_set_cursor(selfp->w_imgv->window, NULL);
     }
   
+    return;
+}
+
+static gint
+cb_calibrate_destroy(GtkWidget *dialog,
+                     gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+    selfp->w_calibrate = NULL;
+    return 0;
+}
+
+static void
+cb_calib_changed(GtkWidget *calib_dialog,
+                 double pixelsize,
+                 const char *unit,
+                 gpointer user_data)
+{
+    GivWin *self = GIV_WIN(user_data);
+
+    selfp->pixelsize = pixelsize;
+    g_free(selfp->pixelsize_unit);
+    selfp->pixelsize_unit = g_strdup(unit);
+    if (selfp->lasso)
+        dovtk_lasso_update(selfp->lasso);
+}
+
+static void
+cb_menu_calibrate (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+
+    if (selfp->w_calibrate)
+        return;
+    selfp->w_calibrate = giv_calibrate_dialog_new(self,
+                                                  selfp->pixelsize,
+                                                  selfp->pixelsize_unit,
+                                                  selfp->last_measure_distance_in_pixels);
+    g_signal_connect(selfp->w_calibrate, "destroy",
+                     G_CALLBACK(cb_calibrate_destroy), self);
+    g_signal_connect(selfp->w_calibrate, "calib-changed",
+                     G_CALLBACK(cb_calib_changed), self);
+    gtk_widget_show_all(selfp->w_calibrate);
+
     return;
 }
 
@@ -3166,6 +3248,7 @@ static double sqr(double x) {
     return x*x;
 }
 
+#if 0
 /** 
  * Draw the line used for measuring. Done by cairo.
  * 
@@ -3258,6 +3341,7 @@ create_backstore(GtkWidget *image_viewer)
   giv_backstore_set_line_cap_extra_store(back_store, 40);
   return back_store;
 }
+#endif
 
 /** 
  * Reorder the data in a pixbuf to the order needed for a a cairo
@@ -3381,8 +3465,142 @@ cb_image_annotate(GivWidget *imgv,
                   )
 {
   GivWin *self = (GivWin *)user_data;
-  if (selfp->back_store)
-      giv_backstore_invalidate(selfp->back_store);
+
+  // The lasso has to be recreated on a view change.
+  if (selfp->lasso) {
+#if 0
+      printf("Destroying...\n");
+      dovtk_lasso_destroy(selfp->lasso);
+      selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
+                                        &my_lasso_draw,
+                                        self);
+      dovtk_lasso_update(selfp->lasso);
+#endif
+  }
+}
+
+static void
+draw_caliper(cairo_t *cr,
+             gboolean do_mask,
+             double x0, double y0,
+             double x1, double y1,
+             const char *caliper_text)
+{
+    int margin = 0;
+    if (do_mask)
+        margin = 5;
+
+    double angle = atan2(y1-y0,x1-x0);
+    cairo_translate(cr,
+                    0.5 * (x0+x1),
+                    0.5 * (y0+y1));
+    cairo_rotate(cr, angle);
+    double dist = sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+
+    if (!do_mask)
+        cairo_set_source_rgba(cr, 10*0x4d/255.0,1.0*0xaa/255.0,0,0.5);
+    cairo_rectangle(cr, -dist/2-margin, -20-margin,
+                    dist+2*margin, 20+2*margin);
+    cairo_fill(cr);
+
+    if (!do_mask)
+        cairo_set_source_rgb(cr, 0x50/255.0,0x2d/255.0,0x16/255.0);
+
+    double calip_height = 50;
+    cairo_move_to(cr, -dist/2+margin,calip_height/2+margin); 
+    double dy = -(calip_height+3*margin)/3;
+    cairo_rel_curve_to(cr,
+                       -15-2*margin,dy,
+                       -15-2*margin,2.5*dy,
+                       -15-2*margin,3*dy);
+    cairo_line_to(cr, -dist/2+margin,-calip_height/2-margin); 
+                  
+    cairo_close_path(cr);
+        
+    cairo_move_to(cr, dist/2-margin,calip_height/2+margin); 
+    cairo_rel_curve_to(cr,
+                       15+2*margin,dy,
+                       15+2*margin,2.5*dy,
+                       15+2*margin,3*dy);
+    cairo_line_to(cr, dist/2-margin,-calip_height/2-margin); 
+                  
+    cairo_close_path(cr);
+
+    if (do_mask) {
+        cairo_fill_preserve(cr);
+        cairo_set_line_width(cr, 5);
+        cairo_stroke(cr);
+    }
+    else 
+        cairo_fill(cr);
+    
+    // Draw the distance in the middle
+    PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
+    PangoLayout *pango_layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(pango_layout, font_descr);
+    pango_layout_set_text(pango_layout, caliper_text, -1);
+    int layout_width, layout_height;
+    pango_layout_get_size(pango_layout, &layout_width, &layout_height);
+
+    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-20);
+    if (!do_mask)
+        cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
+
+    pango_cairo_show_layout(cr, pango_layout);
+    g_object_unref(pango_layout);
+    pango_font_description_free(font_descr);
+}
+
+/** 
+ * Draw  whatever overlay you want on the image. If the do_mask
+ * is on, then you should paint in black and with a pen that
+ * is thicker than the drawing. 
+ */
+static void
+my_lasso_draw(cairo_t *cr,
+              gboolean do_mask,
+              gpointer user_data)
+{
+    GivWin *self = GIV_WIN(user_data);
+    double start_x, start_y;
+    double end_x, end_y;
+
+    if (selfp->measure_x1 < 0)
+        return;
+
+    gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                             selfp->measure_x1,
+                                             selfp->measure_y1,
+                                             &start_x, &start_y);
+    gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                             selfp->measure_x2,
+                                             selfp->measure_y2,
+                                             &end_x, &end_y);
+
+    if (!do_mask) {
+        cairo_set_source_rgb(cr, 1,0,0);
+        cairo_set_line_width(cr,1);
+    }
+    else
+        cairo_set_line_width(cr, 5);
+
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+
+    // Draw a rectangle
+    //    cairo_rectangle(cr, min_x, min_y, abs(end_x-start_x), abs(end_y-start_y));
+    slip caliper_text;
+    double dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
+                       +sqr(selfp->measure_y2 - selfp->measure_y1));
+    caliper_text = slipprintf("%.1f%s",
+                              dist*selfp->pixelsize,
+                              selfp->pixelsize_unit);
+    draw_caliper(cr,
+                 do_mask,
+                 start_x, start_y,
+                 end_x, end_y,
+                 caliper_text);
+
+    cairo_stroke(cr);
 }
 
 %}

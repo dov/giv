@@ -1,0 +1,210 @@
+//======================================================================
+//  giv-calibrate-window.gob - 
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Tue Apr  5 13:44:15 2011
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include "giv-win.h"
+#include <gtk/gtk.h>
+%}
+
+%{
+static GtkWidget *label_left_new(const gchar *label);
+
+// Make sure text below matches this enum
+enum {
+  MEASURE_COMBO_PIXEL,
+  MEASURE_COMBO_LAST_MEASURE,
+  MEASURE_COMBO_IMAGE_WIDTH,
+  MEASURE_COMBO_IMAGE_HEIGHT
+};
+
+%}
+
+class Giv:Calibrate:Dialog from Gtk:Dialog {
+    private GtkWidget *w_giv = NULL;
+    private GtkWidget *w_combo_measure = NULL;
+    private GtkWidget *w_entry_unit = NULL;
+    private GtkWidget *w_entry_pixel_size = NULL;
+    private double last_measure_distance_in_pixels = -1; 
+    public GtkWidget *
+
+    new(GivWin *w_giv,
+        double pixel_size,
+        const char *unit,
+        double last_measure_distance_in_pixels)
+    {
+        GivCalibrateDialog* self = GIV_CALIBRATE_DIALOG(GET_NEW);
+        GtkWidget *w_vbox, *w_table;
+
+        selfp->w_giv = GTK_WIDGET(w_giv);
+        selfp->last_measure_distance_in_pixels = last_measure_distance_in_pixels;
+        gtk_window_set_transient_for(GTK_WINDOW(self),
+                                     GTK_WINDOW(w_giv));
+        gtk_window_set_destroy_with_parent(GTK_WINDOW(self), TRUE);
+        gtk_window_set_title(GTK_WINDOW(self), "Giv Calibration Window");
+        gtk_dialog_add_buttons(GTK_DIALOG(self),
+                               GTK_STOCK_APPLY, GTK_RESPONSE_APPLY,
+                               GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                               GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+                               NULL);
+
+        
+        int row_idx=0;
+        w_vbox = GTK_DIALOG(self)->vbox;
+        w_table = gtk_table_new(3,2, false);
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           w_table, FALSE, FALSE, 0);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Source"),
+                         0,1,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+
+        GtkWidget *w_combo_measure = gtk_combo_box_new_text();
+        selfp->w_combo_measure = w_combo_measure;
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Pixel");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Last measure");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Image width");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Image height");
+        gtk_combo_box_set_active(GTK_COMBO_BOX(w_combo_measure), 0);
+        gtk_table_attach(GTK_TABLE(w_table),
+                         w_combo_measure,
+                         1, 2,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+
+        row_idx++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Distance"),
+                         0,1,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+            
+        GtkWidget *w_entry = gtk_entry_new();
+        selfp->w_entry_pixel_size = w_entry;
+        gchar *ps_string = g_strdup_printf("%g", pixel_size);
+        gtk_entry_set_text(GTK_ENTRY(w_entry), ps_string);
+        g_free(ps_string);
+        gtk_entry_set_width_chars(GTK_ENTRY(w_entry), 10);
+        gtk_table_attach(GTK_TABLE(w_table),
+                         w_entry,
+                         1, 2,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+        g_object_set_data(G_OBJECT(self),
+                          g_strdup("user_distance"),
+                          w_entry);
+
+        row_idx++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Unit"),
+                         0,1,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+
+        w_entry = gtk_entry_new();
+        selfp->w_entry_unit = w_entry;
+        gtk_entry_set_width_chars(GTK_ENTRY(w_entry), 8);
+        gtk_entry_set_text(GTK_ENTRY(w_entry), unit);
+
+        g_object_set_data(G_OBJECT(self),
+                          g_strdup("user_distance"),
+                          w_entry);
+        gtk_table_attach(GTK_TABLE(w_table),
+                         w_entry,
+                         1, 2,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
+                         0,0);
+#if 0
+        GtkWidget *w_combo_unit = gtk_combo_box_new_text();
+        selfp->w_combo_unit = w_combo_unit;
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_unit), "pixel");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_unit), "mm");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_unit), "m");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_unit), "μm");
+        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_unit), "in");
+        gtk_combo_box_set_active(GTK_COMBO_BOX(w_combo_unit), 0);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         w_combo_unit,
+                         2, 3,
+                         row_idx, row_idx+1,
+                         GtkAttachOptions(0), GtkAttachOptions(0),
+                         0,0);
+#endif
+        gtk_widget_show_all(w_vbox);
+        
+        return GTK_WIDGET(self);
+    }
+
+    public void set_last_measure_distance_in_pixels(self,
+                                                    double last_measure_distance_in_pixels)
+    {
+        selfp->last_measure_distance_in_pixels = last_measure_distance_in_pixels;
+    }
+
+    override (Gtk:Dialog) void
+    response (Gtk:Dialog *_self,
+              gint response_id)
+    {
+        GivCalibrateDialog *self = GIV_CALIBRATE_DIALOG(_self);
+
+        if (response_id == GTK_RESPONSE_APPLY
+            || response_id == GTK_RESPONSE_ACCEPT) {
+          const gchar *new_unit = gtk_entry_get_text(GTK_ENTRY(selfp->w_entry_unit));
+          double new_pixel_size = atof(gtk_entry_get_text(GTK_ENTRY(selfp->w_entry_pixel_size)));
+
+          int measure_combo = gtk_combo_box_get_active(GTK_COMBO_BOX(selfp->w_combo_measure));
+          if (measure_combo == MEASURE_COMBO_LAST_MEASURE)
+              new_pixel_size /= selfp->last_measure_distance_in_pixels;
+          else if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH
+                   || measure_combo == MEASURE_COMBO_IMAGE_HEIGHT) {
+              GivImage *img = giv_win_get_image(GIV_WIN(selfp->w_giv));
+              if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
+                  new_pixel_size /= img->width;
+              else
+                  new_pixel_size /= img->height;
+          }
+              
+          giv_calibrate_dialog_calib_changed(self,
+                                             new_pixel_size,
+                                             new_unit);
+        }
+
+        if (response_id == GTK_RESPONSE_ACCEPT
+            || response_id == GTK_RESPONSE_CANCEL) {
+            gtk_widget_destroy(GTK_WIDGET(self));
+        }
+    }
+
+    signal last NONE (DOUBLE, STRING)
+    void calib_changed(self,
+                       double pixelsize,
+                       const char *unit);
+}
+
+    
+%{
+static GtkWidget *label_left_new(const gchar *label)
+{
+    gchar *markup = g_strdup_printf("%s:", label);
+    GtkWidget *w_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(w_label), markup);
+    g_free(markup);
+    gtk_misc_set_alignment(GTK_MISC(w_label), 0, 0.5);
+    return w_label;
+}
+ 
+%}
