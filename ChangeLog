@@ -1,5 +1,9 @@
 2011-04-05  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
+        * Sconstruct: Created a dist command for generating distributions.
+
+        * giv-win.gob : Created ifdef for windows as pango_cairo was severely broken.
+
         * giv-win.gob : Changed measure tool to a caliper.
 
 2011-03-30  Dov Grobgeld  <dov.grobgeld@gmail.com>

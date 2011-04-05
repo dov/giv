@@ -26,6 +26,15 @@ def create_version(env, target, source):
     out.write("#define VERSION \"" + env['VER'] + "\"\n")
     out.close()
 
+def create_dist(env, target, source):
+    # Skip if this is not a git repo
+    if os.path.exists(".git"):
+        vdir = "giv-%s"%env['VER']
+        os.mkdir(vdir, 0755)
+        os.system("tar -cf - `git ls-files` | (cd %s; tar -xf -); "%vdir)
+        os.system("tar -zcf %s.tar.gz %s"%(vdir,vdir))
+        os.system("rm -rf %s"%vdir)
+
 # All purpose template filling routine
 def template_fill(env, target, source):
     out = open(str(target[0]), "wb")
@@ -107,7 +116,8 @@ env['VARIANT'] = variant
 
 # Since we don't run configure when doing scons
 env.Command("config.h",
-            ["SConstruct"],
+            ["SConstruct",
+             "configure.in"],
             create_version)
 env.Append(CPPPATH=[],
            # Needed for our internal PCRE
@@ -143,3 +153,9 @@ env.Alias("install",
                         if re.search('\.(png|html|jpg)$',g)]
                        )
            ])
+
+
+env.Alias("dist",
+          env.Command("giv-${VER}.tar.gz",
+                      [],
+                      create_dist))

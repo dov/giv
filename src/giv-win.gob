@@ -16,6 +16,11 @@ requires 2.0.0
 %}
 
 %{
+#ifdef _WIN32
+#include <windows.h>
+#include <cairo-win32.h>
+#endif
+
 #include <gdk/gdkkeysyms.h>
 #include "givplugin.h"
 #include "giv-widget.h"
@@ -3534,9 +3539,50 @@ draw_caliper(cairo_t *cr,
     else 
         cairo_fill(cr);
     
+#ifdef CAIRO_HAS_WIN32_FONT
+    // As I can't get pango cairo to work under Windows, I use the specific windows
+    // backend which fortunately works.
+    LOGFONTW lf;
+    lf.lfHeight = 1;
+    lf.lfWidth = 0;
+    lf.lfEscapement = 0;
+    lf.lfOrientation = 0;
+    lf.lfWeight = FW_NORMAL;
+    lf.lfItalic = false;
+    lf.lfUnderline = false;
+    lf.lfStrikeOut = false;
+    lf.lfCharSet = DEFAULT_CHARSET;
+    lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    lf.lfQuality = 5; // CLEAR_TYPE_QUALITY
+    memcpy(lf.lfFaceName, L"Arial", sizeof(L"Arial"));
+    
+    cairo_font_face_t *ff = cairo_win32_font_face_create_for_logfontw(&lf);
+    cairo_matrix_t font_scale, ctm;
+    cairo_matrix_init_identity(&ctm);
+    cairo_matrix_init_identity(&font_scale);
+    cairo_matrix_scale(&font_scale, 20, 20);
+    cairo_font_options_t *fopt = cairo_font_options_create();
+    cairo_scaled_font_t*sf = cairo_scaled_font_create(ff, &font_scale, &ctm, fopt);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0);
+    
+    cairo_set_scaled_font(cr, sf);
+    cairo_text_extents_t ext;
+    cairo_text_extents(cr, caliper_text, &ext);
+    cairo_move_to(cr, -0.5*ext.width,-ext.height*0.2);
+    cairo_show_text(cr, caliper_text);
+    cairo_font_face_destroy(ff);
+    cairo_font_options_destroy(fopt);
+    cairo_scaled_font_destroy(sf);
+#else
     // Draw the distance in the middle
     PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
-    PangoLayout *pango_layout = pango_cairo_create_layout(cr);
+    PangoContext *context = pango_cairo_create_context(cr);
+    cairo_font_options_t *options =  cairo_font_options_create();
+    cairo_font_options_set_hint_style(options,CAIRO_HINT_STYLE_NONE);
+    pango_cairo_context_set_font_options(context, options);
+    PangoLayout *pango_layout = pango_layout_new(context);
+
     pango_layout_set_font_description(pango_layout, font_descr);
     pango_layout_set_text(pango_layout, caliper_text, -1);
     int layout_width, layout_height;
@@ -3549,6 +3595,9 @@ draw_caliper(cairo_t *cr,
     pango_cairo_show_layout(cr, pango_layout);
     g_object_unref(pango_layout);
     pango_font_description_free(font_descr);
+    g_object_unref(context);
+    cairo_font_options_destroy(options);
+#endif
 }
 
 /** 

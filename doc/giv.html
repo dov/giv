@@ -1,53 +1,58 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<!-- process with eperl (from CPAN) to produce html file>
+<!-- process with eperl (from http://marginalhacks.com/Hacks/ePerl/) to produce html file> -->
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld, 20-Nov-2006 -->
+<!-- Changed by: Dov Grobgeld, 18-Jul-2008 -->
 </head>
 
 
 <body bgcolor=white>
-<h1 align=center>A Manual for Giv<br>
+<h1 align=center>A Manual for Giv<br></h1>
+<center>
+  <font size=+2>The</font>
+  <font size=+4 color=#000080>G</font><font size=+2>(reat|tk|NU)</font>
+  <font size=+4 color=#000080>I</font><font size=+2>mage and</font>
+  <font size=+4 color=#000080>V</font><font size=+2>ector viewer</font><br>
+  </font>
+</center>
+<h2 align=center>
+    <img src="giv-logo-150.png"><br>
+    <font size=+2>Version 0.9.17</font><br>
     <font size=-1>Dov Grobgeld</font><br>
-    <font size=-1><a href="mailto:dov.grobgeld@weizmann.ac.il">dov.grobgeld@weizmann.ac.il</a></font><br>
-    <font size=-1>Last modified: 2006-11-20</font>
-</h1>
+    <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
+    <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
+    <font size=-1>Last modified: 2010-02-25   </font>
+</h2>
 
-<h2><a name="SEC1">1. Name</a></h2>
-
-<blockquote>
-  giv - The 
-  <font size=+2 color=#000080>G</font>(reat|tk|NU)
-  <font size=+2  color=#000080>I</font>mage
-  <font size=+2  color=#000080>V</font>iewer
-</blockquote>
-
-<h2><a name="SEC2">2. Syntax</a></h2>
+<h2><a name="SEC1">1. Description</a></h2>
 
 <blockquote>
-  <pre>
-    giv {options} img
-  </pre>
-</blockquote>
-
-<h2><a name="SEC3">3. Description</a></h2>
-
-<blockquote>
-  giv is an image viewer with the following advantages:
+  giv is an image viewer with the following features:
   <UL>
-    <LI> Based on the gtk_image_viewer widget. </LI>
-    <LI> It doesn't suffer from the commercial restrictions of xv. </LI>
-    <LI> It can display marks on top of an image. </LI>
-    <LI> It can display monochrome components of a color image.</LI>
-    <LI> In the future it should show histograms on top of images. </LI>
-    
+    <LI> Based on the dov_image_viewer gtk widget (included), which
+      provides small-memory zoomup of images.</LI>
+    <li>Support for 8-bit, floating point, 16-bit, and 32-bit gray and color images.
+    <li>Plugin support for external loaders.
+    <li>Includes loaders for the npy-format, FITS-format, and a simple DICOM 
+  reader.
+    <li>A contrast tool  allows interactively changing
+  contrast and brightness.
+    <LI> It can display lines and marks on top of an image with sub
+      pixel accuracy. </LI>
+    <LI> Pseudo coloring of gray level images.</LI>
     <LI> It is especially suited for computational geometry and vision
-    scientific and educational applications.</LI>
+      scientific and educational applications.</LI>
+    <LI> Hierarchical layering of data sets that can be turned on and off.</LI>
+    <LI> Measuring distance in image. </LI>
+    <LI> Using agg - Anti-Grain Geometry - for fast and accurate on 
+      screen drawing. </LI>
+    <li> Export and print to png, svg, postscript, and pdf thanks to cairo.
+    <LI> Cross platform on posix and Windows through gtk. </LI>
   </UL>
 </blockquote>
 
-<h3><a name="SEC3.1">3.1. Images</a></h3>
+<h3><a name="SEC1.1">1.1. Images</a></h3>
 
 <blockquote>
   Images are loaded through gdk_pixbuf and giv supports all the formats
@@ -66,173 +71,299 @@
     
 </blockquote>
 
-<h3><a name="SEC3.2">3.2. Marks</a></h3>
+<h3><a name="SEC1.2">1.2. The giv files</a></h3>
 
 <blockquote>
-  giv has the cabability to read marks files describing annotations that
-  are drawn on top of the image. The annotations are loaded in marks files.
-  The marks files contains one or more data sets. The data sets consist of
+  giv has the cabability to read files describing vector annotations that
+  are drawn on top of the image, or make up a drawing on their own.
+  The annotations are loaded in file known as giv files.
+  The giv files contains one or more data sets. A data set consists of
   properties, followed by the list of data points.
   <p>
-  The properties all start with the $ sign. Here is a list of the properties
-  supported:<p>
+    A few of the properties are global and they effect not only
+    the dataset, e.g. the <tt>$image</tt> property that is used to
+    load a different image.
+  <p>
+  The properties all start with the $ sign. Here is a list of all
+  the properties supported:<p>
   
   <table>
     <tr><th bgcolor=#eeeeff>Property
 	<th bgcolor=#eeeeff>Example
 	<th bgcolor=#eeeeff>Description
     <tr><td bgcolor=#ffeeee valign=top>$color
-        <td bgcolor=#ffeeee valign=top>$color pink3
-	<td bgcolor=#ffeeee valign=top>The color of the data set
-	  
-    <tr><td bgcolor=#fbf2ee valign=top>$marks
-        <td bgcolor=#fbf2ee valign=top>$marks
-	<td bgcolor=#fbf2ee valign=top>Indicates that the no lines should be drawn
-			    for the data set.
-			    
-    <tr><td bgcolor=#ffeeee valign=top>$marks
-        <td bgcolor=#ffeeee valign=top>$marks circle
-	<td bgcolor=#ffeeee valign=top>The type of the mark. Valid marks are:
-	    <ul>
-	      <li>circle
-	      <li>square
-	    </ul>
-	  
-    <tr><td bgcolor=#fbf2ee valign=top>$scale_marks
-        <td bgcolor=#fbf2ee valign=top>$scale_marks
-	<td bgcolor=#fbf2ee valign=top>Indicates whether the marks should be scaled together with the image. Default is not to scale.
-
+        <td bgcolor=#ffeeee valign=top>$color pink3<br>$color gold/0.2<br>$color #ff0080/0.5
+	<td bgcolor=#ffeeee valign=top>The color of the data set. If the color has a trailing "/<i>num</i>" then it is considered to be the alpha transperancy of the color.
+    <tr><td bgcolor=#fbf2ee valign=top>$outline_color
+        <td bgcolor=#fbf2ee valign=top>$color green
+	<td bgcolor=#fbf2ee valign=top>The outline color of a polygon
     <tr><td bgcolor=#ffeeee valign=top>$noline
         <td bgcolor=#ffeeee valign=top>$noline
-        <td bgcolor=#ffeeee valign=top>Don't draw line between the coordinates.
+	<td bgcolor=#ffeeee valign=top>Indicates that the no lines should be drawn for the data set.
+			    
+    <tr><td bgcolor=#fbf2ee valign=top>$marks
+        <td bgcolor=#fbf2ee valign=top>$marks circle
+	<td bgcolor=#fbf2ee valign=top>The type of the mark. Valid marks are:
+	    <ul>
+	      <li>circle
+	      <li>fcircle
+	      <li>square
+	      <li>fsquare
+	    </ul>
+	  
+    <tr><td bgcolor=#ffeeee valign=top>$scale_marks
+        <td bgcolor=#ffeeee valign=top>$scale_marks
+	<td bgcolor=#ffeeee valign=top>Indicates whether the marks should be scaled together with the image. Default is not to scale.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$linedash
-        <td bgcolor=#fbf2ee valign=top>$linedash 10 5
-        <td bgcolor=#fbf2ee valign=top>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
+    <tr><td bgcolor=#fbf2ee valign=top>$noline
+        <td bgcolor=#fbf2ee valign=top>$noline
+        <td bgcolor=#fbf2ee valign=top>Don't draw line between the coordinates.
 
-    <tr><td bgcolor=#ffeeee valign=top>$mark_size
-        <td bgcolor=#ffeeee valign=top>$mark_size 15
-        <td bgcolor=#ffeeee valign=top>Specify the size of the marks in pixels.
+    <tr><td bgcolor=#ffeeee valign=top>$linedash
+        <td bgcolor=#ffeeee valign=top>$linedash 10 5
+        <td bgcolor=#ffeeee valign=top>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$line
-        <td bgcolor=#fbf2ee valign=top>$line
-        <td bgcolor=#fbf2ee valign=top>Draw a line between the marks. This is needed if the noline has been choosen on the command line.
+    <tr><td bgcolor=#fbf2ee valign=top>$mark_size
+        <td bgcolor=#fbf2ee valign=top>$mark_size 15
+        <td bgcolor=#fbf2ee valign=top>Specify the size of the marks in pixels.
 
     <tr><td bgcolor=#ffeeee valign=top>$lw
         <td bgcolor=#ffeeee valign=top>$lw 3
-        <td bgcolor=#ffeeee valign=top>Line width.
+        <td bgcolor=#ffeeee valign=top>Line width. This also affects the width of the outline marks (e.g. circle and square).
+    <tr><td bgcolor=#fbf2ee valign=top>$image
+        <td bgcolor=#fbf2ee valign=top>$image maja.pgm
+        <td bgcolor=#fbf2ee valign=top>Reference image to be shown below the image. Several images lines may be given. The user may rotate between the different images through the shift-Up and shift-down key bindings.
+    <tr><td bgcolor=#ffeeee valign=top>$arrow
+        <td bgcolor=#ffeeee valign=top>$arrow start
+        <td bgcolor=#ffeeee valign=top>Indicate that arrows should be added to the lines. Arrows may be drawn at the start, of the line, the end of the line, or both by giving the keywords "start", "end", "both" after $arrow.
+    <tr><td bgcolor=#fbf2ee valign=top>$font
+        <td bgcolor=#fbf2ee valign=top>$font Monospace 24
+        <td bgcolor=#fbf2ee valign=top>Font to be used for drawing text. The name of the font
+          is according to requirements of pango font string representation.
+    <tr><td bgcolor=#ffeeee valign=top>$balloon
+        <td bgcolor=#ffeeee valign=top>$balloon Suspect
+        <td bgcolor=#ffeeee valign=top>Adds another line to the popup balloon that is shown
+          when the balloon popups have been turned on (in the view menu)
+          and the mouse hovers over the dataset. 
+    <tr><td bgcolor=#fbf2ee valign=top>$polygon
+        <td bgcolor=#fbf2ee valign=top>$polygon
+        <td bgcolor=#fbf2ee valign=top>Indicates that the dataset should be filled.
+    <tr><td bgcolor=#ffeeee valign=top>$def_style
+        <td bgcolor=#ffeeee valign=top>$def_style Ref $color green
+        <td bgcolor=#ffeeee valign=top>Defines a new style that may be referenced through the $style keyword.
+    <tr><td bgcolor=#fbf2ee valign=top>$style
+        <td bgcolor=#fbf2ee valign=top>$style Ref
+        <td bgcolor=#fbf2ee valign=top>Imports all dataset properties from the names style. This is simply a shortcut to explicitely writing all style properties.
+    <tr><td bgcolor=#ffeeee valign=top>$path
+        <td bgcolor=#ffeeee valign=top>$path reference/pads
+        <td bgcolor=#ffeeee valign=top>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the name.
+    <tr><td bgcolor=#fbf2ee valign=top>$quiver_color
+        <td bgcolor=#fbf2ee valign=top>$color green
+	<td bgcolor=#fbf2ee valign=top>The color of a quiver arrow
+    <tr><td bgcolor=#ffeeee valign=top>$quiver_scale
+        <td bgcolor=#ffeeee valign=top>$quiver_scale 100
+	<td bgcolor=#ffeeee valign=top>The original scale of the quiver plot
   </table>
   
 </blockquote>
 
-<h3><a name="SEC3.3">3.3. Mark example</a></h3>
+<h3><a name="SEC1.3">1.3. Text annotations</a></h3>
 
 <blockquote>
-<table border><tr><th bgcolor=#E0E0FF><a href="example.marks">example.marks</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>$PATH circles 
-<font size=-1 color=red>  2:  </font>$LW 3 
-<font size=-1 color=red>  3:  </font>$NOLINE 
-<font size=-1 color=red>  4:  </font>$MARKS circle 
-<font size=-1 color=red>  5:  </font>$SCALE_MARKS 1 
-<font size=-1 color=red>  6:  </font>$COLOR midnightblue 
-<font size=-1 color=red>  7:  </font>$path circles 
-<font size=-1 color=red>  8:  </font>110 110 
-<font size=-1 color=red>  9:  </font>120 110 
-<font size=-1 color=red> 10:  </font>120 120 
-<font size=-1 color=red> 11:  </font>110 120 
-<font size=-1 color=red> 12:  </font>110 110 
-<font size=-1 color=red> 13:  </font> 
-<font size=-1 color=red> 14:  </font>$PATH squares 
-<font size=-1 color=red> 15:  </font>$MARKS square 
-<font size=-1 color=red> 16:  </font>$MARK_SIZE 12 
-<font size=-1 color=red> 17:  </font>$LW 5 
-<font size=-1 color=red> 18:  </font>$SCALE_MARKS 0 
-<font size=-1 color=red> 19:  </font>$path squares 
-<font size=-1 color=red> 20:  </font>120 120 
-<font size=-1 color=red> 21:  </font>150 150 
-<font size=-1 color=red> 22:  </font>120 150 
-<font size=-1 color=red> 23:  </font>120 120 
-<font size=-1 color=red> 24:  </font> 
-<font size=-1 color=red> 25:  </font>$PATH A single line 
-<font size=-1 color=red> 26:  </font>120 220 
-<font size=-1 color=red> 27:  </font>150 250 
-<font size=-1 color=red> 28:  </font>move 120 250 
-<font size=-1 color=red> 29:  </font>120 220 
-<font size=-1 color=red> 30:  </font> 
-<font size=-1 color=red> 31:  </font>$PATH Another line ls=0 
-<font size=-1 color=red> 32:  </font>$LW 2 
-<font size=-1 color=red> 33:  </font>$ls 0 
-<font size=-1 color=red> 34:  </font>300 130 
-<font size=-1 color=red> 35:  </font>300 180 
-<font size=-1 color=red> 36:  </font> 
-<font size=-1 color=red> 37:  </font>$PATH Another line ls=1 
-<font size=-1 color=red> 38:  </font>$LW 2 
-<font size=-1 color=red> 39:  </font>$ls 1 
-<font size=-1 color=red> 40:  </font>350 130 
-<font size=-1 color=red> 41:  </font>350 180 
-<font size=-1 color=red> 42:  </font> 
-<font size=-1 color=red> 43:  </font>$PATH Another line ls=2 
-<font size=-1 color=red> 44:  </font>$LW 2 
-<font size=-1 color=red> 45:  </font>$ls 2 
-<font size=-1 color=red> 46:  </font>400 130 
-<font size=-1 color=red> 47:  </font>400 180 
+Text is drawn by adding the "T" control character in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left.
+<p>
+The following example illustrates the various anchor options.
+<table border><tr><th bgcolor=#E0E0FF><a href="text-align.giv">text-align.giv</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font># Show the text alignment relative to the alignment number 
+<font size=-1 color=red>  2:  </font>$marks fcircle 
+<font size=-1 color=red>  3:  </font>$color red 
+<font size=-1 color=red>  4:  </font>$noline 
+<font size=-1 color=red>  5:  </font>100 100 
+<font size=-1 color=red>  6:  </font>200 100 
+<font size=-1 color=red>  7:  </font>300 100 
+<font size=-1 color=red>  8:  </font>100 200 
+<font size=-1 color=red>  9:  </font>200 200 
+<font size=-1 color=red> 10:  </font>300 200 
+<font size=-1 color=red> 11:  </font>100 300 
+<font size=-1 color=red> 12:  </font>200 300 
+<font size=-1 color=red> 13:  </font>300 300 
+<font size=-1 color=red> 14:  </font> 
+<font size=-1 color=red> 15:  </font>$color blue 
+<font size=-1 color=red> 16:  </font>T7 100 100 T7 
+<font size=-1 color=red> 17:  </font>T8 200 100 T8 
+<font size=-1 color=red> 18:  </font>T9 300 100 T9 
+<font size=-1 color=red> 19:  </font>T4 100 200 T4 
+<font size=-1 color=red> 20:  </font>T5 200 200 T5 
+<font size=-1 color=red> 21:  </font>T6 300 200 T6 
+<font size=-1 color=red> 22:  </font>T1 100 300 T1 
+<font size=-1 color=red> 23:  </font>T2 200 300 T2 
+<font size=-1 color=red> 24:  </font>T3 300 300 T3 </pre></table>
+<p>
+The following screenshot shows the various alignments relative to the
+anchor points.
+<center>
+  <table>
+    <tr><td><img src="text-align-screenshot.png">
+    </tr>
+  </table>
+<center>
+</blockquote>
+
+<h3><a name="SEC1.4">1.4. Giv file example</a></h3>
+
+<blockquote>
+Here is an extensive giv file example showing off the various features of
+giv. The result is shown in the screenshow below.
+
+<table border><tr><th bgcolor=#E0E0FF><a href="example.giv">example.giv</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font># Comments start with the hash character 
+<font size=-1 color=red>  2:  </font> 
+<font size=-1 color=red>  3:  </font>$balloon Circles are great! 
+<font size=-1 color=red>  4:  </font>$path circles 
+<font size=-1 color=red>  5:  </font>$lw 3 
+<font size=-1 color=red>  6:  </font>$noline 
+<font size=-1 color=red>  7:  </font>$marks circle 
+<font size=-1 color=red>  8:  </font>$scale_marks 1 
+<font size=-1 color=red>  9:  </font>$color midnightblue 
+<font size=-1 color=red> 10:  </font>110 110 
+<font size=-1 color=red> 11:  </font>120 110 
+<font size=-1 color=red> 12:  </font>120 120 
+<font size=-1 color=red> 13:  </font>110 120 
+<font size=-1 color=red> 14:  </font>110 110 
+<font size=-1 color=red> 15:  </font> 
+<font size=-1 color=red> 16:  </font>$path squares 
+<font size=-1 color=red> 17:  </font>$marks square 
+<font size=-1 color=red> 18:  </font>$mark_size 12 
+<font size=-1 color=red> 19:  </font>$lw 5 
+<font size=-1 color=red> 20:  </font>$path squares 
+<font size=-1 color=red> 21:  </font>$color green 
+<font size=-1 color=red> 22:  </font>120 120 
+<font size=-1 color=red> 23:  </font>150 150 
+<font size=-1 color=red> 24:  </font>120 150 
+<font size=-1 color=red> 25:  </font>120 120 
+<font size=-1 color=red> 26:  </font> 
+<font size=-1 color=red> 27:  </font>$PATH Two lines with a move 
+<font size=-1 color=red> 28:  </font>$color red 
+<font size=-1 color=red> 29:  </font>270 120 
+<font size=-1 color=red> 30:  </font>300 150 
+<font size=-1 color=red> 31:  </font>m 270 150 
+<font size=-1 color=red> 32:  </font>270 120 
+<font size=-1 color=red> 33:  </font> 
+<font size=-1 color=red> 34:  </font>$path another simple line 
+<font size=-1 color=red> 35:  </font>$balloon this line 
+<font size=-1 color=red> 36:  </font>$balloon has a multi-line 
+<font size=-1 color=red> 37:  </font>$balloon popup! 
+<font size=-1 color=red> 38:  </font>$color orange 
+<font size=-1 color=red> 39:  </font>320 130 
+<font size=-1 color=red> 40:  </font>320 180 
+<font size=-1 color=red> 41:  </font> 
+<font size=-1 color=red> 42:  </font>$path a dashed line 10,5 
+<font size=-1 color=red> 43:  </font>$color purple 
+<font size=-1 color=red> 44:  </font>$linedash 10,5 
+<font size=-1 color=red> 45:  </font>$lw 2 
+<font size=-1 color=red> 46:  </font>350 130 
+<font size=-1 color=red> 47:  </font>350 180 
 <font size=-1 color=red> 48:  </font> 
-<font size=-1 color=red> 49:  </font>$path an arc 
-<font size=-1 color=red> 50:  </font>$lw 2 
-<font size=-1 color=red> 51:  </font>450 130 
-<font size=-1 color=red> 52:  </font>500 250 
-<font size=-1 color=red> 53:  </font>m 450 130 
-<font size=-1 color=red> 54:  </font>arc 500 250 25 
-<font size=-1 color=red> 55:  </font>arc 450 130 25 
+<font size=-1 color=red> 49:  </font>$path a dashed line 5,3 with an arrow 
+<font size=-1 color=red> 50:  </font>$linedash 5,3 
+<font size=-1 color=red> 51:  </font>$LW 2 
+<font size=-1 color=red> 52:  </font>$color blue 
+<font size=-1 color=red> 53:  </font>$arrow 
+<font size=-1 color=red> 54:  </font>380 130 
+<font size=-1 color=red> 55:  </font>380 180 
 <font size=-1 color=red> 56:  </font> 
-<font size=-1 color=red> 57:  </font> 
-<font size=-1 color=red> 58:  </font>$polygon 
-<font size=-1 color=red> 59:  </font>$color pink3 
-<font size=-1 color=red> 60:  </font>$outline_color black 
-<font size=-1 color=red> 61:  </font>$path A triangle 
-<font size=-1 color=red> 62:  </font>$lw 3 
-<font size=-1 color=red> 63:  </font>200 300 
-<font size=-1 color=red> 64:  </font>250 300 
-<font size=-1 color=red> 65:  </font>200 200 
-<font size=-1 color=red> 66:  </font> 
-<font size=-1 color=red> 67:  </font>$path blue text 
-<font size=-1 color=red> 68:  </font>$color blue 
-<font size=-1 color=red> 69:  </font>T 0 0 Origin 
-<font size=-1 color=red> 70:  </font> 
-<font size=-1 color=red> 71:  </font>$path magenta text 
-<font size=-1 color=red> 72:  </font>$color magenta3 
-<font size=-1 color=red> 73:  </font>$text_size 20 
-<font size=-1 color=red> 74:  </font>T 5 10 Another origin.  </pre></table>
+<font size=-1 color=red> 57:  </font>$polygon 
+<font size=-1 color=red> 58:  </font>$color pink3 
+<font size=-1 color=red> 59:  </font>$outline_color black 
+<font size=-1 color=red> 60:  </font>$path A closed polygon  
+<font size=-1 color=red> 61:  </font>$lw 3 
+<font size=-1 color=red> 62:  </font>200 300 
+<font size=-1 color=red> 63:  </font>250 300 
+<font size=-1 color=red> 64:  </font>200 200 
+<font size=-1 color=red> 65:  </font> 
+<font size=-1 color=red> 66:  </font>$marks fcircle 
+<font size=-1 color=red> 67:  </font>$color blue 
+<font size=-1 color=red> 68:  </font>0 0 
+<font size=-1 color=red> 69:  </font> 
+<font size=-1 color=red> 70:  </font>$path blue text 
+<font size=-1 color=red> 71:  </font>$color blue 
+<font size=-1 color=red> 72:  </font>$font Sans 15 
+<font size=-1 color=red> 73:  </font>T 0 0 Origin 
+<font size=-1 color=red> 74:  </font> 
+<font size=-1 color=red> 75:  </font>$polygon 
+<font size=-1 color=red> 76:  </font>$color none 
+<font size=-1 color=red> 77:  </font>$lw 5 
+<font size=-1 color=red> 78:  </font>$balloon Fonts 
+<font size=-1 color=red> 79:  </font>0 250 
+<font size=-1 color=red> 80:  </font>300 250 
+<font size=-1 color=red> 81:  </font>300 400 
+<font size=-1 color=red> 82:  </font>0 400 
+<font size=-1 color=red> 83:  </font> 
+<font size=-1 color=red> 84:  </font>$path font Monospace  
+<font size=-1 color=red> 85:  </font>$color black 
+<font size=-1 color=red> 86:  </font>$font Monospace 20 
+<font size=-1 color=red> 87:  </font>T 0 300 Monospace 
+<font size=-1 color=red> 88:  </font> 
+<font size=-1 color=red> 89:  </font>$path font Serif  
+<font size=-1 color=red> 90:  </font>$color black 
+<font size=-1 color=red> 91:  </font>$font Sans Bold Italic 18 
+<font size=-1 color=red> 92:  </font>T 0 330 Sans Bold Italic 18 
+<font size=-1 color=red> 93:  </font> 
+<font size=-1 color=red> 94:  </font>$path font Serif  
+<font size=-1 color=red> 95:  </font>$color black 
+<font size=-1 color=red> 96:  </font>$font Serif 20 
+<font size=-1 color=red> 97:  </font>T 0 360 Serif 
+<font size=-1 color=red> 98:  </font> 
+<font size=-1 color=red> 99:  </font>$path frame 
+<font size=-1 color=red>100:  </font>$color red 
+<font size=-1 color=red>101:  </font>400 0 
+<font size=-1 color=red>102:  </font>500 0 
+<font size=-1 color=red>103:  </font>500 100 
+<font size=-1 color=red>104:  </font>400 100 
+<font size=-1 color=red>105:  </font>400 0 
+<font size=-1 color=red>106:  </font> 
+<font size=-1 color=red>107:  </font>$path arrow both 
+<font size=-1 color=red>108:  </font>$arrow both  
+<font size=-1 color=red>109:  </font>$color green 
+<font size=-1 color=red>110:  </font>$lw 2 
+<font size=-1 color=red>111:  </font>410 10 
+<font size=-1 color=red>112:  </font>490 90 
+<font size=-1 color=red>113:  </font> 
+<font size=-1 color=red>114:  </font>$path arrow start 
+<font size=-1 color=red>115:  </font>$arrow start 
+<font size=-1 color=red>116:  </font>$color green 
+<font size=-1 color=red>117:  </font>$lw 2 
+<font size=-1 color=red>118:  </font>445 40 
+<font size=-1 color=red>119:  </font>465 20 
+<font size=-1 color=red>120:  </font> 
+<font size=-1 color=red>121:  </font>$path arrow end 
+<font size=-1 color=red>122:  </font>$arrow end 
+<font size=-1 color=red>123:  </font>$color green 
+<font size=-1 color=red>124:  </font>$lw 1 
+<font size=-1 color=red>125:  </font>455 50 
+<font size=-1 color=red>126:  </font>475 30 
+<font size=-1 color=red>127:  </font> 
+<font size=-1 color=red>128:  </font>$path font Serif  
+<font size=-1 color=red>129:  </font>$color gray 
+<font size=-1 color=red>130:  </font>$font Serif Bold 50 
+<font size=-1 color=red>131:  </font>T 140 0 GIV 
+<font size=-1 color=red>132:  </font> 
+<font size=-1 color=red>133:  </font>$path font Serif  
+<font size=-1 color=red>134:  </font>$color purple3 
+<font size=-1 color=red>135:  </font>$font Serif Bold 50 
+<font size=-1 color=red>136:  </font>T 136 4 GIV </pre></table>
+<br><br>
   <table>
     <tr><td><img src="marks-view-1.png">
 	<td><img src="marks-view-2.png">
     </tr>
-    <tr><th>Marks at default zoom
-	  <th>Marks zoomed in by 4
+    <tr><td align=center>Marks at default zoom
+	<td align=center>Marks zoomed in. The balloon popup has been turn on.
     </tr>
   </table>
 	    
-  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations is the physical memory and the speed of the CPU.
+  <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations are the physical memory and the speed of the CPU.
 </blockquote>
 
-<h2><a name="SEC4">4. Command line options</a></h2>
-
-<blockquote>
-  
-<table>
-    <tr><th bgcolor=#eeeeff>Option
-	<th bgcolor=#eeeeff>Description
-  
-<tr><td bgcolor=#ffeeee valign=top>-marks markfile<td bgcolor=#ffeeee valign=top>Specify a marks file.
-<tr><td bgcolor=#fbf2ee valign=top>-nl<td bgcolor=#fbf2ee valign=top>Don't draw lines by default.
-<tr><td bgcolor=#ffeeee valign=top>-ms ms<td bgcolor=#ffeeee valign=top>Specify default mark size.
-<tr><td bgcolor=#fbf2ee valign=top>-sm<td bgcolor=#fbf2ee valign=top>Marks should scale by default.
-<tr><td bgcolor=#ffeeee valign=top>-P<td bgcolor=#ffeeee valign=top>Draw marks by default.
-<tr><td bgcolor=#fbf2ee valign=top>-lw lw<td bgcolor=#fbf2ee valign=top>Default line width.
-<tr><td bgcolor=#ffeeee valign=top>-expand e<td bgcolor=#ffeeee valign=top>Initial expansion.
-</table>
-</blockquote>
-
-<h2><a name="SEC5">5. Interaction</a></h2>
+<h2><a name="SEC2">2. Interaction</a></h2>
 
 <blockquote>
 <table>
@@ -242,20 +373,104 @@
 <tr><td bgcolor=#ffeeee valign=top>q
 	  <td bgcolor=#ffeeee valign=top>Quit
 <tr><td bgcolor=#fbf2ee valign=top>=<br>Ctrl-B1
-	  <td bgcolor=#fbf2ee valign=top>Zoom in
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 2
 <tr><td bgcolor=#ffeeee valign=top>-<br>Ctrl-B3
-	  <td bgcolor=#ffeeee valign=top>Zoom out
-<tr><td bgcolor=#fbf2ee valign=top>t
-	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
-<tr><td bgcolor=#ffeeee valign=top>h
-	  <td bgcolor=#ffeeee valign=top>Histogram equalization
-<tr><td bgcolor=#fbf2ee valign=top>n
-	  <td bgcolor=#fbf2ee valign=top>Normal view.
-<tr><td bgcolor=#ffeeee valign=top>N
-	  <td bgcolor=#ffeeee valign=top>Normalize histogram.
-<tr><td bgcolor=#fbf2ee valign=top>r
-	  <td bgcolor=#fbf2ee valign=top>Reset histogram
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 2
+<tr><td bgcolor=#fbf2ee valign=top>Scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.1
+<tr><td bgcolor=#ffeeee valign=top>Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.1
+<tr><td bgcolor=#fbf2ee valign=top>Shift+scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in of quiver vectors by a factor of 1.1
+<tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out of quiver vectors by a factor of 1.1
+<tr><td bgcolor=#fbf2ee valign=top>f
+	  <td bgcolor=#fbf2ee valign=top>Fill data to window
 <tr><td bgcolor=#ffeeee valign=top>B3
 	  <td bgcolor=#ffeeee valign=top>Popup options menu.
+<tr><td bgcolor=#fbf2ee valign=top>c
+	  <td bgcolor=#fbf2ee valign=top>Toggle cross hair.
+<tr><td bgcolor=#ffeeee valign=top>m
+	  <td bgcolor=#ffeeee valign=top>Toggle overlay.
+<tr><td bgcolor=#fbf2ee valign=top>o
+	  <td bgcolor=#fbf2ee valign=top>Popup dataset browser.
+<tr><td bgcolor=#ffeeee valign=top>1
+	  <td bgcolor=#ffeeee valign=top>Sets one image pixel equal to one screen pixel.
+<tr><td bgcolor=#fbf2ee valign=top>s
+	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
+<tr><td bgcolor=#ffeeee valign=top>v
+	  <td bgcolor=#ffeeee valign=top>Vertical flip
+<tr><td bgcolor=#fbf2ee valign=top>h
+	  <td bgcolor=#fbf2ee valign=top>Horizontal flip
+<tr><td bgcolor=#ffeeee valign=top>i
+	  <td bgcolor=#ffeeee valign=top>Show information window
+<tr><td bgcolor=#fbf2ee valign=top>Left/Space
+	  <td bgcolor=#fbf2ee valign=top>Show next image in directory.
+<tr><td bgcolor=#ffeeee valign=top>Right/BackSpace
+	  <td bgcolor=#ffeeee valign=top>Show previous image in directory.
+<tr><td bgcolor=#fbf2ee valign=top>Shift-Down
+	  <td bgcolor=#fbf2ee valign=top>Choose next image when several $image references are given
+<tr><td bgcolor=#ffeeee valign=top>Shift-Up
+	  <td bgcolor=#ffeeee valign=top>Choose previous $image image
 </table>
+</blockquote>
+
+<h2><a name="SEC3">3. Gallery</a></h2>
+
+<blockquote>
+  <table>
+    <tr><td align=center><img src="gallery-europe.jpg">
+	<td align=center><img src="gallery-europe-zoom.jpg">
+    </tr>
+    <tr><td align=center width=25%>A heavy dataset from the CIA world map data of Europe comprising more than 400,000 vector elements.<br><br>
+	<td align=center width=25%>Zoom-in of Shetland and Orkney islands off the coast of Scotland.<br><br>
+    </tr>
+    <tr>
+	<td align=center><img src="gallery-cat-contour.jpg">
+        <td align=center><img src="gallery-cat-contour-sub-pixel.png">
+    </tr>
+    <tr> <td align=center width=25%>The result of a contour finding algorithm
+          shown on top of the image. The overlay may be toggled by
+          the key 'm'.<br><br>
+	<td align=center width=25%>Zoom in of image shows contour
+          sub pixel accuracy.<br><br>
+    </tr>
+    <tr><td align=center><img src="gallery-quiver.jpg">
+        <td align=center><img src="gallery-voronoi.png">
+    </tr>
+    <tr><td align=center valign=top>A quiver plot.
+         <td align=center width=25%>giv showing a Voronoi diagram.
+           The dataset browser is also shown. <br><br>
+    </tr>
+    <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
+        <td align=center><img src="alpha-example.jpg">
+    </tr>
+    <tr>
+      <td align=center valign=top>Pseudo color of a gray level image.
+      <td>Overlays may be painted with transparency as in this "annotation"
+        of the Lena image.
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><img src="giv-m51-with-contrast-tool-screenshot.png" width=600></td>
+    </tr>
+    <tr>
+    <td colspan="2" align="center">The Contrast Tool with a 16-bit image</td>
+    </tr>
+  </table>
+</blockquote>
+
+<h2><a name="SEC4">4. Future plans</a></h2>
+
+<blockquote>
+  Here is a list of possible future development. The direction taken
+  depends on user feedback!
+  <UL>
+    <LI> Support 16-bit, 32-bit, float, and double images. </LI>
+    <LI> Create a framework for external image loader DLL's. </LI>
+    <LI> Create loaders for HDF5 and Dicom. </LI>
+    <LI> Create a property window to show meta data. E.g. data from a dicom file. </LI>
+    <LI> Speed up dealing with huge datasets. </LI>
+    <LI> Create a measuring tool for measuring areas, histograms, etc. </LI>
+    <LI> xmlrpc interface for remote control. </LI>
+  </UL>  
 </blockquote>

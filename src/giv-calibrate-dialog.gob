@@ -172,10 +172,12 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
           else if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH
                    || measure_combo == MEASURE_COMBO_IMAGE_HEIGHT) {
               GivImage *img = giv_win_get_image(GIV_WIN(selfp->w_giv));
-              if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
-                  new_pixel_size /= img->width;
-              else
-                  new_pixel_size /= img->height;
+              if (img) {
+                  if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
+                      new_pixel_size /= img->width;
+                  else
+                      new_pixel_size /= img->height;
+              }
           }
               
           giv_calibrate_dialog_calib_changed(self,
