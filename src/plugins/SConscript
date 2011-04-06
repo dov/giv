@@ -32,6 +32,12 @@ if not env['SBOX']:
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['libtiff','giv-image']+env['LIBS'],
                       )
+
+    env.SharedLibrary('png',
+                      ['png.c'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
+                      LIBS=['png','z','giv-image']+env['LIBS'],
+                      )
     
     SConscript('dcmtk/SConscript',
                exports='env')

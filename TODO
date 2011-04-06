@@ -17,3 +17,6 @@ List of things to do.
 * Fix annoying resize bugs on reload. Fix flickering!
 * Add 3d support to npy plugin.
 * Add zoom of histogram.
+* Add option for setting the number of decimals to show
+* Add optional grid for high zoom in.
+* Make png plugin support backgrounds.

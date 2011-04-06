@@ -1,5 +1,7 @@
 2011-04-06  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
+        * plugins/png.c : png plugin with support for 16-bit png files.
+
         * plugins/dcmtk/dcmdata/libsrc/SConscript: Turned of autogeneration of dcdictbi.cc.
 
         * tiff.c, giv_image.c, giv_image.h : Added support for 16 bit tiff images.
