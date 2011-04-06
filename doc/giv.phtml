@@ -94,11 +94,11 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.17</font><br>
+    <font size=+2>Version 0.9.18</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2010-02-25   </font>
+    <font size=-1>Last modified: 2011-04-05   </font>
 </h2>
 
 <: section("Description") :>
@@ -374,19 +374,34 @@ giv. The result is shown in the screenshow below.
       <td colspan="2" align="center"><img src="giv-m51-with-contrast-tool-screenshot.png" width=600></td>
     </tr>
     <tr>
-    <td colspan="2" align="center">The Contrast Tool with a 16-bit image</td>
+    <td colspan="2" align="center">The Contrast Tool with a 16-bit image<br></td>
+    </tr>
+
+    <!----->
+    <tr>
+      <td colspan="2" align="center"><img src="giv-calib-and-measure.png" width=600></td>
+    </tr>
+    <tr>
+    <td colspan="2" align="center">The measurement caliper and the calibration tool<br></td>
     </tr>
   </table>
 </blockquote>
+
+<: section("Plugins") :>
+Giv supports plugins for loading 8-bit, 16-bit, 32-bit and floating point images. Currently there are
+loaders for the following formats:
+<ul>
+<li>Dicom
+<li>FITS
+<li>Tiff
+</ul>
 
 <: section("Future plans") :>
 <blockquote>
   Here is a list of possible future development. The direction taken
   depends on user feedback!
   <UL>
-    <LI> Support 16-bit, 32-bit, float, and double images. </LI>
-    <LI> Create a framework for external image loader DLL's. </LI>
-    <LI> Create loaders for HDF5 and Dicom. </LI>
+    <LI> Create loaders for HDF5. </LI>
     <LI> Create a property window to show meta data. E.g. data from a dicom file. </LI>
     <LI> Speed up dealing with huge datasets. </LI>
     <LI> Create a measuring tool for measuring areas, histograms, etc. </LI>

@@ -54,7 +54,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     GivImageType image_type;
 
     if (tif) {
-	uint32 w, h, config=9999, bps=9999, spp=9999;
+        uint32 w, h, config=9999, bps=9999, spp=9999, sample_format=9999;
 	size_t npixels;
 	uint8* raster;
         gboolean has_colormap = FALSE;
@@ -65,11 +65,15 @@ GivImage *giv_plugin_load_file(const char *filename,
 	TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &config);
         TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps);
         TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
+        TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sample_format);
+
         if (TIFFGetField(tif, TIFFTAG_COLORMAP, &rmap, &gmap, &bmap))
             has_colormap = TRUE;
+#if 0
         printf("has_colormap= %d\n", has_colormap);
         
         printf("bps spp=%d %d\n", bps, spp);
+#endif
 
 	raster = (uint8*) _TIFFmalloc(TIFFScanlineSize(tif));
         if (config == PLANARCONFIG_CONTIG) {
@@ -88,20 +92,39 @@ GivImage *giv_plugin_load_file(const char *filename,
 
             // TBD - Support more types.
             if (spp == 3 || has_colormap) {
-                image_type = GIVIMAGE_RGB_U8;
+                if (bps == 8)
+                    image_type = GIVIMAGE_RGB_U8;
+                else if (bps == 16)
+                    image_type = GIVIMAGE_RGB_U16;
                 dst_spp = 3;
             }
-            else
+            else if(spp == 1
+                    && bps == 32
+                    && sample_format == SAMPLEFORMAT_IEEEFP) {
+                image_type = GIVIMAGE_FLOAT;
+            }
+            else if (bps == 8)
                 image_type = GIVIMAGE_U8;
+            else if (bps == 16)
+                image_type = GIVIMAGE_U16;
+            else if (bps == 32)
+                image_type = GIVIMAGE_I32;
+            else {
+                printf("Unknown Tiff type!\n");
+                return NULL;
+            }
+
             img = giv_image_new(image_type, w, h);
             guchar *dst = img->buf.buf;
-            
+            int dst_bpp = giv_image_type_get_size(image_type);
+            int dst_row_stride = giv_image_get_row_stride(img);
+
             // Copy the tiff data to the img structure. This can
             // be made more memory conservative by using scanlines.
             for (row_idx=0; row_idx<h; row_idx++) {
                 TIFFReadScanline(tif, raster, row_idx, 0);
                 guchar *src_ptr = raster;
-                guchar *dst_ptr = dst + row_idx * w * dst_spp;
+                guchar *dst_ptr = dst + row_idx * dst_row_stride;
 
                 // Split between colormap and not colormap per row which
                 // is sufficiently fast.
@@ -115,7 +138,7 @@ GivImage *giv_plugin_load_file(const char *filename,
                 }
                 else {
                     for (col_idx=0; col_idx<w; col_idx++) {
-                        for (clr_idx=0; clr_idx<spp; clr_idx++) {
+                        for (clr_idx=0; clr_idx<spp*bps/8; clr_idx++) {
                             *dst_ptr++ = *src_ptr++;
                         }
                     }

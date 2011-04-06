@@ -1,4 +1,16 @@
+2011-04-06  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * plugins/dcmtk/dcmdata/libsrc/SConscript: Turned of autogeneration of dcdictbi.cc.
+
+        * tiff.c, giv_image.c, giv_image.h : Added support for 16 bit tiff images.
+
+        * tiff.c : Added support for float (SAMPLEFORMAT_IEEEFP) images.
+
+        * cfunix.h : Erased definition of size_to to fix Linux64 bit compilatin.
+
 2011-04-05  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * Released version 0.9.18
 
         * Sconstruct: Created a dist command for generating distributions.
 

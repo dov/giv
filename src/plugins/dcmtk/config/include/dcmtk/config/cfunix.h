@@ -332,7 +332,7 @@ typedef int pid_t;
 #endif
 
 /* Define `size_t' to `unsigned' if <sys/types.h> does not define. */
-#define HAVE_NO_TYPEDEF_SIZE_T 1
+#undef HAVE_NO_TYPEDEF_SIZE_T 
 #ifdef HAVE_NO_TYPEDEF_SIZE_T
 typedef unsigned size_t;
 #endif

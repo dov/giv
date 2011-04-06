@@ -13,6 +13,16 @@
 #include "givregex.h"
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
+
+static guint8 clip_u8(double f)
+{
+    if (f < 0)
+        return 0;
+    if (f > 255)
+        return 255;
+    return (int)f;
+}
+
 GQuark
 giv_image_error_quark (void)
 {
@@ -414,7 +424,15 @@ double giv_image_get_value(GivImage *img,
     case GIVIMAGE_RGBA_U8:
         return (((GivImageRgbAlpha8*)row_start)[x_idx]).red;
     case GIVIMAGE_RGB_U16:
-        return (((GivImageRgb16*)row_start)[x_idx]).red;
+        {
+            GivImageRgb16 rgb = (((GivImageRgb16*)row_start)[x_idx]);
+            int max = rgb.red;
+            if (rgb.green > max)
+                max = rgb.green;
+            if (rgb.blue > max)
+                max = rgb.blue;
+            return max;
+        }
     case GIVIMAGE_RGBA_U16:
         return (((GivImageRgbAlpha16*)row_start)[x_idx]).red;
     default:
@@ -445,6 +463,16 @@ GivImageRgb16 giv_image_get_rgb_value(GivImage *img,
         rgb.red = img->buf.rgba8_buf[idx].red;
         rgb.green = img->buf.rgba8_buf[idx].green;
         rgb.blue = img->buf.rgba8_buf[idx].blue;
+        break;
+    case GIVIMAGE_RGB_U16:
+        rgb.red = img->buf.rgb16_buf[idx].red;
+        rgb.green = img->buf.rgb16_buf[idx].green;
+        rgb.blue = img->buf.rgb16_buf[idx].blue;
+        break;
+    case GIVIMAGE_RGBA_U16:
+        rgb.red = img->buf.rgba16_buf[idx].red;
+        rgb.green = img->buf.rgba16_buf[idx].green;
+        rgb.blue = img->buf.rgba16_buf[idx].blue;
         break;
     default:
         ;
@@ -588,16 +616,33 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
         int row_stride = img->row_stride;
 
         // Silently ignore 16 bit images at the moment
-        for (row_idx=0; row_idx<height; row_idx++) {
-            for (col_idx=0; col_idx<width; col_idx++) {
-                int ch_idx;
-                for (ch_idx=0; ch_idx<num_ch_per_pixel; ch_idx++) {
-                    pbuf[row_idx * pb_rowstride
-                         + col_idx * num_ch_per_pixel
-                         + ch_idx]
-                        = buf[row_idx * row_stride
-                              +col_idx * num_ch_per_pixel
-                              + ch_idx]; 
+        if (img->img_type == GIVIMAGE_RGB_U16) {
+            for (row_idx=0; row_idx<height; row_idx++) {
+                gchar *row = pbuf + row_idx * pb_rowstride;
+                for (col_idx=0; col_idx<width; col_idx++) {
+                    GivImageRgb16 rgb16
+                        = giv_image_get_rgb_value(img,
+                                                  col_idx,
+                                                  row_idx,
+                                                  slice_idx);
+                    row[col_idx * 3] = clip_u8((rgb16.red-min)*255/(max-min));
+                    row[col_idx * 3+1] = clip_u8((rgb16.green-min)*255/(max-min));
+                    row[col_idx * 3+2] = clip_u8((rgb16.blue-min)*255/(max-min));
+                }
+            }
+        }
+        else {
+            for (row_idx=0; row_idx<height; row_idx++) {
+                for (col_idx=0; col_idx<width; col_idx++) {
+                    int ch_idx;
+                    for (ch_idx=0; ch_idx<num_ch_per_pixel; ch_idx++) {
+                        pbuf[row_idx * pb_rowstride
+                             + col_idx * num_ch_per_pixel
+                             + ch_idx]
+                            = buf[row_idx * row_stride
+                                  +col_idx * num_ch_per_pixel
+                                  + ch_idx]; 
+                    }
                 }
             }
         }
@@ -613,11 +658,7 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
                 if (max == min)
                     val = 128;
                 else
-                    val = 255.0 * (val-min)/(max-min);
-                if (val<=0)
-                    val = 0;
-                if (val >= 255)
-                    val = 255;
+                    val = clip_u8(255.0 * (val-min)/(max-min));
                 for (ch_idx=0; ch_idx<3; ch_idx++) 
                     pbuf[row_idx * pb_rowstride
                          + col_idx * 3
