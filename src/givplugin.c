@@ -18,7 +18,7 @@ typedef gboolean (* SupportsFile) (const char *filename,
                                    guchar *start_chunk,
                                    gint start_chunk_len);
 typedef GivImage* (* LoadFile)(const char *filename,
-                               GError *error);
+                               GError **error);
 
 // TBD: Support a comma separated list of plugin directories.
 static void rehash_loaders()
@@ -52,7 +52,7 @@ static void rehash_loaders()
 
     const gchar *name;
     while( (name=g_dir_read_name(plugin_dir)) ) {
-        printf("name = %s\n", name);
+      //        printf("name = %s\n", name);
         // Try to load it as a module if it ends with ".dll"
         // or ".so".
         gchar *extension = g_strrstr(name, ".");

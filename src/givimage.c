@@ -618,7 +618,7 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
         // Silently ignore 16 bit images at the moment
         if (img->img_type == GIVIMAGE_RGB_U16) {
             for (row_idx=0; row_idx<height; row_idx++) {
-                gchar *row = pbuf + row_idx * pb_rowstride;
+                guchar *row = pbuf + row_idx * pb_rowstride;
                 for (col_idx=0; col_idx<width; col_idx++) {
                     GivImageRgb16 rgb16
                         = giv_image_get_rgb_value(img,

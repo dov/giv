@@ -1,3 +1,10 @@
+2011-04-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * png.c : Fixed error when reading 8-bit png images.
+
+        * giv-win.gob : Made info label update when changing pixel size
+        info.
+
 2011-04-06  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * plugins/png.c : png plugin with support for 16-bit png files.

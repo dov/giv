@@ -78,16 +78,22 @@ GivImage *giv_plugin_load_file(const char *filename,
        &bit_depth, &color_type, &interlace_type,
        &compression_type, &filter_method);
 
+#if 0
     printf("width height bit_depth color_type = %d %d %d %d\n",
            (int)width, (int)height,
            bit_depth, color_type);
-
+#endif
     
     if (color_type == PNG_COLOR_TYPE_PALETTE)
         png_set_palette_to_rgb(png_ptr);
 
+    // Since giv doesn't support gray alpha, we upgrade to rgb
+    if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+        png_set_gray_to_rgb(png_ptr);
+
     if (color_type == PNG_COLOR_TYPE_GRAY &&
-        bit_depth < 8) png_set_gray_1_2_4_to_8(png_ptr);
+        bit_depth < 8)
+        png_set_expand_gray_1_2_4_to_8(png_ptr);
 
     if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
         png_set_tRNS_to_alpha(png_ptr);

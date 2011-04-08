@@ -1376,6 +1376,29 @@ class Giv:Win from Gtk:Window
     {
         return selfp->img_org;
     }
+
+    public void
+    update_pixelsize_info(self,
+                          GString *info_label)
+    {
+        char format[128];
+        int precision = 0;
+        if (selfp->do_show_sub_pixel)
+            precision = 3;
+        sprintf(format, " (%%.%df,%%.%df) dist=%%.3f%%s (%%.2f%%s,%%.2f%%s)",
+                precision,precision);
+        
+        g_string_sprintf(info_label, format,
+                         selfp->measure_x2,
+                         selfp->measure_y2,
+                         selfp->last_measure_distance_in_pixels*selfp->pixelsize,
+                         selfp->pixelsize_unit,
+                         (selfp->measure_x2 - selfp->measure_x1)*selfp->pixelsize,
+                         selfp->pixelsize_unit,
+                         (selfp->measure_y2 - selfp->measure_y1)*selfp->pixelsize,
+                         selfp->pixelsize_unit
+                         );
+    }
 }
 
 %{
@@ -1666,20 +1689,7 @@ cb_motion_event(GtkWidget *widget,
                             x,y);
 #endif
           dovtk_lasso_update(selfp->lasso);
-          if (!selfp->do_show_sub_pixel)
-              g_string_sprintf(info_label, " (%.0f,%.0f) dist=%.3f (%.2f,%.2f)",
-                               x,y,
-                               m_dist,
-                               x - selfp->measure_x1,
-                               y - selfp->measure_y1
-                               );
-          else
-              g_string_sprintf(info_label, " (%.3f,%.3f) dist=%.3f (%.3f,%.3f)",
-                               x,y,
-                               m_dist,
-                               x - selfp->measure_x1,
-                               y - selfp->measure_y1
-                               );
+          giv_win_update_pixelsize_info(self, info_label);
         }
         else
             do_update_label = false;
@@ -2085,6 +2095,11 @@ cb_calib_changed(GtkWidget *calib_dialog,
     selfp->pixelsize_unit = g_strdup(unit);
     if (selfp->lasso)
         dovtk_lasso_update(selfp->lasso);
+
+    GString *info_label = g_string_new("");
+    giv_win_update_pixelsize_info(self, info_label);
+    gtk_label_set(GTK_LABEL(selfp->w_info_label), info_label->str);
+    g_string_free(info_label, TRUE);
 }
 
 static void
@@ -3540,6 +3555,8 @@ draw_caliper(cairo_t *cr,
         cairo_fill(cr);
     
 #ifdef CAIRO_HAS_WIN32_FONT
+    // This is stil broken!
+
     // As I can't get pango cairo to work under Windows, I use the specific windows
     // backend which fortunately works.
     LOGFONTW lf;
@@ -3588,7 +3605,7 @@ draw_caliper(cairo_t *cr,
     int layout_width, layout_height;
     pango_layout_get_size(pango_layout, &layout_width, &layout_height);
 
-    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-20);
+    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.2*layout_height);
     if (!do_mask)
         cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
 
