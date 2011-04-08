@@ -3554,7 +3554,7 @@ draw_caliper(cairo_t *cr,
     else 
         cairo_fill(cr);
     
-#ifdef CAIRO_HAS_WIN32_FONT
+#if 0 
     // This is stil broken!
 
     // As I can't get pango cairo to work under Windows, I use the specific windows
@@ -3605,7 +3605,7 @@ draw_caliper(cairo_t *cr,
     int layout_width, layout_height;
     pango_layout_get_size(pango_layout, &layout_width, &layout_height);
 
-    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.2*layout_height);
+    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.9*layout_height/PANGO_SCALE);
     if (!do_mask)
         cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
 
