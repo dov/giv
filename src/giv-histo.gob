@@ -34,6 +34,8 @@ class Giv:Histo from Gtk:Drawing:Area {
     private gdouble dragging_y = -1;
     private double contrast_gl_min = -1;
     private double contrast_gl_max = -1;
+    private double old_contrast_gl_min = -1;
+    private double old_contrast_gl_max = -1;
     private double img_gl_min = -1;
     private double img_gl_max = -1;
     private double scale = 1.0;
@@ -149,9 +151,14 @@ class Giv:Histo from Gtk:Drawing:Area {
 
         // Only notify listeners of the contrast change after
         // we have redrawn the histogram!
-        giv_histo_contrast_changed(self,
-                                   selfp->contrast_gl_min,
-                                   selfp->contrast_gl_max);
+        if (selfp->contrast_gl_min != selfp->old_contrast_gl_min
+            || selfp->contrast_gl_max != selfp->old_contrast_gl_max) {
+            giv_histo_contrast_changed(self,
+                                       selfp->contrast_gl_min,
+                                       selfp->contrast_gl_max);
+            selfp->old_contrast_gl_max = selfp->contrast_gl_max;
+            selfp->old_contrast_gl_min = selfp->contrast_gl_min;
+        }
 
         // Draw the gl cursor
         PangoLayout *layout = pango_cairo_create_layout(cr);

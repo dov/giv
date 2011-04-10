@@ -8,7 +8,7 @@ List of things to do.
 * Support contrast changing also for color images.
 * Add plugins for:
 ** HDF5
-** 16-bit png through libpng
+** PNM - So that comments will be accessible.
 * Explore other libraries to build plugins uponin order to use their importers, e.g:
 ** OpenCV - 
 ** The CImg Library - http://cimg.sourceforge.net/
@@ -16,7 +16,7 @@ List of things to do.
 * Support high-bit color.
 * Fix annoying resize bugs on reload. Fix flickering!
 * Add 3d support to npy plugin.
-* Add zoom of histogram.
 * Add option for setting the number of decimals to show
 * Add optional grid for high zoom in.
 * Make png plugin support backgrounds.
+* Linear interpolate colors in colormap for more colors in pseudo color.

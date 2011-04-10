@@ -1,3 +1,13 @@
+2011-04-10  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Made GL of integer formats show all values as integers.
+
+2011-04-09  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-histo.gob : Optimized generation of the contrast_changed
+        signal so that it is only omitted if the contrast has actually
+        changed.
+
 2011-04-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob : Fixed text drawing in caliper on windows.
