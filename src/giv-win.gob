@@ -1718,6 +1718,9 @@ cb_motion_event(GtkWidget *widget,
                 g_string_sprintfa(info_label,
                                   "] = #%02X",
                                   (int)val);
+                if (selfp->w_contrast_view)
+                    giv_contrast_set_cursor_gl(GIV_CONTRAST(selfp->w_contrast_view),
+                                               val);
             }
             else if (selfp->img_org->img_type == GIVIMAGE_RGBA_U8
                      || selfp->img_org->img_type == GIVIMAGE_RGBA_U16) {

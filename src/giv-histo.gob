@@ -112,6 +112,14 @@ class Giv:Histo from Gtk:Drawing:Area {
 
         gtk_widget_queue_draw(GTK_WIDGET(self));
     }
+
+    public void
+    set_cursor_gl(self,
+                  double gl)
+    {
+        selfp->cursor_gl = gl;
+        gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
     
     override (Gtk:Widget) gboolean
     expose_event (Gtk:Widget *_self,

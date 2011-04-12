@@ -1,3 +1,7 @@
+2011-04-12  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob, giv-contrast.gob, giv-histo.gob : Moving over a gray level image updates the pointer triangle in the histogram.
+
 2011-04-10  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob : Made GL of integer formats show all values as integers.
