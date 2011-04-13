@@ -39,3 +39,12 @@ src/gtkimageviewer/gtk-image-viewer.h
 src/giv
 src/plugins/dcmtk/dcmdata/libsrc/mkdictbi
 config.h
+/src/giv-settings-editor-private.h
+/src/giv-settings-editor.cc
+/src/giv-settings-editor.h
+/src/giv-settings-private.h
+/src/giv-settings.cc
+/src/giv-settings.h
+/giv.wine.nsi
+*.gz
+/doc/perl-toc.html

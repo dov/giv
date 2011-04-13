@@ -1,0 +1,81 @@
+//======================================================================
+//  giv-settings.gob - Settings for gob
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Wed Apr 13 20:06:26 2011
+//----------------------------------------------------------------------
+
+requires 2.0.0
+
+%headertop{
+#include <glib.h>
+%}
+
+%{
+#include <glib/gstdio.h>
+%}
+
+class Giv:Settings from G:Object {
+    public gboolean do_same_filetype_on_next = FALSE;
+    private char *keyfile_path = NULL destroy { g_free(keyfile_path); };
+
+    public GObject *
+    new(const char *keyfile_path)
+    {
+        GivSettings *self = GIV_SETTINGS(GET_NEW);
+        GError *error = NULL;
+        selfp->keyfile_path = g_strdup(keyfile_path);
+
+        GKeyFile *keyfile = g_key_file_new();
+        GKeyFileFlags flags = GKeyFileFlags(0);
+
+        /* Load the GKeyFile from keyfile.conf or return. */
+        if (g_key_file_load_from_file (keyfile,
+                                       selfp->keyfile_path,
+                                       flags,
+                                       &error)) {
+            self->do_same_filetype_on_next = g_key_file_get_boolean(keyfile,
+                                                                    "settings",
+                                                                    "do_same_filetype_on_next",
+                                                                    NULL);
+        }
+        else
+            g_error_free(error);
+        g_key_file_free(keyfile);
+
+        return G_OBJECT(self);
+    }
+
+    public int
+    save_prefs(self)
+    {
+        GKeyFile *keyfile = g_key_file_new();
+        GError *error = NULL;
+
+        g_key_file_set_boolean(keyfile,
+                               "settings",
+                               "do_same_filetype_on_next",
+                               self->do_same_filetype_on_next);
+
+        gchar *data = g_key_file_to_data(keyfile,NULL, NULL);
+        gchar *dirname = g_path_get_dirname(selfp->keyfile_path);
+        if (!g_file_test(dirname,
+                         G_FILE_TEST_IS_DIR))
+            g_mkdir_with_parents(dirname, 0755);
+
+        if (g_file_test(dirname,
+                        G_FILE_TEST_IS_DIR))
+            g_file_set_contents(selfp->keyfile_path,
+                                data,
+                                -1,
+                                &error);
+        g_free(dirname);
+        g_free(data);
+
+        // Ignore errors
+        if (error) {
+            g_error_free(error);
+        }
+    }
+}
+  

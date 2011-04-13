@@ -1,3 +1,15 @@
+2011-04-14  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv.wine.nsi.in : Added gtkrc for more windows look.
+
+2011-04-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-settings.gob: Created settings for only seeing files of 
+        the same type.
+
+        * giv-settings.gob, giv-settings-editor.gob, giv-win.gob :
+        Created persistant settings and an editor.
+
 2011-04-12  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob, giv-contrast.gob, giv-histo.gob : Moving over a gray level image updates the pointer triangle in the histogram.

@@ -1,0 +1,146 @@
+//======================================================================
+//  giv-settings-editor.gob -  A settings editor for giv
+//
+//  Dov Grobgeld <dov.grobgeld@gmail.com>
+//  Thu Jun  4 15:12:50 2009
+//----------------------------------------------------------------------
+requires 2.0.0
+
+%headertop{
+#include "giv-settings.h"
+#include <gtk/gtk.h>
+#include <stdarg.h>
+#include <stdlib.h>
+%}
+
+%{
+static GtkWidget *hig_like_frame_new(const gchar *label);
+static GtkWidget *entry_new_from_double(double init_val);
+static GtkWidget *entry_new_from_string(const gchar *text);
+static GtkWidget *check_button_new_from_bool(bool init_state);
+static GtkWidget *label_left_new(const gchar *label);
+ 
+%}
+
+%privateheader{
+%}
+
+class Giv:Settings:Editor from Gtk:Dialog
+{
+    private GObject *giv_settings = NULL destroy { if (giv_settings) g_object_unref(giv_settings); };
+    private GtkWidget *w_button_same_file_type = NULL;
+
+    public GtkWidget*
+    new (GivSettings *giv_settings)
+    {
+        GivSettingsEditor *self = GET_NEW;
+
+        selfp->giv_settings = G_OBJECT(giv_settings);
+        g_object_ref(selfp->giv_settings);
+
+        // Use HIG recommendation using frames without border.
+        GtkWidget *w_frame = hig_like_frame_new("File Browsing");
+
+        gtk_box_pack_start(GTK_BOX(GTK_DIALOG(self)->vbox),
+                           w_frame, FALSE, FALSE, 0);
+
+        GtkWidget *w_table = gtk_table_new(8,8,FALSE);
+        gtk_box_pack_start(GTK_BOX(GTK_DIALOG(self)->vbox),
+                           w_table, FALSE, FALSE, 0);
+        
+        // Whether to hide names
+        int row = 0;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Same type?"),
+                         1, 2,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+        
+        selfp->w_button_same_file_type = check_button_new_from_bool(giv_settings->do_same_filetype_on_next);
+        g_object_set(selfp->w_button_same_file_type,
+                     "tooltip-markup",
+                     "When moving to next and previous file, only visit files of the same file type",
+                     NULL);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         selfp->w_button_same_file_type,
+                         2, 3,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+
+        // Buttons
+        gtk_dialog_add_button(GTK_DIALOG(self),
+                              GTK_STOCK_APPLY,
+                              GTK_RESPONSE_APPLY);
+        gtk_dialog_add_button(GTK_DIALOG(self),
+                              GTK_STOCK_CANCEL,
+                              GTK_RESPONSE_CANCEL);
+        gtk_dialog_add_button(GTK_DIALOG(self),
+                              GTK_STOCK_OK,
+                              GTK_RESPONSE_ACCEPT);
+
+        return GTK_WIDGET(self);
+    }
+
+    public bool get_bool(self,
+                         const char *label)
+    {
+        GtkWidget *w_toggle = GTK_WIDGET(g_object_get_data(G_OBJECT(self), label));
+        if (!w_toggle)
+            return FALSE;
+        int state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w_toggle));
+        return state;
+    }
+
+    public void apply(self)
+    {
+        GIV_SETTINGS(selfp->giv_settings)->do_same_filetype_on_next
+            = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_same_file_type));
+    }
+
+}
+
+%{
+static GtkWidget *hig_like_frame_new(const gchar *label)
+{
+    GtkWidget *w_frame = gtk_frame_new(NULL);
+    GtkWidget *w_label = gtk_label_new(NULL);
+    gchar*markup = g_strdup_printf("<b>%s</b>", label);
+
+    gtk_label_set_markup(GTK_LABEL(w_label),
+                         markup);
+    g_free(markup);
+    gtk_frame_set_label_widget(GTK_FRAME(w_frame),
+                               w_label);
+    // Follow the HIG recommendation
+    gtk_frame_set_shadow_type(GTK_FRAME(w_frame), GTK_SHADOW_NONE);
+
+    return w_frame;
+}
+
+
+static GtkWidget *check_button_new_from_bool(bool init_state)
+{
+    GtkWidget *check_button = gtk_check_button_new();
+
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_button),
+                                 init_state);
+
+    return check_button;
+}
+ 
+static GtkWidget *label_left_new(const gchar *label)
+{
+    gchar *markup = g_strdup_printf("%s:", label);
+    GtkWidget *w_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(w_label), markup);
+    g_free(markup);
+    gtk_misc_set_alignment(GTK_MISC(w_label), 0, 0.5);
+    return w_label;
+}
+ 
+%}

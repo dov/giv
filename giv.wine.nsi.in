@@ -65,6 +65,8 @@ SetOutPath $INSTDIR\etc
 File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\gtk-2.0
 File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\fonts
 File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\pango
+SetOutPath $INSTDIR\etc\gtk-2.0
+File \usr\i686-pc-mingw32\sys-root\mingw\share\themes\MS-Windows\gtk-2.0\gtkrc
 
 # Plugins
 SetOutPath $INSTDIR\plugins

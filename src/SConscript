@@ -63,6 +63,8 @@ src_giv_widget =     ["giv-widget.cc",
                       "giv-backstore.cc",
                       "giv-markup.cc",
                       "giv_agg_arrowhead.cc",
+                      "giv-settings.cc",
+                      "giv-settings-editor.cc"
                       ]
 
 env.Library("giv-widget",
@@ -96,7 +98,9 @@ for gob in ("giv-win",
             "giv-widget",
             "giv-contrast",
             "giv-histo",
-            "giv-calibrate-dialog"
+            "giv-calibrate-dialog",
+            "giv-settings",
+            "giv-settings-editor",
             ) :
     env.Command([gob + ".cc",
                  gob + ".h",
