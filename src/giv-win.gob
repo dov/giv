@@ -105,7 +105,9 @@ static void cb_view_auto_reload (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
+#if 0
 static void cb_menu_default (GtkAction *action, gpointer data);
+#endif
 static void cb_menu_preferences (GtkAction *action, gpointer data);
 static void cb_menu_new_window (GtkAction *action, gpointer data);
 static void cb_menu_fill (GtkAction *action, gpointer data);
@@ -232,7 +234,7 @@ cb_image_annotate(GivWidget *imgv,
                   );
 static void
 my_lasso_draw(cairo_t *cr,
-              gboolean do_mask,
+              DovtkLassoContext context,
               gpointer user_data);
 
 // The following tables contain all the actions for both the menubar
@@ -473,6 +475,7 @@ class Giv:Win from Gtk:Window
     private bool do_square_aspect_ratio = true;
     private bool do_auto_fit_marks = TRUE;
     private bool do_auto_reload = FALSE;
+    private bool do_no_transparency = FALSE;
     private gdouble last_move_x=-1;
     private gdouble last_move_y=-1;
     private double last_cx;
@@ -494,8 +497,11 @@ class Giv:Win from Gtk:Window
     //   private giv_backstore_t *back_store = NULL;
     private DovtkLasso *lasso = NULL;
     private gboolean is_measuring_distance = FALSE;
+    private int picking_mode = 0;
     private gboolean is_quiver_zoom = FALSE;
     private gint measure_point_index = 0;
+    private double picking_x=-1;
+    private double picking_y=-1;
     private double measure_x1=-1;
     private double measure_y1=-1;
     private double measure_x2=-1;
@@ -693,6 +699,8 @@ class Giv:Win from Gtk:Window
                          G_CALLBACK(cb_image_reference), self);
         g_signal_connect(selfp->w_imgv, "button-press-event",
                          G_CALLBACK(cb_button_press_event), self);
+        g_signal_connect(selfp->w_imgv, "button-release-event",
+                         G_CALLBACK(cb_button_release_event), self);
         g_signal_connect(selfp->w_imgv, "key-press-event",
                          G_CALLBACK(cb_key_press_event), self);
         g_signal_connect(selfp->w_imgv, "motion-notify-event",
@@ -1474,14 +1482,20 @@ cb_button_press_event (GtkWidget * widget,
     giv_widget_popdown_balloon(GIV_WIDGET(selfp->w_imgv));
 
     if (event->button == 1) {
-        
         // check if are in measure mode ('z')
         if (selfp->is_measuring_distance) {
-            if (0 == selfp->measure_point_index) {
+            selfp->picking_mode = dovtk_lasso_get_label_for_pixel(selfp->lasso, event->x, event->y);
+            if (selfp->measure_point_index == 0
+                && selfp->picking_mode) {
+                selfp->picking_x = selfp->last_move_x;
+                selfp->picking_y = selfp->last_move_y;
+            }
+            else if (0 == selfp->measure_point_index) {
                 selfp->measure_x1 = selfp->last_move_x;
                 selfp->measure_y1 = selfp->last_move_y;
                 selfp->measure_point_index = 1;
-                selfp->measure_x2 = selfp->measure_y2 = -1;
+                selfp->measure_x2 = selfp->measure_x1;
+                selfp->measure_y2 = selfp->measure_y1;
             }
             else {
                 selfp->measure_x2 = selfp->last_move_x;
@@ -1517,6 +1531,7 @@ cb_button_release_event (GtkWidget * widget,
         selfp->is_dragging = FALSE;
         giv_win_redraw(self);
     }
+    selfp->picking_mode = 0;
 
     return 0;
 }
@@ -1528,6 +1543,13 @@ cb_key_press_event (GtkWidget * widget,
 {
     GivWin *self = (GivWin *)user_data;
     gint k = event->keyval;
+    if (k == 'a') {
+        selfp->do_no_transparency = !selfp->do_no_transparency;
+        giv_widget_set_do_no_transparency(GIV_WIDGET(selfp->w_imgv),
+                                          selfp->do_no_transparency);
+        giv_win_redraw(self);
+        return 1;
+    }
     if (k == 'q')
         gtk_main_quit();
     if (k== 'o')
@@ -1698,30 +1720,38 @@ cb_motion_event(GtkWidget *widget,
     double x,y;
     GString *info_label = g_string_new("");
     gboolean do_update_label = true;
+    bool do_update_measure_distance = false;
     
     gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
                                              cx, cy, &x, &y);
     
     if (selfp->is_measuring_distance) {
-        if (selfp->measure_point_index == 1) {
-          // Calculate distance
-          double m_dist = sqrt(sqr(selfp->measure_x1 - x) + sqr((selfp->measure_y1-y)));
-          selfp->last_measure_distance_in_pixels = m_dist;
-          if (selfp->w_calibrate)
-              giv_calibrate_dialog_set_last_measure_distance_in_pixels(
-                GIV_CALIBRATE_DIALOG(selfp->w_calibrate),
-                m_dist);
-
-          selfp->measure_x2 = x;
-          selfp->measure_y2 = y;
+        if (selfp->picking_mode) {
+            double dx = x - selfp->picking_x;
+            double dy = y - selfp->picking_y;
+            if (selfp->picking_mode == 1 || selfp->picking_mode==2) {
+                selfp->measure_x1 += dx;
+                selfp->measure_y1 += dy;
+            }
+            if (selfp->picking_mode == 1 || selfp->picking_mode==3) {
+                selfp->measure_x2 += dx;
+                selfp->measure_y2 += dy;
+            }
+            selfp->picking_x = x;
+            selfp->picking_y = y;
+            do_update_measure_distance = true;
+        }
+        
+        else if (selfp->measure_point_index == 1) {
+            selfp->measure_x2 = x;
+            selfp->measure_y2 = y;
+            do_update_measure_distance = true;
 #if 0
           draw_measure_line(selfp->back_store,
                             widget,
                             selfp->measure_x1, selfp->measure_y1,
                             x,y);
 #endif
-          dovtk_lasso_update(selfp->lasso);
-          giv_win_update_pixelsize_info(self, info_label);
         }
         else
             do_update_label = false;
@@ -1731,6 +1761,19 @@ cb_motion_event(GtkWidget *widget,
     else
          g_string_sprintf(info_label, " (%4.0f, %4.0f)", x, y);
     
+    if (do_update_measure_distance) {
+        double m_dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
+                             + sqr(selfp->measure_y2-selfp->measure_y1));
+        selfp->last_measure_distance_in_pixels = m_dist;
+
+        dovtk_lasso_update(selfp->lasso);
+        giv_win_update_pixelsize_info(self, info_label);
+        if (selfp->w_calibrate)
+            giv_calibrate_dialog_set_last_measure_distance_in_pixels(
+                GIV_CALIBRATE_DIALOG(selfp->w_calibrate),
+                m_dist);
+    }
+
     if (selfp->img_org && !selfp->is_measuring_distance) {
         int width = giv_image_get_width(selfp->img_org);
         int height = giv_image_get_height(selfp->img_org);
@@ -2545,6 +2588,7 @@ void draw_to_cairo(cairo_t *cr,
                          scale_x, scale_y,
                          shift_x, shift_y,
                          cnv_width, cnv_height);
+    renderer.set_do_no_transparency(selfp->do_no_transparency);
     renderer.paint();
 
     pixbuf_to_cairo(img_scaled,
@@ -2596,6 +2640,7 @@ void draw_to_cairo(cairo_t *cr,
                          scale_x, scale_y,
                          shift_x, shift_y,
                          cnv_width, cnv_height);
+    renderer.set_do_no_transparency(selfp->do_no_transparency);
     renderer.paint();
 #endif
 }
@@ -3583,15 +3628,18 @@ cb_image_annotate(GivWidget *imgv,
 }
 
 static void
-draw_caliper(cairo_t *cr,
-             gboolean do_mask,
+draw_caliper(GivWin *self,
+             cairo_t *cr,
+             DovtkLassoContext lasso_context,
              double x0, double y0,
              double x1, double y1,
              const char *caliper_text)
 {
     int margin = 0;
-    if (do_mask)
+    if (lasso_context != DOVTK_LASSO_CONTEXT_PAINT)
         margin = 5;
+
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
     double angle = atan2(y1-y0,x1-x0);
     cairo_translate(cr,
@@ -3600,14 +3648,19 @@ draw_caliper(cairo_t *cr,
     cairo_rotate(cr, angle);
     double dist = sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
 
-    if (!do_mask)
+    if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         cairo_set_source_rgba(cr, 10*0x4d/255.0,1.0*0xaa/255.0,0,0.5);
+    else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 1);
+    
     cairo_rectangle(cr, -dist/2-margin, -20-margin,
                     dist+2*margin, 20+2*margin);
     cairo_fill(cr);
 
-    if (!do_mask)
+    if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         cairo_set_source_rgb(cr, 0x50/255.0,0x2d/255.0,0x16/255.0);
+    else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 2);
 
     double calip_height = 50;
     cairo_move_to(cr, -dist/2+margin,calip_height/2+margin); 
@@ -3620,6 +3673,13 @@ draw_caliper(cairo_t *cr,
                   
     cairo_close_path(cr);
         
+    if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL) {
+        cairo_fill_preserve(cr);
+        cairo_set_line_width(cr, 5);
+        cairo_stroke(cr);
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 3);
+    }
+
     cairo_move_to(cr, dist/2-margin,calip_height/2+margin); 
     cairo_rel_curve_to(cr,
                        15+2*margin,dy,
@@ -3629,14 +3689,18 @@ draw_caliper(cairo_t *cr,
                   
     cairo_close_path(cr);
 
-    if (do_mask) {
-        cairo_fill_preserve(cr);
+    if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT) 
+        cairo_fill(cr);
+    else {
         cairo_set_line_width(cr, 5);
+        cairo_fill_preserve(cr);
         cairo_stroke(cr);
     }
-    else 
-        cairo_fill(cr);
     
+    // No need to draw text for label context
+    if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+        return;
+
 #if 0 
     // This is stil broken!
 
@@ -3693,7 +3757,7 @@ draw_caliper(cairo_t *cr,
     pango_layout_get_size(pango_layout, &layout_width, &layout_height);
 
     cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.9*layout_height/PANGO_SCALE);
-    if (!do_mask)
+    if (lasso_context==DOVTK_LASSO_CONTEXT_PAINT)
         cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
 
     pango_cairo_show_layout(cr, pango_layout);
@@ -3711,7 +3775,7 @@ draw_caliper(cairo_t *cr,
  */
 static void
 my_lasso_draw(cairo_t *cr,
-              gboolean do_mask,
+              DovtkLassoContext context,
               gpointer user_data)
 {
     GivWin *self = GIV_WIN(user_data);
@@ -3730,6 +3794,7 @@ my_lasso_draw(cairo_t *cr,
                                              selfp->measure_y2,
                                              &end_x, &end_y);
 
+#if 0
     if (!do_mask) {
         cairo_set_source_rgb(cr, 1,0,0);
         cairo_set_line_width(cr,1);
@@ -3738,6 +3803,7 @@ my_lasso_draw(cairo_t *cr,
         cairo_set_line_width(cr, 5);
 
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+#endif
 
     // Draw a rectangle
     //    cairo_rectangle(cr, min_x, min_y, abs(end_x-start_x), abs(end_y-start_y));
@@ -3747,13 +3813,16 @@ my_lasso_draw(cairo_t *cr,
     caliper_text = slipprintf("%.1f%s",
                               dist*selfp->pixelsize,
                               selfp->pixelsize_unit);
-    draw_caliper(cr,
-                 do_mask,
+    draw_caliper(self,
+                 cr,
+                 context,
                  start_x, start_y,
                  end_x, end_y,
                  caliper_text);
 
+#if 0
     cairo_stroke(cr);
+#endif
 }
 
 %}

@@ -1,10 +1,19 @@
+2011-04-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob, GivRenderer.h, GivRenderer.cc : Added the
+        toggle 'a' that allow toggling the alpha transparency of
+        all overlays.
+
+        * giv-win.gob : Added ability to adjust the caliper tool
+        after placement.
+
 2011-04-14  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv.wine.nsi.in : Added gtkrc for more windows look.
 
 2011-04-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
-        * giv-settings.gob: Created settings for only seeing files of 
+        * giv-settings.gob: Created settings for only seeing files of
         the same type.
 
         * giv-settings.gob, giv-settings-editor.gob, giv-win.gob :

@@ -32,7 +32,8 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
     shift_x(_shift_x),
     shift_y(_shift_y),
     width(_width),
-    height(_height)
+    height(_height),
+    do_no_transparency(false)
 {
 }
 
@@ -52,6 +53,8 @@ void GivRenderer::paint()
         double gg = cs*dataset->color.green;
         double bb = cs*dataset->color.blue;
         double alpha = cs*dataset->color.alpha;
+        if (this->do_no_transparency)
+            alpha = 1.0;
 
 #if 0
         printf("datasets[%d]->color.pixel = %d\n",

@@ -16,6 +16,7 @@ List of things to do.
 * Support high-bit color.
 * Fix annoying resize bugs on reload. Fix flickering!
 * Add 3d support to npy plugin.
+* Add 3d support to tiff plugin.
 * Add option for setting the number of decimals to show
 * Add optional grid for high zoom in.
 * Make png plugin support backgrounds.

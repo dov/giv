@@ -90,6 +90,7 @@ class Giv:Widget from Gtk:Image:Viewer
     private bool do_view_marks = TRUE;
     private bool do_view_cross_hair = FALSE;
     private bool do_show_balloon = FALSE;
+    private bool do_no_transparency = FALSE;
     private gint last_cx = 0;
     private gint last_cy = 0;
     private gint last_move_x = 0;
@@ -334,6 +335,13 @@ class Giv:Widget from Gtk:Image:Viewer
     }
 
     public
+    void set_do_no_transparency(self,
+                                bool do_no_transparency)
+    {
+      selfp->do_no_transparency = do_no_transparency;
+    }
+
+    public
     void set_colormap(self,
                       GivPseudoColor pseudo_color)
     {
@@ -542,6 +550,7 @@ cb_image_annotate(GivWidget *self,
                          scale_x, scale_y,
                          shift_x, shift_y,
                          width, height);
+    renderer.set_do_no_transparency(selfp->do_no_transparency);
     if (!selfp->is_dragging && selfp->do_view_marks)
         renderer.paint();
 
@@ -612,6 +621,7 @@ cb_image_annotate(GivWidget *self,
                              li_scale_x, li_scale_y,
                              li_shift_x, li_shift_y,
                              li_width, li_height);
+        renderer.set_do_no_transparency(selfp->do_no_transparency);
         renderer.paint();
     }
 }

@@ -16,6 +16,10 @@ class GivRenderer {
                 double height
                 );
     void paint();
+    void set_do_no_transparency(bool do_no_transparency)
+    {
+        this->do_no_transparency = do_no_transparency;
+    }
 
  private:
     GPtrArray *datasets;
@@ -26,7 +30,7 @@ class GivRenderer {
     double shift_y;
     double width;
     double height;
-        
+    bool do_no_transparency;
 };
 
 #endif /* GIVRENDERER */
