@@ -59,6 +59,7 @@ GivImage *giv_plugin_load_file(const char *filename,
 	uint8* raster;
         gboolean has_colormap = FALSE;
         uint16 *rmap, *gmap, *bmap;
+        uint16 pn=0, num_pages=0;
 
 	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
@@ -66,13 +67,16 @@ GivImage *giv_plugin_load_file(const char *filename,
         TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps);
         TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
         TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sample_format);
+        TIFFGetField(tif, TIFFTAG_PAGENUMBER, &pn, &num_pages);
 
         if (TIFFGetField(tif, TIFFTAG_COLORMAP, &rmap, &gmap, &bmap))
             has_colormap = TRUE;
+
 #if 0
         printf("has_colormap= %d\n", has_colormap);
         
         printf("bps spp=%d %d\n", bps, spp);
+        printf("pn num_pages = %d %d\n", pn, num_pages);
 #endif
 
 	raster = (uint8*) _TIFFmalloc(TIFFScanlineSize(tif));
@@ -109,6 +113,8 @@ GivImage *giv_plugin_load_file(const char *filename,
                 image_type = GIVIMAGE_U16;
             else if (bps == 32)
                 image_type = GIVIMAGE_I32;
+            else if (bps == 1)
+                image_type = GIVIMAGE_U8;
             else {
                 printf("Unknown Tiff type!\n");
                 return NULL;
@@ -134,6 +140,15 @@ GivImage *giv_plugin_load_file(const char *filename,
                         *dst_ptr++ = rmap[src_gl] >> 8;
                         *dst_ptr++ = gmap[src_gl] >> 8;
                         *dst_ptr++ = bmap[src_gl] >> 8;
+                    }
+                }
+                else if (bps == 1) {
+                    for (col_idx=0; col_idx<w/8; col_idx++) {
+                        int bit_idx;
+                        for (bit_idx=0; bit_idx<8; bit_idx++) {
+                            *dst_ptr++ = 1-((*src_ptr >> (7-bit_idx))&1);
+                        }
+                        src_ptr++;
                     }
                 }
                 else {

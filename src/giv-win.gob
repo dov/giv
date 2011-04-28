@@ -1532,6 +1532,7 @@ cb_button_release_event (GtkWidget * widget,
         giv_win_redraw(self);
     }
     selfp->picking_mode = 0;
+    selfp->measure_point_index = 0;
 
     return 0;
 }
@@ -2181,10 +2182,12 @@ cb_menu_measure_distance (GtkAction *action, gpointer data)
         selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
                                           &my_lasso_draw,
                                           self);
+#if 0
         if (!selfp->cursor_plus) {
             selfp->cursor_plus = gdk_cursor_new(GDK_PLUS);
         }
         gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
+#endif
     }
     else {
         //free_giv_backstore (selfp->back_store);

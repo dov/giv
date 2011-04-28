@@ -1,3 +1,15 @@
+2011-04-28  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * configure.in : Bumped version to 0.9.19 .
+
+        * plugins/tiff.c : Added support for 1bps files. (First page only).
+
+        * giv-calibrate-dialog.gob : Made the text field change when
+        switching between different reference units.
+
+        * giv-win.gob : Made mouse release stop measuring. Was a second
+        click.
+
 2011-04-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob, GivRenderer.h, GivRenderer.cc : Added the

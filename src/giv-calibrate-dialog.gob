@@ -14,6 +14,8 @@ requires 2.0.0
 
 %{
 static GtkWidget *label_left_new(const gchar *label);
+static void cb_combo_changed(GtkComboBox *widget,
+                             gpointer     user_data);
 
 // Make sure text below matches this enum
 enum {
@@ -30,7 +32,10 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
     private GtkWidget *w_combo_measure = NULL;
     private GtkWidget *w_entry_unit = NULL;
     private GtkWidget *w_entry_pixel_size = NULL;
-    private double last_measure_distance_in_pixels = -1; 
+    private double last_measure_distance_in_pixels = -1;
+
+    // The enum of the combo that is being used
+    private int current_ref = 0;
     public GtkWidget *
 
     new(GivWin *w_giv,
@@ -68,6 +73,7 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
                          0,0);
 
         GtkWidget *w_combo_measure = gtk_combo_box_new_text();
+        g_signal_connect(w_combo_measure,"changed", G_CALLBACK(cb_combo_changed), self);
         selfp->w_combo_measure = w_combo_measure;
         gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Pixel");
         gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Last measure");
@@ -91,7 +97,7 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
             
         GtkWidget *w_entry = gtk_entry_new();
         selfp->w_entry_pixel_size = w_entry;
-        gchar *ps_string = g_strdup_printf("%g", pixel_size);
+        gchar *ps_string = g_strdup_printf("%.4g", pixel_size);
         gtk_entry_set_text(GTK_ENTRY(w_entry), ps_string);
         g_free(ps_string);
         gtk_entry_set_width_chars(GTK_ENTRY(w_entry), 10);
@@ -155,6 +161,28 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
         selfp->last_measure_distance_in_pixels = last_measure_distance_in_pixels;
     }
 
+    private double calc_pixel_size(self)
+    {
+        if (!selfp->w_entry_pixel_size)
+            return 1.0;
+        double pixel_size = atof(gtk_entry_get_text(GTK_ENTRY(selfp->w_entry_pixel_size)));
+        
+        int measure_combo = selfp->current_ref;
+        if (measure_combo == MEASURE_COMBO_LAST_MEASURE)
+            pixel_size /= selfp->last_measure_distance_in_pixels;
+        else if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH
+                 || measure_combo == MEASURE_COMBO_IMAGE_HEIGHT) {
+            GivImage *img = giv_win_get_image(GIV_WIN(selfp->w_giv));
+            if (img) {
+                if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
+                    pixel_size /= img->width;
+                else
+                    pixel_size /= img->height;
+            }
+        }
+        return pixel_size;
+    }
+
     override (Gtk:Dialog) void
     response (Gtk:Dialog *_self,
               gint response_id)
@@ -164,24 +192,9 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
         if (response_id == GTK_RESPONSE_APPLY
             || response_id == GTK_RESPONSE_ACCEPT) {
           const gchar *new_unit = gtk_entry_get_text(GTK_ENTRY(selfp->w_entry_unit));
-          double new_pixel_size = atof(gtk_entry_get_text(GTK_ENTRY(selfp->w_entry_pixel_size)));
-
-          int measure_combo = gtk_combo_box_get_active(GTK_COMBO_BOX(selfp->w_combo_measure));
-          if (measure_combo == MEASURE_COMBO_LAST_MEASURE)
-              new_pixel_size /= selfp->last_measure_distance_in_pixels;
-          else if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH
-                   || measure_combo == MEASURE_COMBO_IMAGE_HEIGHT) {
-              GivImage *img = giv_win_get_image(GIV_WIN(selfp->w_giv));
-              if (img) {
-                  if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
-                      new_pixel_size /= img->width;
-                  else
-                      new_pixel_size /= img->height;
-              }
-          }
               
           giv_calibrate_dialog_calib_changed(self,
-                                             new_pixel_size,
+                                             giv_calibrate_dialog_calc_pixel_size(self),
                                              new_unit);
         }
 
@@ -209,4 +222,42 @@ static GtkWidget *label_left_new(const gchar *label)
     return w_label;
 }
  
+static void cb_combo_changed(GtkComboBox *widget,
+                             gpointer     user_data)
+{
+  GivCalibrateDialog *self = GIV_CALIBRATE_DIALOG(user_data);
+  int measure_combo = gtk_combo_box_get_active(GTK_COMBO_BOX(selfp->w_combo_measure));
+
+  // Update the entry text
+  double new_dist = giv_calibrate_dialog_calc_pixel_size(self);
+  switch(measure_combo) {
+  case MEASURE_COMBO_PIXEL :
+      break;
+  case MEASURE_COMBO_LAST_MEASURE :
+      new_dist *= selfp->last_measure_distance_in_pixels;
+      break;
+  case MEASURE_COMBO_IMAGE_WIDTH:
+  case MEASURE_COMBO_IMAGE_HEIGHT:
+      {
+          GivImage *img = giv_win_get_image(GIV_WIN(selfp->w_giv));
+          if (img) {
+              if (measure_combo == MEASURE_COMBO_IMAGE_WIDTH)
+                  new_dist *= img->width;
+              else
+                  new_dist *= img->height;
+          }
+          break;
+      }
+  default:
+      break;
+  };
+      
+  gchar *new_text = g_strdup_printf("%.4g", new_dist);
+  if (selfp->w_entry_pixel_size)
+      gtk_entry_set_text(GTK_ENTRY(selfp->w_entry_pixel_size),
+                         new_text);
+  g_free(new_text);
+  selfp->current_ref = measure_combo;
+}
+
 %}
