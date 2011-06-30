@@ -90,7 +90,7 @@ if ARGUMENTS.get('mingw', 0):
                  "src/plugins/npy.dll",
                  ],
                 ["makensis giv.wine.nsi"])
-    env.Append(LINKFLAGS=['-mwindows'],
+    env.Append(#LINKFLAGS=['-mwindows'],
 #               CPPPATH=["/usr/local/mingw32/include"],
 #               LIBPATH=["/usr/local/mingw32/lib"],
                )

@@ -526,7 +526,7 @@ class Gtk:Image:Viewer from Gtk:Widget
     if (selfp->button == (int)event->button)
       {
         if (selfp->is_mouse_button2_pressed) {
-  	selfp->is_mouse_button2_pressed = FALSE;
+          selfp->is_mouse_button2_pressed = FALSE;
   	if (selfp->last_pan_anchor_x>0 && selfp->last_pan_anchor_y > 0)
   	    zoom_translate(self,
                            (int)(selfp->last_pan_anchor_x-x),

@@ -112,12 +112,13 @@ giv_parser_parse_file(GivParser *gp,
     
     FILE *GIV;
 
-    GIV = fopen(filename, "r");
+    GIV = fopen(filename, "rb");
     if (!GIV)
 	return -1;
 
     is_new_set = TRUE;
-    while(1) {
+    gboolean empty_line = false;
+    while(!empty_line) {
 	char S_[256];
 	int len;
 	
@@ -125,18 +126,20 @@ giv_parser_parse_file(GivParser *gp,
 	fgets(S_, sizeof(S_), GIV);
 	len = strlen(S_);
 
-        if (feof(GIV))
-            break;
-#if 0
-	if (len<=1)
-	    continue;
-#endif
-	
+        // Skip damaged sections with all NULLS
+        if (len==0)
+            empty_line = true;
+
 	// Get rid of CR and LF at end of line
+        int org_len = len;
 	while (len>0 && (S_[len-1] == '\r' || S_[len-1] == '\n')) {
 	    S_[len-1] = 0;
 	    len--;
 	}
+
+        // Get out if we didn't get a \r or \n at the end of the line!
+        if (org_len == len)
+            break;
 	
 	if (is_new_set || marks==NULL) {
 	    marks = new_giv_dataset(num_sets);
@@ -155,6 +158,9 @@ giv_parser_parse_file(GivParser *gp,
 	}
 
         giv_parser_giv_marks_data_add_line(gp, marks, S_, filename, linenum);
+
+        if (feof(GIV))
+            break;
     }
     fclose(GIV);
 
@@ -605,20 +611,22 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_MOVE:
     case STRING_QUIVER:
         if (type == STRING_DRAW) {
-            sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y);
-            if (marks->points->len == 0)
-                p.op = OP_MOVE;
-            else
-                p.op = OP_DRAW;
+            if (sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y)==2) {
+                if (marks->points->len == 0)
+                    p.op = OP_MOVE;
+                else
+                    p.op = OP_DRAW;
+            }
         }
         else {
-            sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y);
-            if (type == STRING_QUIVER) {
-                p.op = OP_QUIVER;
-                marks->has_quiver = TRUE;
+            if (sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y)==3) {
+                if (type == STRING_QUIVER) {
+                    p.op = OP_QUIVER;
+                    marks->has_quiver = TRUE;
+                }
+                else
+                    p.op = OP_MOVE;
             }
-            else
-                p.op = OP_MOVE;
         }
 
         /* Find marks bounding box */
@@ -630,7 +638,6 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             gp->global_mark_min_y = p.data.point.y - ms2;
         if (p.data.point.y > gp->global_mark_max_y)
             gp->global_mark_max_y = p.data.point.y + ms2;
-	    
         g_array_append_val(marks->points, p);
         break;
     case STRING_TEXT:

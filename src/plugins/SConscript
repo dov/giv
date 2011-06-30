@@ -33,10 +33,14 @@ if not env['SBOX']:
                       LIBS=['libtiff','giv-image']+env['LIBS'],
                       )
 
+    if ARGUMENTS.get('mingw', 0):
+        png_lib = ['png14']
+    else:
+        png_lib = []
     env.SharedLibrary('png',
                       ['png.c'],
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
-                      LIBS=['giv-image']+env['LIBS'],
+                      LIBS=['giv-image']+png_lib+env['LIBS'],
                       )
     
     SConscript('dcmtk/SConscript',
