@@ -611,7 +611,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_MOVE:
     case STRING_QUIVER:
         if (type == STRING_DRAW) {
-            if (sscanf(S_, "%lf %lf", &p.data.point.x, &p.data.point.y)==2) {
+            if (sscanf(S_, "%lf %lf", &p.x, &p.y)==2) {
                 if (marks->points->len == 0)
                     p.op = OP_MOVE;
                 else
@@ -619,7 +619,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             }
         }
         else {
-            if (sscanf(S_, "%s %lf %lf", dummy, &p.data.point.x, &p.data.point.y)==3) {
+            if (sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y)==3) {
                 if (type == STRING_QUIVER) {
                     p.op = OP_QUIVER;
                     marks->has_quiver = TRUE;
@@ -630,28 +630,26 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         }
 
         /* Find marks bounding box */
-        if (p.data.point.x < gp->global_mark_min_x)
-            gp->global_mark_min_x = p.data.point.x - ms2;
-        if (p.data.point.x > gp->global_mark_max_x)
-            gp->global_mark_max_x = p.data.point.x + ms2;
-        if (p.data.point.y < gp->global_mark_min_y)
-            gp->global_mark_min_y = p.data.point.y - ms2;
-        if (p.data.point.y > gp->global_mark_max_y)
-            gp->global_mark_max_y = p.data.point.y + ms2;
+        if (p.x < gp->global_mark_min_x)
+            gp->global_mark_min_x = p.x - ms2;
+        if (p.x > gp->global_mark_max_x)
+            gp->global_mark_max_x = p.x + ms2;
+        if (p.y < gp->global_mark_min_y)
+            gp->global_mark_min_y = p.y - ms2;
+        if (p.y > gp->global_mark_max_y)
+            gp->global_mark_max_y = p.y + ms2;
         g_array_append_val(marks->points, p);
         break;
     case STRING_TEXT:
         {
             text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
-            sscanf(S_, "%s %lf %lf", dummy, &tm->x, &tm->y);
+            sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
             tm->text_align = 1;
             if (S_[1] >= '0' && S_[1] <= '9') 
                 tm->text_align = atoi(&S_[1]);
             tm->string = string_strdup_rest(S_, 3);
             p.op = OP_TEXT;
-            p.data.point.x = tm->x;
-            p.data.point.y = tm->y;
-            p.data.text_object = tm;
+            p.text_object = tm;
             g_array_append_val(marks->points, p);
         }
         break;

@@ -80,7 +80,6 @@ typedef struct
 typedef struct
 {
     char *string;
-    double x, y;
     double size;
     int text_align; // A number between 1 and 9 like the numeric keypad. Default is 1.
 } text_mark_t;
@@ -88,14 +87,8 @@ typedef struct
 typedef struct
 {
   gint op;
-  union
-  {
-    struct
-    {
-      gdouble x, y;
-    } point;
-    text_mark_t *text_object;
-  } data;
+  gdouble x, y;
+  text_mark_t *text_object;
 } point_t;
 
 giv_dataset_t *new_giv_dataset(int num_datasets);

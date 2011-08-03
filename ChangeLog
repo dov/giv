@@ -1,3 +1,8 @@
+2011-08-03  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * GivRenderer.cc, giv-data.h, giv-parser.cc : Got
+        rid of the union used for text annotation.
+
 2011-06-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * plugins/SConstruct: Fixed compilation under windows for

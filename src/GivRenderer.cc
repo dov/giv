@@ -102,8 +102,8 @@ void GivRenderer::paint()
                 for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
                     point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-                    double m_x = p.data.point.x * scale_x - shift_x;
-                    double m_y = p.data.point.y * scale_y - shift_y;
+                    double m_x = p.x * scale_x - shift_x;
+                    double m_y = p.y * scale_y - shift_y;
 
                     if (i < 2 && p.op == OP_DRAW) {
                         double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
@@ -124,8 +124,8 @@ void GivRenderer::paint()
                     }
                     else if (p.op == OP_QUIVER) {
                         double qscale = dataset->quiver_scale;
-                        double q_x = old_x + p.data.point.x * scale_x * qscale;
-                        double q_y = old_y + p.data.point.y * scale_y * qscale;
+                        double q_x = old_x + p.x * scale_x * qscale;
+                        double q_y = old_y + p.y * scale_y * qscale;
                         painter.add_line_segment(old_x, old_y, q_x, q_y,
                                                  false);
                         need_paint = true;
@@ -184,8 +184,8 @@ void GivRenderer::paint()
                     has_text = true;
                 }
                 else {
-                    double m_x = p.data.point.x * scale_x - shift_x;
-                    double m_y = p.data.point.y * scale_y - shift_y;
+                    double m_x = p.x * scale_x - shift_x;
+                    double m_y = p.y * scale_y - shift_y;
 
                     // Crop marks 
                     if (m_x < -mark_size_x || m_x > width+mark_size_x
@@ -220,10 +220,10 @@ void GivRenderer::paint()
                 point_t p = g_array_index(dataset->points, point_t, p_idx);
 
                 if (p.op == OP_TEXT) {
-                    double m_x = p.data.point.x * scale_x - shift_x;
-                    double m_y = p.data.point.y * scale_y - shift_y;
-                    const char *text = p.data.text_object->string;
-                    int text_align = p.data.text_object->text_align;
+                    double m_x = p.x * scale_x - shift_x;
+                    double m_y = p.y * scale_y - shift_y;
+                    const char *text = p.text_object->string;
+                    int text_align = p.text_object->text_align;
                     painter.add_text(text, m_x, m_y, text_align, dataset->do_pango_markup);
                 }
             }
