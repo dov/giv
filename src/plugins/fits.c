@@ -130,7 +130,7 @@ GivImage *giv_plugin_load_file(const char *filename,
                               width,
                               width * wsize,
                               height,
-                              height * wsize * height,
+                              height * wsize * width,
                               2,
                               depth);
     wsize = giv_image_type_get_size(type)/8;  /* Size in bytes */
@@ -150,7 +150,7 @@ GivImage *giv_plugin_load_file(const char *filename,
             for (row_idx = 0; row_idx < height; row_idx++)
                 memcpy(img->buf.buf + z_idx * slice_size
                        + (height - row_idx - 1) * width * wsize,
-                       flip_data + z_idx * slice_size + row_idx * width * wsize,
+                       (guchar*)flip_data + z_idx * slice_size + row_idx * width * wsize,
                        width * wsize);
     }
 #else

@@ -1,3 +1,7 @@
+2011-09-06  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * plugins/fits.c : Fixed bug in the reading of multi slice fits files.
+
 2011-08-03  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * GivRenderer.cc, giv-data.h, giv-parser.cc : Got
