@@ -186,6 +186,13 @@ class Giv:Contrast from Gtk:Dialog {
         giv_histo_set_cursor_gl(GIV_HISTO(selfp->w_histo), gl);
     }
 
+    public void
+    set_do_auto_contrast(self,
+                         gboolean do_auto_contrast)
+    {
+      giv_histo_set_do_auto_contrast(GIV_HISTO(selfp->w_histo), do_auto_contrast);
+    }
+
     override (Gtk:Dialog) void
     response (Gtk:Dialog *_self,
               gint response_id)

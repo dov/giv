@@ -30,6 +30,7 @@ class Giv:Histo from Gtk:Drawing:Area {
     private gdouble cursor_x2 = 200;
     private FocusPos focus_pos = FOCUS_NONE;
     private gboolean dragging = FALSE;
+    private gboolean do_auto_contrast = TRUE; 
     private gdouble dragging_x = -1;
     private gdouble dragging_y = -1;
     private double contrast_gl_min = -1;
@@ -76,15 +77,16 @@ class Giv:Histo from Gtk:Drawing:Area {
     {
         if (!image)
             return;
-        // calculate the histogram
-        giv_image_get_min_max(image,
-                              &selfp->img_gl_min, &selfp->img_gl_max);
-        selfp->contrast_gl_min = selfp->img_gl_min;
-        selfp->contrast_gl_max = selfp->img_gl_max;
 
-        // short cuts
-        double min = selfp->contrast_gl_min;
-        double max = selfp->contrast_gl_max;
+        double min, max;
+        giv_image_get_min_max(image,
+                              &min, &max);
+        selfp->img_gl_min = min;
+        selfp->img_gl_max = max;
+        if (selfp->do_auto_contrast) {
+            selfp->contrast_gl_min = min;
+            selfp->contrast_gl_max = max;
+        }
 
         selfp->histo_max = 0;
         for (int i=0; i<256; i++) 
@@ -350,6 +352,12 @@ class Giv:Histo from Gtk:Drawing:Area {
         selfp->contrast_gl_min = min;
         selfp->contrast_gl_max = max;
         gtk_widget_queue_draw(GTK_WIDGET(self));
+    }
+
+    public void set_do_auto_contrast(self,
+                                     bool do_auto_contrast)
+    {
+        selfp->do_auto_contrast = do_auto_contrast;
     }
 
     public void auto_contrast(self)

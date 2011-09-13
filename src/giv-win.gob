@@ -101,6 +101,7 @@ static void cb_view_vflip (GtkAction *action, gpointer data);
 static void cb_view_colormap (GtkAction *action, gpointer data);
 static void cb_view_cross_hair (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
+static void cb_view_auto_contrast (GtkAction *action, gpointer data);
 static void cb_view_auto_reload (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
@@ -180,10 +181,6 @@ static gint
 cb_motion_event(GtkWidget *widget,
                 GdkEventMotion *event,
                 gpointer user_data);
-static gint
-cb_leave_notify_event(GtkWidget *widget,
-                      GdkEventCrossing *event,
-                      gpointer user_data);
 
 static void
 apply_color_map(GivWin *self);
@@ -374,6 +371,11 @@ static GtkToggleActionEntry toggle_entries[] =
     "_Auto Resize", NULL,    
     "Auto Resize",
     G_CALLBACK (cb_view_auto_resize), TRUE },
+  { "AutoContrast",
+    NULL,
+    "_Auto Contrast", NULL,    
+    "Auto Resize",
+    G_CALLBACK (cb_view_auto_contrast), TRUE },
   { "AutoReload",
     NULL,
     "A_uto Reload", NULL,    
@@ -475,6 +477,7 @@ class Giv:Win from Gtk:Window
     private bool do_square_aspect_ratio = true;
     private bool do_auto_fit_marks = TRUE;
     private bool do_auto_reload = FALSE;
+    private bool do_auto_contrast = TRUE;
     private bool do_no_transparency = FALSE;
     private gdouble last_move_x=-1;
     private gdouble last_move_y=-1;
@@ -972,10 +975,11 @@ class Giv:Win from Gtk:Window
         }
 
         selfp->img_org = new_img;
-        giv_image_get_min_max(new_img,
-                              // output
-                              &selfp->contrast_min,
-                              &selfp->contrast_max);
+        if (selfp->do_auto_contrast)
+            giv_image_get_min_max(new_img,
+                                  // output
+                                  &selfp->contrast_min,
+                                  &selfp->contrast_max);
         if (new_img->img_type == GIVIMAGE_U8
             || new_img->img_type == GIVIMAGE_RGB_U8
             || new_img->img_type == GIVIMAGE_RGBA_U8) {
@@ -1998,6 +2002,23 @@ static void cb_view_auto_resize (GtkAction *action, gpointer data)
         fit_marks_in_window(self);
 }
 
+static void cb_view_auto_contrast (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+
+    selfp->do_auto_contrast = !selfp->do_auto_contrast;
+    giv_contrast_set_do_auto_contrast(GIV_CONTRAST(selfp->w_contrast_view),
+                                      selfp->do_auto_contrast);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/AutoContrast")),
+        selfp->do_auto_contrast);
+
+    if (selfp->do_auto_contrast)
+        cb_load_image_when_idle(self);
+}
+
 static void cb_view_auto_reload (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
@@ -2930,6 +2951,7 @@ line_ver_line_intersect(double x0, double y0, double x1, double y1,
   return (*y_cross >= line_y0 && *y_cross <= line_y1 && *x_cross >= x0 && *x_cross <= x1);
 }
 
+#if 0
 static gboolean
 giv_check_img_for_mono(GdkPixbuf *im)
 {
@@ -2946,6 +2968,7 @@ giv_check_img_for_mono(GdkPixbuf *im)
     }
     return TRUE;
 }
+#endif
 
 static gboolean
 giv_check_img_for_mono(GivImage *im)
@@ -3203,6 +3226,7 @@ static void cb_image_reference(GtkWidget *widget,
 
 }
 
+#if 0
 static void cb_set_orientation(giv_parser_orientation_t hflip,
                                giv_parser_orientation_t vflip,
                                gpointer user_data)
@@ -3222,6 +3246,7 @@ static void cb_set_orientation(giv_parser_orientation_t hflip,
                         self);
     }
 }       
+#endif
 
 static void
 cb_file_list_drag_data_received (GtkWidget          *widget,
@@ -3322,8 +3347,6 @@ fit_marks_in_window(GivWin *self)
     printf("min_x min_y max_x max_y = %f %f %f %f\n",
            min_x, min_y, max_x, max_y);
 #endif
-    double scroll_x_dist, scroll_y_dist, scroll_x_center, scroll_y_center;
-    double scroll_min_x, scroll_min_y, scroll_max_x, scroll_max_y;
     double margin = 0;
     
 #if 0
@@ -3342,16 +3365,6 @@ fit_marks_in_window(GivWin *self)
     }
     else {
         margin= 10;
-
-        scroll_x_dist = max_x - min_x;
-        scroll_y_dist = max_y - min_y;
-        scroll_x_center = 0.5*(max_x + min_x);
-        scroll_y_center = 0.5*(max_y + min_y);
-        
-        scroll_min_x = scroll_x_center - scroll_x_dist * 0.5;
-        scroll_max_x = scroll_x_center + scroll_x_dist * 0.5;
-        scroll_min_y = scroll_y_center - scroll_y_dist * 0.5;
-        scroll_max_y = scroll_y_center + scroll_y_dist * 0.5;
 
         // The following is a hack around the problem of too thin
         // data in x or y... It should be solved in the gtk_image_viewer.

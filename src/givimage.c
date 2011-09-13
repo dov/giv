@@ -106,19 +106,22 @@ GivImage *giv_image_new_from_file(const char *filename,
         gboolean is_mono = TRUE;
 
         // Check if the file is monochrome.
-        int pix_idx;
+        int row_idx,col_idx;
         int width = gdk_pixbuf_get_width(pixbuf);
         int height = gdk_pixbuf_get_height(pixbuf);
         guint8 *buf = gdk_pixbuf_get_pixels(pixbuf);
         int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
-        
-        for(pix_idx=0; pix_idx<width * height; pix_idx++) {
-            if (buf[0] != buf[1]
-                || buf[0] != buf[2]) {
-                is_mono = FALSE;
-                break;
+
+        for (row_idx=0; row_idx<height; row_idx++) {
+            guint8 *p = buf + row_idx * row_stride;
+            for (col_idx=0; col_idx<width; col_idx++) {
+                if (p[0] != p[1]
+                    || p[0] != p[2]) {
+                    is_mono = FALSE;
+                    break;
+                }
+                p+= 3;
             }
-            buf+= 3;
         }
 
         if (is_mono) {
