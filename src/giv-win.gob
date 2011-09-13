@@ -2007,8 +2007,9 @@ static void cb_view_auto_contrast (GtkAction *action, gpointer data)
     GivWin *self = GIV_WIN(data);
 
     selfp->do_auto_contrast = !selfp->do_auto_contrast;
-    giv_contrast_set_do_auto_contrast(GIV_CONTRAST(selfp->w_contrast_view),
-                                      selfp->do_auto_contrast);
+    if (selfp->w_contrast_view)
+        giv_contrast_set_do_auto_contrast(GIV_CONTRAST(selfp->w_contrast_view),
+                                          selfp->do_auto_contrast);
     gtk_check_menu_item_set_active(
         GTK_CHECK_MENU_ITEM(
             gtk_ui_manager_get_widget(selfp->menu_manager,
@@ -2111,7 +2112,8 @@ cb_menu_contrast_view (GtkAction *action, gpointer data)
                      G_CALLBACK(cb_contrast_changed), self);
     g_signal_connect(selfp->w_contrast_view, "destroy",
                      G_CALLBACK(cb_contrast_view_destroy), self);
-
+    giv_contrast_set_do_auto_contrast(GIV_CONTRAST(selfp->w_contrast_view),
+                                      selfp->do_auto_contrast);
     gtk_widget_show_all(selfp->w_contrast_view);
 
     return;
