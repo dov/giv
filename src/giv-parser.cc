@@ -1129,3 +1129,42 @@ GPtrArray *giv_parser_get_giv_datasets(GivParser *gp)
 {
     return gp->giv_datasets;
 }
+
+int giv_parser_count_marks(GivParser *gp,
+                           double x0, double y0,
+                           double x1, double y1)
+{
+    double min_x = x0;
+    double max_x = x1;
+    if (min_x > max_x) {
+        double tmp = min_x;
+        min_x = max_x;
+        max_x = tmp;
+    }
+    double min_y = y0;
+    double max_y = y1;
+    if (min_y > max_y) {
+        double tmp = min_y;
+        min_y = max_y;
+        max_y = tmp;
+    }
+        
+        
+    int num_marks = 0;
+    for (int i=0; i<(int)gp->giv_datasets->len; i++) {
+        giv_dataset_t *dataset = (giv_dataset_t*)g_ptr_array_index(gp->giv_datasets, i);
+
+        if (!dataset->is_visible)
+            continue;
+        for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
+            point_t p = g_array_index(dataset->points, point_t, p_idx);
+
+            if (p.x >= min_x && p.x <= max_x
+                && p.y >= min_y && p.y <= max_y)
+                num_marks++;
+        }
+    }
+
+    return num_marks;
+}
+    

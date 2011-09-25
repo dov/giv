@@ -72,5 +72,8 @@ int giv_parser_giv_marks_data_add_line(GivParser *giv_parser,
                                        const char *filename,
                                        int linenum);
 GPtrArray* giv_parser_get_giv_datasets(GivParser *giv_parser);
+int giv_parser_count_marks(GivParser *giv_parser,
+                           double x0, double y0,
+                           double x1, double y1);
 
 #endif

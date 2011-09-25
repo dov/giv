@@ -106,6 +106,7 @@ static void cb_view_auto_reload (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
+static void cb_menu_count_marks (GtkAction *action, gpointer data);
 #if 0
 static void cb_menu_default (GtkAction *action, gpointer data);
 #endif
@@ -233,6 +234,10 @@ static void
 my_lasso_draw(cairo_t *cr,
               DovtkLassoContext context,
               gpointer user_data);
+static void
+my_lasso_draw_rectangle(cairo_t *cr,
+                        DovtkLassoContext context,
+                        gpointer user_data);
 
 // The following tables contain all the actions for both the menubar
 // and the popup menus.
@@ -391,6 +396,11 @@ static GtkToggleActionEntry toggle_entries[] =
     "_Quiver Zoom", NULL,
     "Quiver Zoom",
     G_CALLBACK (cb_menu_quiver_zoom), FALSE },
+  { "ToolCountMarks",
+    NULL,    
+    "_Count Marks", NULL,
+    "Count Marks",
+    G_CALLBACK (cb_menu_count_marks), FALSE },
 };
 
 static GtkRadioActionEntry actionsPseudoColor[] = {
@@ -500,6 +510,7 @@ class Giv:Win from Gtk:Window
     //   private giv_backstore_t *back_store = NULL;
     private DovtkLasso *lasso = NULL;
     private gboolean is_measuring_distance = FALSE;
+    private gboolean is_counting_marks = FALSE;
     private int picking_mode = 0;
     private gboolean is_quiver_zoom = FALSE;
     private gint measure_point_index = 0;
@@ -924,7 +935,7 @@ class Giv:Win from Gtk:Window
     public int load_giv(self,
                         const char *filename)
     {
-        giv_widget_clear_giv(GIV_WIDGET(selfp->w_imgv));
+      //        giv_widget_clear_giv(GIV_WIDGET(selfp->w_imgv));
         giv_widget_add_giv_from_file(GIV_WIDGET(selfp->w_imgv),
                                      filename);
 #if 0
@@ -1487,7 +1498,8 @@ cb_button_press_event (GtkWidget * widget,
 
     if (event->button == 1) {
         // check if are in measure mode ('z')
-        if (selfp->is_measuring_distance) {
+        if (selfp->is_measuring_distance
+            || selfp->is_counting_marks) {
             selfp->picking_mode = dovtk_lasso_get_label_for_pixel(selfp->lasso, event->x, event->y);
             if (selfp->measure_point_index == 0
                 && selfp->picking_mode) {
@@ -1534,6 +1546,19 @@ cb_button_release_event (GtkWidget * widget,
 #endif
         selfp->is_dragging = FALSE;
         giv_win_redraw(self);
+    }
+
+    if (selfp->is_counting_marks) {
+      // Get image region
+      GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
+      int num_marks =  giv_parser_count_marks(giv_parser,
+                                              selfp->measure_x1,
+                                              selfp->measure_y1,
+                                              selfp->measure_x2,
+                                              selfp->measure_y2);
+      char label[64];
+      sprintf(label, "%d marks in rectangle", num_marks);
+      gtk_label_set(GTK_LABEL(selfp->w_info_label), label);
     }
     selfp->picking_mode = 0;
     selfp->measure_point_index = 0;
@@ -1729,6 +1754,30 @@ cb_motion_event(GtkWidget *widget,
     
     gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
                                              cx, cy, &x, &y);
+    
+    if (selfp->is_counting_marks) {
+
+        if (selfp->picking_mode) {
+            double dx = x - selfp->picking_x;
+            double dy = y - selfp->picking_y;
+            if (selfp->picking_mode == 1 || selfp->picking_mode==2) {
+                selfp->measure_x1 += dx;
+                selfp->measure_y1 += dy;
+            }
+            if (selfp->picking_mode == 1 || selfp->picking_mode==3) {
+                selfp->measure_x2 += dx;
+                selfp->measure_y2 += dy;
+            }
+            selfp->picking_x = x;
+            selfp->picking_y = y;
+        }
+        else if (selfp->measure_point_index == 1) {
+            selfp->measure_x2 = x;
+            selfp->measure_y2 = y;
+        }
+
+        dovtk_lasso_update(selfp->lasso);
+    }
     
     if (selfp->is_measuring_distance) {
         if (selfp->picking_mode) {
@@ -2188,6 +2237,35 @@ cb_menu_quiver_zoom (GtkAction *action, gpointer data)
     GivWin *self = GIV_WIN(data);
     
     selfp->is_quiver_zoom = !selfp->is_quiver_zoom;
+  
+    return;
+}
+
+void
+cb_menu_count_marks (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+
+    // Silently ignore if we are measuring distances
+    if (selfp->is_measuring_distance)
+        return;
+    
+    selfp->is_counting_marks = !selfp->is_counting_marks;
+    if (selfp->is_counting_marks) {
+      //        selfp->back_store = create_backstore(selfp->w_imgv);
+        selfp->measure_x1=-1;
+        selfp->measure_y1=-1;
+        selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
+                                          &my_lasso_draw_rectangle,
+                                          self);
+    }
+    else {
+        //free_giv_backstore (selfp->back_store);
+        //selfp->back_store = NULL;
+        dovtk_lasso_destroy(selfp->lasso);
+        selfp->lasso = NULL;
+        gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+    }
   
     return;
 }
@@ -3841,6 +3919,54 @@ my_lasso_draw(cairo_t *cr,
 #if 0
     cairo_stroke(cr);
 #endif
+}
+
+/** 
+ * Draw  whatever overlay you want on the image. If the do_mask
+ * is on, then you should paint in black and with a pen that
+ * is thicker than the drawing. 
+ */
+static void
+my_lasso_draw_rectangle(cairo_t *cr,
+                        DovtkLassoContext context,
+                        gpointer user_data)
+{
+    GivWin *self = GIV_WIN(user_data);
+    double start_x, start_y;
+    double end_x, end_y;
+
+    gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                             selfp->measure_x1,
+                                             selfp->measure_y1,
+                                             &start_x, &start_y);
+    gtk_image_viewer_img_coord_to_canv_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                             selfp->measure_x2,
+                                             selfp->measure_y2,
+                                             &end_x, &end_y);
+
+    // Draw a rectangle
+    double min_x = start_x;
+    if (end_x < min_x)
+        min_x = end_x;
+    double min_y = start_y;
+    if (end_y < min_y)
+        min_y = end_y;
+
+    cairo_rectangle(cr, min_x, min_y,
+                    fabs(end_x-start_x), abs(end_y-start_y));
+
+    double margin = 0;
+    if (context == DOVTK_LASSO_CONTEXT_PAINT)
+        cairo_set_source_rgba(cr, 1,0,0,0.6);
+    else {
+        cairo_set_source_rgba(cr, 1,1,1,1);
+        cairo_set_line_width(cr, 5);
+    }
+        
+    if (context == DOVTK_LASSO_CONTEXT_LABEL) 
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 1);
+
+    cairo_stroke(cr);
 }
 
 %}

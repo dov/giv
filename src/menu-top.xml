@@ -42,6 +42,7 @@
       <menuitem name="Calibrate" action="ToolCalibrateAction" />
       <menuitem name="MeasureDistance" action="ToolMeasureDistanceAction" />
       <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
+      <menuitem name="CountMarks" action="ToolCountMarks" />
     </menu>
     <menu name="Help" action="HelpMenuAction" position="bot">
       <menuitem name="Copyright" action="CopyrightAction" />
