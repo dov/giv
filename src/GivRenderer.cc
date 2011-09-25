@@ -367,10 +367,26 @@ clip_line_to_rectangle(double x0, double y0, double x1, double y1,
         return TRUE;
     }
     else {
-        *cx0 = cross_x[0];
-        *cy0 = cross_y[0];
-        *cx1 = cross_x[1];
-        *cy1 = cross_y[1];
+        // This is wrong. The right thing is to choose which of the points [0] or [1]
+        // sit on the rectangle, and use that point.
+        if (z0_inside) {
+            *cx1 = cross_x[0];
+            *cy1 = cross_y[0];
+            *cx0 = x0;
+            *cy0 = y0;
+        }
+        else if (z1_inside) {
+            *cx0 = cross_x[0];
+            *cy0 = cross_y[0];
+            *cx1 = x1;
+            *cy1 = y1;
+        }
+        else {
+            *cx0 = cross_x[0];
+            *cy0 = cross_y[0];
+            *cx1 = cross_x[1];
+            *cy1 = cross_y[1];
+        }
         return TRUE;
     }
 }

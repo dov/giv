@@ -1,5 +1,7 @@
 2011-09-25  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
+        * GivRenderer.gob : Temporary fix for clipping error. 
+
         * giv-win.gob, giv-parser.gob : Added tool for counting marks in rectangle.
 
         * giv-win.gob : Fixed bug that he -join flag wasn't functioning.
