@@ -100,6 +100,7 @@ static void cb_view_hflip (GtkAction *action, gpointer data);
 static void cb_view_vflip (GtkAction *action, gpointer data);
 static void cb_view_colormap (GtkAction *action, gpointer data);
 static void cb_view_cross_hair (GtkAction *action, gpointer data);
+static void cb_view_pixel_grid (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
 static void cb_view_auto_contrast (GtkAction *action, gpointer data);
 static void cb_view_auto_reload (GtkAction *action, gpointer data);
@@ -371,6 +372,11 @@ static GtkToggleActionEntry toggle_entries[] =
     "View Cross Hair", NULL,    
     "View Cross hair",
     G_CALLBACK (cb_view_cross_hair), FALSE },
+  { "ViewPixelGrid",
+    NULL,
+    "View Pixel Grid", NULL,    
+    "View Pixel Grid",
+    G_CALLBACK (cb_view_pixel_grid), FALSE },
   { "AutoResize",
     NULL,
     "_Auto Resize", NULL,    
@@ -487,6 +493,11 @@ class Giv:Win from Gtk:Window
     private bool do_square_aspect_ratio = true;
     private bool do_auto_fit_marks = TRUE;
     private bool do_auto_reload = FALSE;
+    private bool do_draw_pixel_grid = TRUE;
+    // If the image is triggered to be loaded by auto reload then the
+    // a failure to load is silently ignored. This is handled by the
+    // auto_relod_trigger flag;
+    private bool auto_reload_trigger = FALSE; 
     private bool do_auto_contrast = TRUE;
     private bool do_no_transparency = FALSE;
     private gdouble last_move_x=-1;
@@ -971,12 +982,22 @@ class Giv:Win from Gtk:Window
         }
 
         if (error) {
-            app_error(self,
-                      "Failed to load image %s: %s\n",
-                      filename, error->message);
+            // Silently ignore image failures on auto reload
+            if (selfp->do_auto_reload && selfp->auto_reload_trigger) {
+                // Force a new test
+                selfp->cached_mtime = 0;
+                return;
+            }
+            else {
+                app_error(self,
+                          "Failed to load image %s: %s\n",
+                          filename, error->message);
+                return;
+            }
             g_error_free(error);
-            return;
         }
+        
+        selfp->auto_reload_trigger = false;
         
         if (selfp->img_org)
             giv_image_unref(selfp->img_org);
@@ -1465,6 +1486,7 @@ static gboolean auto_reload_function(gpointer data)
     stat(fn, &st);
     if (st.st_mtime != selfp->cached_mtime) {
         selfp->cached_mtime = st.st_mtime;
+        selfp->auto_reload_trigger = TRUE;
         giv_win_set_current_file(self, selfp->filename_list_index);
     }
 
@@ -2032,6 +2054,19 @@ static void cb_view_cross_hair (GtkAction *action, gpointer data)
             gtk_ui_manager_get_widget(selfp->menu_manager,
                                       "/menubar/ViewMenu/CrossHair")),
         selfp->do_view_cross_hair);
+
+    giv_win_redraw(self);
+}
+
+static void cb_view_pixel_grid (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+    GtkWidget *menu_widget = gtk_ui_manager_get_widget(selfp->menu_manager,
+                                                       "/menubar/ViewMenu/CrossHair");
+
+    gboolean old_val = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
+    giv_widget_set_show_grid(GIV_WIDGET(selfp->w_imgv), !old_val);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_widget), !old_val);
 
     giv_win_redraw(self);
 }
@@ -2739,13 +2774,15 @@ void draw_to_cairo(cairo_t *cr,
         gdk_pixbuf_unref(cimg);
     }
 
-    GivPainterCairo painter(cr);
-    GivRenderer renderer(datasets, painter,
-                         scale_x, scale_y,
-                         shift_x, shift_y,
-                         cnv_width, cnv_height);
-    renderer.set_do_no_transparency(selfp->do_no_transparency);
-    renderer.paint();
+    if (selfp->do_view_marks) {
+        GivPainterCairo painter(cr);
+        GivRenderer renderer(datasets, painter,
+                             scale_x, scale_y,
+                             shift_x, shift_y,
+                             cnv_width, cnv_height);
+        renderer.set_do_no_transparency(selfp->do_no_transparency);
+        renderer.paint();
+    }
 #endif
 }
 

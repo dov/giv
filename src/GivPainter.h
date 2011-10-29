@@ -20,6 +20,14 @@ class GivPainter {
                            double green,
                            double blue,
                            double alpha=1.0) = 0;
+    void set_giv_color(GivColor giv_color)
+    {
+        static const double s = 1.0/0xffff;
+        set_color(giv_color.red * s,
+                  giv_color.green * s,
+                  giv_color.blue * s,
+                  giv_color.alpha * s);
+    }
     virtual int set_line_width(double line_width) = 0;
     virtual int set_text_size(double text_size) = 0;
     virtual int set_font(const char* font) = 0;

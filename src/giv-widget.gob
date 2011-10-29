@@ -43,6 +43,7 @@ typedef void (*giv_widget_file_reference_callback_t)(const char *filename,
 #include "GivRenderer.h"
 #include "colormaps.h"
 #include "giv-data.h"
+#include "math.h"
 
 using namespace std;
 
@@ -91,6 +92,7 @@ class Giv:Widget from Gtk:Image:Viewer
     private bool do_view_cross_hair = FALSE;
     private bool do_show_balloon = FALSE;
     private bool do_no_transparency = FALSE;
+    private bool do_show_grid = FALSE;
     private gint last_cx = 0;
     private gint last_cy = 0;
     private gint last_move_x = 0;
@@ -101,6 +103,8 @@ class Giv:Widget from Gtk:Image:Viewer
     private GivPseudoColor colormap = GIV_PSEUDO_COLOR_OFF;
     private giv_widget_file_reference_callback_t file_reference_cb;
     private gpointer file_reference_user_data;
+    private int pixel_grid_min_zoom = 5;
+    private GivColor pixel_grid_color;
    
     public GtkWidget *
     new (GdkPixbuf *pixbuf)
@@ -129,6 +133,12 @@ class Giv:Widget from Gtk:Image:Viewer
             gtk_widget_modify_bg(selfp->w_balloon_window,
                                  GTK_STATE_NORMAL, &color);
         }
+
+        // Default grid color. This should be made configurable
+        selfp->pixel_grid_color.red = 0xffff;
+        selfp->pixel_grid_color.green = 0;
+        selfp->pixel_grid_color.blue = 0;
+        selfp->pixel_grid_color.alpha = 0x8000;
 
         gtk_widget_set_app_paintable (selfp->w_balloon_window, TRUE);
         gtk_window_set_resizable (GTK_WINDOW(selfp->w_balloon_window), FALSE);
@@ -342,6 +352,13 @@ class Giv:Widget from Gtk:Image:Viewer
     }
 
     public
+    void set_show_grid(self,
+                          bool do_show_grid)
+    {
+      selfp->do_show_grid = do_show_grid;
+    }
+
+    public
     void set_colormap(self,
                       GivPseudoColor pseudo_color)
     {
@@ -386,6 +403,10 @@ class Giv:Widget from Gtk:Image:Viewer
             return 1;
         case 'm':
             giv_widget_set_show_marks(self, !selfp->do_view_marks);
+            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+            return 1;
+        case 'g':
+            giv_widget_set_show_grid(self, !selfp->do_show_grid);
             gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
             return 1;
         case 'x':
@@ -587,6 +608,35 @@ cb_image_annotate(GivWidget *self,
             painter.stroke();
             painter.fill();
         }
+    }
+
+    // Draw the grid
+    if (selfp->do_show_grid && scale_x > selfp->pixel_grid_min_zoom) {
+        // img bounding box of image currently shown
+        int x0, x1, y0, y1;
+        // px = ix * scale_x - shift_x
+        // ix = (px+shift_x)/scale_x
+        x0 = (int)floor(1.0*shift_x/scale_x);
+        y0 = (int)floor(1.0*shift_y/scale_y);
+        x1 = (int)ceil((width+shift_x)/scale_x);
+        y1 = (int)ceil((height+shift_y)/scale_y);
+        double color_scale = 1.0/0xffff;
+
+        painter.set_giv_color(selfp->pixel_grid_color);
+        painter.set_line_width(1);
+        for (int i=x0; i<=x1; i++) {
+            double px = i*scale_x - shift_x;
+
+            painter.add_line_segment(px,0, px,height);
+            painter.stroke();
+        }
+        for (int i=y0; i<=y1; i++) {
+            double py = i*scale_y - shift_y;
+
+            painter.add_line_segment(0,py, width,py);
+            painter.stroke();
+        }
+        painter.fill();
     }
 
     // Create the label image necessary for the balloon popup. The
