@@ -1,3 +1,8 @@
+2011-11-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Taken into account the aspect ratio when calculating
+        the auto fit scale ratio.
+
 2011-10-30  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob, giv-widget.gob : Added support for pixel grid.

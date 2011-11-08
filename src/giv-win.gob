@@ -3482,18 +3482,21 @@ fit_marks_in_window(GivWin *self)
     }
     else {
         margin= 10;
+        int cnv_width = selfp->w_imgv->allocation.width;
+        int cnv_height = selfp->w_imgv->allocation.height;
+        double aspect_ratio = 1.0*cnv_height/cnv_width;
 
         // The following is a hack around the problem of too thin
         // data in x or y... It should be solved in the gtk_image_viewer.
         if (max_x - min_x < max_y-min_y) {
             double avg_x = 0.5*(max_x+min_x);
-            min_x = avg_x - 0.5*(max_y-min_y);
-            max_x = avg_x + 0.5*(max_y-min_y);
+            min_x = avg_x - 0.5/aspect_ratio*(max_y-min_y);
+            max_x = avg_x + 0.5/aspect_ratio*(max_y-min_y);
         }
         if (max_y - min_y < max_x-min_x) {
             double avg_y = 0.5*(max_y+min_y);
-            min_y = avg_y - 0.5*(max_x-min_x);
-            max_y = avg_y + 0.5*(max_x-min_x);
+            min_y = avg_y - aspect_ratio*0.5*(max_x-min_x);
+            max_y = avg_y + aspect_ratio*0.5*(max_x-min_x);
         }
         
         gtk_image_viewer_set_scroll_region(GTK_IMAGE_VIEWER(selfp->w_imgv),
