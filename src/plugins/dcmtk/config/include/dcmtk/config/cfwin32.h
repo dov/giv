@@ -888,6 +888,6 @@ typedef unsigned short ushort;
 #endif /* _WIN32 */
 
 #include <windows.h>
-#define unlink(s) DeleteFile(s)
+#define dcmtk_unlink(s) DeleteFile(s)
 
 #endif /* CFWIN32_H */

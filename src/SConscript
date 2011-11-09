@@ -43,7 +43,7 @@ if ARGUMENTS.get('mingw', 0):
                       ["giv.rc",
                        "giv-logo.ico"
                       ],
-                      ["i686-pc-mingw32-windres giv.rc giv.res.obj"],
+                      ["i686-w64-mingw32-windres giv.rc giv.res.obj"],
                       chdir=1)
     print "res = ", res
     src_giv_exe = src_giv_exe + res

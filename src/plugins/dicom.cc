@@ -6,6 +6,7 @@
 //  Mon Nov  9 06:28:09 2009
 //----------------------------------------------------------------------
 
+#include <stdio.h>
 #include "dcmtk/dcmdata/dcfilefo.h"
 #include "dcmtk/dcmdata/dcdeftag.h"
 #include "../givimage.h"

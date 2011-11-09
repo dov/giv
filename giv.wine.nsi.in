@@ -35,38 +35,39 @@ File /r examples
 SetOutPath $INSTDIR\bin
 File src\Giv.exe
 File src\giv-image.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgcc_s_sjlj-1.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libstdc++-6.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libiconv-2.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libpcre-0.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libintl-8.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgdk-win32*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgdk_pixbuf*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgtk-win32*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgio*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libcairo*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libjasper-1.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\zlib*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libglib*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libatk*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgobject*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgmodule*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libgthread*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libpango*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libpng*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libtiff*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libjpeg*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libpixman-1-0.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libfontconfig*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\libfreetype*.dll
-File \usr\i686-pc-mingw32\sys-root\mingw\bin\gdk-pixbuf-query-loaders.exe
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgcc_s_sjlj-1.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libstdc++-6.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\iconv.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpcre-0.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libintl-8.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libffi-6.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgdk-win32*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgdk_pixbuf*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgtk-win32*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgio*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libcairo*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libjasper-1.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\zlib*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libglib*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libatk*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgobject*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgmodule*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgthread*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpango*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpng*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libtiff*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libjpeg*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpixman-1-0.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libfontconfig*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libfreetype*.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\gdk-pixbuf-query-loaders.exe
 
 SetOutPath $INSTDIR\etc
-File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\gtk-2.0
-File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\fonts
-File /r \usr\i686-pc-mingw32\sys-root\mingw\etc\pango
+File /r \usr\i686-w64-mingw32\sys-root\mingw\etc\gtk-2.0
+File /r \usr\i686-w64-mingw32\sys-root\mingw\etc\fonts
+File /r \usr\i686-w64-mingw32\sys-root\mingw\etc\pango
 SetOutPath $INSTDIR\etc\gtk-2.0
-File \usr\i686-pc-mingw32\sys-root\mingw\share\themes\MS-Windows\gtk-2.0\gtkrc
+File \usr\i686-w64-mingw32\sys-root\mingw\share\themes\MS-Windows\gtk-2.0\gtkrc
 
 # Plugins
 SetOutPath $INSTDIR\plugins
@@ -74,15 +75,15 @@ File src\plugins\*.dll
 
 # pango
 SetOutPath $INSTDIR\lib
-File /r \usr\i686-pc-mingw32\sys-root\mingw\lib\pango
+File /r \usr\i686-w64-mingw32\sys-root\mingw\lib\pango
 
 # pixbuf etc
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
-File /r \usr\i686-pc-mingw32\sys-root\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders*
+File /r \usr\i686-w64-mingw32\sys-root\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders*
 SetOutPath $INSTDIR\lib\gtk-2.0\2.10.0\engines
-File \usr\i686-pc-mingw32\sys-root\mingw\lib\gtk-2.0\2.10.0\engines\*
+File \usr\i686-w64-mingw32\sys-root\mingw\lib\gtk-2.0\2.10.0\engines\*
 SetOutPath $INSTDIR\share\themes 
-File /r \usr\i686-pc-mingw32\sys-root\mingw\share\themes\*
+File /r \usr\i686-w64-mingw32\sys-root\mingw\share\themes\*
 
 # Build the gdk-pixbuf.loaders file automatically
 #ExpandEnvStrings $0 %COMSPEC%
