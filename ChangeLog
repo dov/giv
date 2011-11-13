@@ -1,3 +1,7 @@
+2011-11-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * configure.in: Bumped version to 0.1.20
+
 2011-11-08  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * giv-win.gob : Taken into account the aspect ratio when calculating

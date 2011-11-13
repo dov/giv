@@ -18,11 +18,11 @@
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.18</font><br>
+    <font size=+2>Version 0.9.20</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2011-04-05   </font>
+    <font size=-1>Last modified: 2011-11-13  </font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -34,10 +34,12 @@
       provides small-memory zoomup of images.</LI>
     <li>Support for 8-bit, floating point, 16-bit, and 32-bit gray and color images.
     <li>Plugin support for external loaders.
+    <li>Support for multi-slice images.
     <li>Includes loaders for the npy-format, FITS-format, and a simple DICOM 
   reader.
-    <li>A contrast tool  allows interactively changing
+    <li>An interactive contrast tool  allows interactively changing
   contrast and brightness.
+
     <LI> It can display lines and marks on top of an image with sub
       pixel accuracy. </LI>
     <LI> Pseudo coloring of gray level images.</LI>
@@ -380,16 +382,20 @@ giv. The result is shown in the screenshow below.
 	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.1
 <tr><td bgcolor=#ffeeee valign=top>Scroll wheel down
 	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.1
+<!--
 <tr><td bgcolor=#fbf2ee valign=top>Shift+scroll wheel up
 	  <td bgcolor=#fbf2ee valign=top>Zoom in of quiver vectors by a factor of 1.1
 <tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel down
 	  <td bgcolor=#ffeeee valign=top>Zoom out of quiver vectors by a factor of 1.1
+-->
 <tr><td bgcolor=#fbf2ee valign=top>f
 	  <td bgcolor=#fbf2ee valign=top>Fill data to window
 <tr><td bgcolor=#ffeeee valign=top>B3
 	  <td bgcolor=#ffeeee valign=top>Popup options menu.
+<!--
 <tr><td bgcolor=#fbf2ee valign=top>c
 	  <td bgcolor=#fbf2ee valign=top>Toggle cross hair.
+-->
 <tr><td bgcolor=#ffeeee valign=top>m
 	  <td bgcolor=#ffeeee valign=top>Toggle overlay.
 <tr><td bgcolor=#fbf2ee valign=top>o
@@ -409,7 +415,7 @@ giv. The result is shown in the screenshow below.
 <tr><td bgcolor=#ffeeee valign=top>Right/BackSpace
 	  <td bgcolor=#ffeeee valign=top>Show previous image in directory.
 <tr><td bgcolor=#fbf2ee valign=top>Shift-Down
-	  <td bgcolor=#fbf2ee valign=top>Choose next image when several $image references are given
+	  <td bgcolor=#fbf2ee valign=top>Choose next image when several $image references are given or next image for multi depth images.
 <tr><td bgcolor=#ffeeee valign=top>Shift-Up
 	  <td bgcolor=#ffeeee valign=top>Choose previous $image image
 </table>
