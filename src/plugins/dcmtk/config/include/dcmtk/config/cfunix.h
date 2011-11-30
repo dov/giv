@@ -338,9 +338,12 @@ typedef unsigned size_t;
 #endif
 
 /* Define `ssize_t' to `long' if <sys/types.h> does not define. */
+#include <stdio.h>
+#if 0
 #define HAVE_NO_TYPEDEF_SSIZE_T 1
 #ifdef HAVE_NO_TYPEDEF_SSIZE_T
 typedef long ssize_t;
+#endif
 #endif
 
 /* Define `uchar' to `unsigned char' if <sys/types.h> does not define. */
