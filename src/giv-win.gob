@@ -1460,7 +1460,10 @@ class Giv:Win from Gtk:Window
     {
         GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, index);
         gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
-        return g_strrstr(filename0, ".")+1;
+        const gchar *dot_pos = g_strrstr(filename0, ".");
+        if (!dot_pos)
+            return NULL;
+        return dot_pos;
     }
 }
 
@@ -1655,6 +1658,11 @@ cb_key_press_event (GtkWidget * widget,
                 break;
 
             const gchar *new_type = giv_win_get_filetype_for_index(self,new_index);
+            if (org_type == NULL && new_type == NULL)
+                break;
+            if (!org_type || !new_type)
+                continue;
+            
             if (g_ascii_strcasecmp(org_type,new_type)!=0)
                 continue;
             break;
