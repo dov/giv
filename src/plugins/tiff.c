@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include "../givimage.h"
 #include "../givplugin.h"
-#include "../givregex.h"
 #include <glib.h>
 #include <math.h>
 #include "tiffio.h"

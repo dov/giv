@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include "../givimage.h"
 #include "../givplugin.h"
-#include "../givregex.h"
 #include <glib.h>
 #include <math.h>
 
@@ -52,15 +51,15 @@ GivImage *giv_plugin_load_file(const char *filename,
     
     // Use regex to parse the header. Should update this to allow
     // user attributes.
-    GivRegex *regex = g_regex_new ("^\\{\\s*"
-                                   "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
-                                   "'fortran_order':\\s*(\\w+)\\s*,\\s*"
-                                   "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
-                                   "\\}", 0, 0, error);
+    GRegex *regex = g_regex_new ("^\\{\\s*"
+                                 "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
+                                 "'fortran_order':\\s*(\\w+)\\s*,\\s*"
+                                 "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
+                                 "\\}", 0, 0, error);
     if (*error) 
         return NULL;
 
-    GivMatchInfo *match_info = NULL;
+    GMatchInfo *match_info = NULL;
     gboolean is_match = g_regex_match_full(regex,
                                            npy_string+10,
                                            header_len,
