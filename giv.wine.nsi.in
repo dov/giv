@@ -60,6 +60,7 @@ File \usr\i686-w64-mingw32\sys-root\mingw\bin\libjpeg*.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpixman-1-0.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libfontconfig*.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libfreetype*.dll
+File \usr\local\mingw32\bin\libjson-glib-1.0-0.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\gdk-pixbuf-query-loaders.exe
 
 SetOutPath $INSTDIR\etc

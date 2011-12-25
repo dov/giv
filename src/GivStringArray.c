@@ -6,7 +6,6 @@
 //----------------------------------------------------------------------
 
 #include "GivStringArray.h"
-#include "givregex.h"
 
 void giv_string_array_free(GPtrArray *string_array)
 {
@@ -21,10 +20,10 @@ int giv_string_array_find(GPtrArray* string_array,
 {
     int i=0;
     for (i =0; i<string_array->len; i++) {
-        if (giv_regex_match_simple(pattern,
-                                   (gchar*)g_ptr_array_index(string_array, i),
-                                   GIV_REGEX_CASELESS,
-                                   (GivRegexMatchFlags)0)) {
+        if (g_regex_match_simple(pattern,
+                                 (gchar*)g_ptr_array_index(string_array, i),
+                                 G_REGEX_CASELESS,
+                                 (GRegexMatchFlags)0)) {
             return i;
         }
     }

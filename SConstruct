@@ -120,12 +120,13 @@ env.Append(CPPPATH=[],
            LIBPATH=["#/src/agg",
                     "#/src/plis",
                     "#/src/gtkimageviewer",
+                    "#/src/glib-jsonrpc",
                     ],
            RPATH=["agg/src"],
-           LIBS=['gtkimageviewer_local', 'agg']
+           LIBS=['gtkimageviewer_local', 'agg', 'glib-jsonrpc_local']
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 json-glib-1.0 gio-2.0")
 
 SConscript(['src/SConscript',
             'doc/SConscript',

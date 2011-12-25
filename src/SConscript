@@ -23,7 +23,6 @@ def file2c(env, target, source):
     inp.close()
 
 src_giv_image = ['givimage.c',
-                 "givregex.c",
                  'givplugin.c',
                  ]
 
@@ -135,6 +134,7 @@ SConscript(['agg/SConscript',
             'plis/SConscript',
             'gtkimageviewer/SConscript',
             'plugins/SConscript',
+            'glib-jsonrpc/SConscript',
 #            'pcre/SConscript',
             ],
            exports='env')

@@ -1,0 +1,6 @@
+Import('env')
+
+env.Library("glib-jsonrpc_local",
+            ["glib-jsonrpc-json.c",
+             "glib-jsonrpc-server.c",
+             "glib-jsonrpc-client.c"])

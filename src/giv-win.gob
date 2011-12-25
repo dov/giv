@@ -13,6 +13,8 @@ requires 2.0.0
 #include "giv-data.h"
 #include "plis/plis.h"
 #include "givimage.h"
+#include "glib-jsonrpc/glib-jsonrpc-server.h"
+#include "glib-jsonrpc/glib-jsonrpc-client.h"
 %}
 
 %{
@@ -44,10 +46,10 @@ requires 2.0.0
 #include "GivStringArray.h"
 #include "time.h"
 #include <sys/stat.h>
-#include "givregex.h"
 #include "giv-calibrate-dialog.h"
 #include "giv-settings.h"
 #include "giv-settings-editor.h"
+#include "glib-jsonrpc/glib-jsonrpc-json.h"
 
 using namespace std;
 using namespace plis;
@@ -86,6 +88,8 @@ enum
     DND_TEXT_PLAIN,
     DND_TEXT_URI_LIST
 };
+
+const int GIV_DEFAULT_PORT = 8222;
 
 /* Target types for dropping into the file list */
 static const GtkTargetEntry file_list_dest_targets[] = {
@@ -239,6 +243,7 @@ static void
 my_lasso_draw_rectangle(cairo_t *cr,
                         DovtkLassoContext context,
                         gpointer user_data);
+static void create_remote_commands(GivWin *self);
 
 // The following tables contain all the actions for both the menubar
 // and the popup menus.
@@ -546,6 +551,7 @@ class Giv:Win from Gtk:Window
     private gchar *pixelsize_unit = NULL;
     private double last_measure_distance_in_pixels = -1;
     private GivSettings *giv_settings = NULL destroy { g_object_unref(giv_settings); };
+    private GLibJsonRpcServer *jsonrpc_server;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -563,6 +569,9 @@ class Giv:Win from Gtk:Window
         double shift_x = 0;
         double shift_y = 0;
         char *export_filename = NULL;
+        int giv_port = GIV_DEFAULT_PORT;
+        gboolean do_remote = FALSE;
+        const gchar *giv_host = "localhost"; // Currently fixed
 
         // Parse command line
         while(argp < argc && argv[argp][0] == '-') {
@@ -605,18 +614,63 @@ class Giv:Win from Gtk:Window
                 shift_y = atof(argv[argp++]);
                 continue;
             }
-            CASE("-export") {
+            CASE("-export")
+              {
                 export_filename = argv[argp++];
                 continue;
-            }
+              }
+            CASE("-port")
+              {
+                giv_port = atoi(argv[argp++]);
+                continue;
+              }
+            CASE("-remote")
+              {
+                do_remote = TRUE;
+                continue;
+              }
 
             printf("Unknown option %s!\n", S_);
             exit(-1);
         }
 
+        // Load an image into a remote instance of giv. If this fails,
+        // then normal loading should take place.
+        if (do_remote)
+          {
+            GLibJsonRpcClient *client = glib_jsonrpc_client_new(giv_host,
+                                                                giv_port);
+
+            if (client)
+              {
+                // assume a single image
+                JsonNode *params = glib_jsonrpc_json_csv_to_json_array(argv[argp++]);
+                JsonNode *response = NULL;
+                int status = glib_jsonrpc_client_call(client,
+                                                      "load_file",
+                                                      params,
+                                                      // output
+                                                      &response);
+                json_node_free(params);
+                if (response)
+                  json_node_free(response);
+                if (status==0)
+                  exit(0);
+              }
+
+            // Fall through and run giv normally!
+          }
+            
+
         selfp->cb_names = g_ptr_array_new();
         selfp->filename_list = g_ptr_array_new();
         selfp->pixelsize_unit = g_strdup("");
+
+        selfp->jsonrpc_server = glib_jsonrpc_server_new(giv_port);
+
+        // Silently ignore failed server
+        if (selfp->jsonrpc_server)
+          create_remote_commands(self);
 
         gchar *settings_file = g_strdup_printf("%s/.config/Giv/giv.conf", g_get_home_dir());
         selfp->giv_settings = GIV_SETTINGS(giv_settings_new(settings_file));
@@ -3727,10 +3781,10 @@ bool is_file_ext(const char *filename,
 {
     gchar *pattern = g_strdup_printf("\\.(%s)$",
                                      ext_match);
-    bool res = giv_regex_match_simple(pattern,
-                                      filename,
-                                      GIV_REGEX_CASELESS,
-                                      GivRegexMatchFlags(0));
+    bool res = g_regex_match_simple(pattern,
+                                    filename,
+                                    G_REGEX_CASELESS,
+                                    GRegexMatchFlags(0));
     g_free(pattern);
     return res;
 }
@@ -4001,9 +4055,8 @@ my_lasso_draw_rectangle(cairo_t *cr,
         min_y = end_y;
 
     cairo_rectangle(cr, min_x, min_y,
-                    fabs(end_x-start_x), abs(end_y-start_y));
+                    fabs(end_x-start_x), fabs(end_y-start_y));
 
-    double margin = 0;
     if (context == DOVTK_LASSO_CONTEXT_PAINT)
         cairo_set_source_rgba(cr, 1,0,0,0.6);
     else {
@@ -4015,6 +4068,90 @@ my_lasso_draw_rectangle(cairo_t *cr,
         dovtk_lasso_set_color_label(selfp->lasso, cr, 1);
 
     cairo_stroke(cr);
+}
+
+static int cmd_ping(GLibJsonRpcServer *server,
+                    const char *method,
+                    JsonNode *params,
+                    JsonNode **response,
+                    gpointer user_data)
+{
+  printf("pong!\n");
+
+  *response = json_node_new(JSON_NODE_VALUE);
+  json_node_set_string(*response, "pong");
+  
+  return 0;
+}
+
+static int cmd_load_file(GLibJsonRpcServer *server,
+                         const char *method,
+                         JsonNode *params,
+                         JsonNode **response,
+                         gpointer user_data)
+{
+  GivWin *self = (GivWin*)user_data;
+  *response = json_node_new(JSON_NODE_VALUE);
+  JsonReader *reader = json_reader_new(params);
+  
+  // Assume array at the moment
+  json_reader_read_element(reader, 0);
+  const char *filename = json_reader_get_string_value(reader);
+
+  // The following ugly code is the same as is used in the
+  // open response callback. It should be joined!
+  char *basename = g_path_get_basename(filename);
+  giv_win_read_dir_into_filename_list(self, filename);
+  selfp->filename_list_index = -1;
+  for (int i=0; i<(int)selfp->filename_list->len; i++)
+    {
+      GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
+                                                         i);
+      if (g_str_has_suffix((const gchar*)g_ptr_array_index(fn_list, 0),
+                           basename)) {
+        selfp->filename_list_index = i;
+        break;
+      }
+    }
+  g_free(basename);
+  if (selfp->filename_list->len
+      && selfp->filename_list_index < 0) {
+    GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
+                                                       0);
+    
+    giv_win_load_file(self, (gchar*)g_ptr_array_index(fn_list, 0));
+    selfp->idle_index = 0;
+    selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
+                                    self);
+  }
+  else
+  {
+    selfp->idle_index = selfp->filename_list_index;
+    selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
+                                    self);
+  }
+
+  if (last_image_path)
+    g_free(last_image_path);
+  last_image_path = strdup(filename);
+
+  g_object_unref(reader);
+  json_node_set_string(*response, "Ok");
+  
+  return 0;
+}
+
+// Define remote commands
+static void create_remote_commands(GivWin *self)
+{
+  glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
+                                       "ping",
+                                       cmd_ping,
+                                       self);
+  glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
+                                       "load_file",
+                                       cmd_load_file,
+                                       self);
 }
 
 %}

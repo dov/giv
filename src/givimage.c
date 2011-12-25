@@ -10,7 +10,6 @@
 #include "givimage.h"
 #include "givplugin.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include "givregex.h"
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
 
@@ -88,14 +87,14 @@ GivImage *giv_image_new_from_file(const char *filename,
     }
     else if (*error) {
     }
-    else if (giv_regex_match_simple("png"
+    else if (g_regex_match_simple("png"
                                   "|jpe?g"
                                   "|p[bgp]m"
                                   "|bmp"
                                   "|svg"
                                   ,
                                   extension,
-                                  GIV_REGEX_CASELESS,
+                                  G_REGEX_CASELESS,
                                   0)) {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename,
                                                      error);
@@ -166,17 +165,17 @@ GivImage *giv_image_new_from_file(const char *filename,
     }
     // Space separated value. A simple text format parser. Still
     // doesn't support comments. Fix this!
-    else if (giv_regex_match_simple("ssv",
+    else if (g_regex_match_simple("ssv",
                                   extension,
-                                  GIV_REGEX_CASELESS,
+                                  G_REGEX_CASELESS,
                                   0)) {
         gchar *ssv_string;
         guint length;
         
         g_file_get_contents(filename, &ssv_string, &length, error);
-        gchar **lines = giv_regex_split_simple("\r?\n",
-                                               ssv_string,
-                                               0, 0);
+        gchar **lines = g_regex_split_simple("\r?\n",
+                                             ssv_string,
+                                             0, 0);
         int num_lines = g_strv_length(lines);
 
         // Count lines while skipping comments
@@ -203,9 +202,9 @@ GivImage *giv_image_new_from_file(const char *filename,
             // skip whitespace
             while(*p == ' ')
                 p++;
-            gchar **fields = giv_regex_split_simple("(?:,|;|\\s)\\s*",
-                                                    p,
-                                                    0,0);
+            gchar **fields = g_regex_split_simple("(?:,|;|\\s)\\s*",
+                                                  p,
+                                                  0,0);
             if (row_idx==0) {
                 width = g_strv_length(fields);
                 img = giv_image_new(GIVIMAGE_FLOAT,
@@ -222,10 +221,10 @@ GivImage *giv_image_new_from_file(const char *filename,
         g_free(ssv_string);
     }
 #if 0
-    else if (giv_regex_match_simple("npy",
-                                    extension,
-                                    GIV_REGEX_CASELESS,
-                                    0)) {
+    else if (g_regex_match_simple("npy",
+                                  extension,
+                                  G_REGEX_CASELESS,
+                                  0)) {
         gchar *npy_string;
         guint length;
         
@@ -239,7 +238,7 @@ GivImage *giv_image_new_from_file(const char *filename,
 
         // Use regex to parse the header. Should update this to allow
         // user attributes.
-        GivRegex *regex = giv_regex_new ("^\\{\\s*"
+        GivRegex *regex = g_regex_new ("^\\{\\s*"
                                        "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
                                        "'fortran_order':\\s*(\\w+)\\s*,\\s*"
                                        "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
@@ -249,13 +248,13 @@ GivImage *giv_image_new_from_file(const char *filename,
             exit(-1);
         }
         GivMatchInfo *match_info = NULL;
-        gboolean is_match = giv_regex_match_full(regex,
-                                                 npy_string+10,
-                                                 header_len,
-                                                 0,
-                                                 (GivRegexMatchFlags)0,
-                                                 &match_info,
-                                                 error);
+        gboolean is_match = g_regex_match_full(regex,
+                                               npy_string+10,
+                                               header_len,
+                                               0,
+                                               (GRegexMatchFlags)0,
+                                               &match_info,
+                                               error);
         gboolean is_supported_type = TRUE;
         gboolean is_fortran_type = FALSE;
         gint width=-1, height = -1;
@@ -293,8 +292,8 @@ GivImage *giv_image_new_from_file(const char *filename,
             g_free(match_string);
         }
 
-        giv_regex_unref(regex);
-        giv_match_info_free(match_info);
+        g_regex_unref(regex);
+        g_match_info_free(match_info);
         
         if  (!is_match
              || !header_ok
