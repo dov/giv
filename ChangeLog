@@ -1,3 +1,15 @@
+2011-12-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * python/giv-client-marks.py : An example of how to use the new jsonrpc command "giv_string".
+
+        * giv-win.gob : Added remote command "giv_string".
+
+2011-12-26  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob, glib-jsonrpc/*: Added remote control support to giv.
+
+        * python/giv-client.py : An example python client showing how to remote control giv.
+
 2011-11-13  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * configure.in: Bumped version to 0.1.20
