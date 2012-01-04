@@ -36,6 +36,11 @@ JsonNode *glib_jsonrpc_json_csv_to_json_array(const char *string);
 // A general json parser
 JsonNode *glib_jsonrpc_json_string_to_json_node(const gchar *str);
 
+// Create a string node
+JsonNode *glib_jsonrpc_json_new_string_node(const gchar *str);
+
+// Create a gchar** into a json array
+JsonNode *glib_jsonrpc_json_strv_to_json_array(gchar **strv);
 
 #ifdef __cplusplus
 }

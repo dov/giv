@@ -245,6 +245,7 @@ my_lasso_draw_rectangle(cairo_t *cr,
                         DovtkLassoContext context,
                         gpointer user_data);
 static void create_remote_commands(GivWin *self);
+static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y);
 
 // The following tables contain all the actions for both the menubar
 // and the popup menus.
@@ -538,9 +539,11 @@ class Giv:Win from Gtk:Window
     private double measure_x2=-1;
     private double measure_y2=-1;
     private double quiver_scale = 1.0;
+    private GdkCursor *current_cursor=0;
     private GdkCursor *cursor_plus=0;
-    private GtkWidget *w_color_map_bar = NULL;
+    private GdkCursor *cursor_diamond_cross = NULL;
     private GdkCursor *cursor_default=0;
+    private GtkWidget *w_color_map_bar = NULL;
     private gboolean is_dragging = FALSE;
     private GtkPrintSettings *print_settings = NULL;
     private gchar *img_comment = NULL;
@@ -553,6 +556,8 @@ class Giv:Win from Gtk:Window
     private double last_measure_distance_in_pixels = -1;
     private GivSettings *giv_settings = NULL destroy { g_object_unref(giv_settings); };
     private GLibJsonRpcServer *jsonrpc_server;
+    private GLibJsonRpcAsyncQuery *json_query = NULL;
+    private gboolean do_pick_coordinate = FALSE;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -573,6 +578,9 @@ class Giv:Win from Gtk:Window
         int giv_port = GIV_DEFAULT_PORT;
         gboolean do_remote = FALSE;
         const gchar *giv_host = "localhost"; // Currently fixed
+        gchar *remote_string=NULL;
+        gchar *json_method=NULL;
+        gchar *json_params_string=NULL;
 
         // Parse command line
         while(argp < argc && argv[argp][0] == '-') {
@@ -628,6 +636,18 @@ class Giv:Win from Gtk:Window
             CASE("-remote")
               {
                 do_remote = TRUE;
+                remote_string= argv[argp++];
+                continue;
+              }
+            CASE("-json_method")
+              {
+                do_remote = TRUE;
+                json_method = g_strdup(argv[argp++]);
+                continue;
+              }
+            CASE("-json_params")
+              {
+                json_params_string = argv[argp++];
                 continue;
               }
 
@@ -644,25 +664,41 @@ class Giv:Win from Gtk:Window
 
             if (client)
               {
-                // assume a single image
-                JsonNode *params = glib_jsonrpc_json_csv_to_json_array(argv[argp++]);
+                JsonNode *params = NULL;
+                if (!json_method)
+                  {
+                    // Either split remote string as space separated by params
+                    char **json_args = g_strsplit(remote_string," ",-1);
+                    json_method = g_strdup(json_args[0]);
+                    char **json_params = &json_args[1];
+                    params = glib_jsonrpc_json_strv_to_json_array(json_params);
+                    g_strfreev(json_args);
+                  }
+                else if (json_params_string)
+                  params = glib_jsonrpc_json_string_to_json_node(json_params_string);
+
                 JsonNode *response = NULL;
-                int status = glib_jsonrpc_client_call(client,
-                                                      "load_file",
-                                                      params,
-                                                      // output
-                                                      &response);
+                glib_jsonrpc_client_call(client,
+                                         json_method,
+                                         params,
+                                         // output
+                                         &response);
+                g_free(json_method);
                 json_node_free(params);
                 if (response)
-                  json_node_free(response);
-                if (status==0)
-                  exit(0);
+                  {
+                    gchar *str = glib_jsonrpc_json_to_string(response);
+                    printf("%s\n",str);
+                    g_free(str);
+                    json_node_free(response);
+                  }
+                exit(0);
               }
 
             // Fall through and run giv normally!
           }
             
-
+        selfp->cursor_plus = gdk_cursor_new(GDK_PLUS);
         selfp->cb_names = g_ptr_array_new();
         selfp->filename_list = g_ptr_array_new();
         selfp->pixelsize_unit = g_strdup("");
@@ -1576,6 +1612,16 @@ cb_button_press_event (GtkWidget * widget,
 
     giv_widget_popdown_balloon(GIV_WIDGET(selfp->w_imgv));
 
+    if (event->button == 1 && selfp->do_pick_coordinate) {
+        double world_x, world_y;
+        gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                                 event->x, event->y,
+                                                 &world_x, &world_y);
+        giv_win_json_pick_reply(self, NULL, world_x, world_y);
+
+        return true;
+    }
+
     if (event->button == 1) {
         // check if are in measure mode ('z')
         if (selfp->is_measuring_distance
@@ -1676,6 +1722,11 @@ cb_key_press_event (GtkWidget * widget,
         giv_win_shrink_wrap(self);
         return 1;
     }
+    if (k==GDK_Escape)
+      {
+        if (selfp->do_pick_coordinate)
+          giv_win_json_pick_reply(self, "Aborted", -1,-1);
+      }
     if (// reload
         k == GDK_KP_Enter
         || k == GDK_Return
@@ -2363,6 +2414,7 @@ cb_menu_count_marks (GtkAction *action, gpointer data)
         dovtk_lasso_destroy(selfp->lasso);
         selfp->lasso = NULL;
         gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+        selfp->current_cursor = NULL;
     }
   
     return;
@@ -2381,12 +2433,7 @@ cb_menu_measure_distance (GtkAction *action, gpointer data)
         selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
                                           &my_lasso_draw,
                                           self);
-#if 0
-        if (!selfp->cursor_plus) {
-            selfp->cursor_plus = gdk_cursor_new(GDK_PLUS);
-        }
-        gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
-#endif
+        //        gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
     }
     else {
         //free_giv_backstore (selfp->back_store);
@@ -4159,14 +4206,43 @@ static int cmd_giv_string(GLibJsonRpcServer *server,
   GivWin *self = (GivWin*)user_data;
   *response = json_node_new(JSON_NODE_VALUE);
   JsonReader *reader = json_reader_new(params);
+  bool do_append = false;
+
+  int nelem = json_reader_count_elements(reader);
+  if (nelem<1)
+    {
+      json_node_set_string(*response, "Error! Not enough parameters");
+      return -1;
+    }
+
+  int i;
+  const char *S_;
+
+  // Parse arguments that start with -
+  for (i=0; i<nelem; i++)
+    {
+      json_reader_read_element(reader, 0);
+      S_ = json_reader_get_string_value(reader);
+      json_reader_end_element (reader);
+
+      if (S_[0]!='-')
+        break;
+      
+      // Parse the argument
+      CASE("-append")
+        {
+          do_append=true;
+          continue;
+        }
+      // Ignore unknown parameters
+    }
   
-  // Assume array at the moment
-  json_reader_read_element(reader, 0);
-  const char *giv_string = json_reader_get_string_value(reader);
+  const char *giv_string = S_;
 
   // Erase the old giv string
   // TBD, make this configurable?
-  giv_widget_clear_giv(GIV_WIDGET(selfp->w_imgv));
+  if (!do_append)
+      giv_widget_clear_giv(GIV_WIDGET(selfp->w_imgv));
   giv_widget_add_giv_from_string(GIV_WIDGET(selfp->w_imgv), giv_string);
 
   g_object_unref(reader);
@@ -4174,6 +4250,59 @@ static int cmd_giv_string(GLibJsonRpcServer *server,
   g_idle_add(cb_redraw_when_idle, self);
   
   return 0;
+}
+
+static gboolean cb_idle_set_cursor(gpointer user_data)
+{
+  GivWin *self = (GivWin*)user_data;
+  gdk_window_set_cursor(selfp->w_imgv->window, selfp->current_cursor);
+  return false;
+}
+
+static int cmd_pick_coordinate(GLibJsonRpcServer *server,
+                               GLibJsonRpcAsyncQuery *query,
+                               const char *method,
+                               JsonNode *params,
+                               gpointer user_data)
+{
+  GivWin *self = (GivWin*)user_data;
+  selfp->do_pick_coordinate = true;
+  selfp->json_query = query;
+  selfp->current_cursor = selfp->cursor_plus;
+  g_idle_add(cb_idle_set_cursor, self);
+  
+  return 0;
+}
+
+static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y)
+{
+  selfp->do_pick_coordinate = false;
+
+  // Build a json array with the reply
+  if (error==NULL)
+    {
+      JsonBuilder *builder = json_builder_new ();
+      json_builder_begin_array (builder);
+      json_builder_add_double_value(builder,x);
+      json_builder_add_double_value(builder,y);
+      json_builder_end_array (builder);
+      JsonNode *response = json_node_copy(json_builder_get_root (builder));
+      g_object_unref(builder);
+      
+      glib_jsonrpc_server_send_async_response(selfp->json_query,
+                                              0,
+                                              response);
+    }
+  else
+    {
+      JsonNode *error_response = glib_jsonrpc_json_new_string_node(error);
+      glib_jsonrpc_server_send_async_response(selfp->json_query,
+                                              -1,
+                                              error_response);
+    }
+  
+  gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+  selfp->current_cursor = NULL;
 }
 
 // Define remote commands
@@ -4191,6 +4320,10 @@ static void create_remote_commands(GivWin *self)
                                        "giv_string",
                                        cmd_giv_string,
                                        self);
+  glib_jsonrpc_server_register_async_command(selfp->jsonrpc_server,
+                                             "pick_coordinate",
+                                             cmd_pick_coordinate,
+                                             self);
 }
 
 %}

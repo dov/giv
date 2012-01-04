@@ -1,3 +1,7 @@
+2012-01-05  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * configure.in: Bumped version to 0.1.21.
+
 2011-12-27  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * python/giv-client-marks.py : An example of how to use the new jsonrpc command "giv_string".

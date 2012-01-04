@@ -31,6 +31,12 @@ extern "C" {
 typedef struct {
 } GLibJsonRpcServer; 
 
+// Queries use for async commands
+typedef struct {
+} GLibJsonRpcAsyncQuery;
+
+GLibJsonRpcServer *glib_jsonrpc_async_query_get_server(GLibJsonRpcAsyncQuery *query);
+  
 typedef int (GLibJsonRpcCommandCallback)(GLibJsonRpcServer *server,
                                          const char *method,
                                          JsonNode *params,
@@ -38,6 +44,7 @@ typedef int (GLibJsonRpcCommandCallback)(GLibJsonRpcServer *server,
                                          gpointer user_data);
 
 typedef int (GLibJsonRpcCommandAsyncCallback)(GLibJsonRpcServer *server,
+                                              GLibJsonRpcAsyncQuery *query,
                                               const char *method,
                                               JsonNode *params,
                                               gpointer user_data);
@@ -55,7 +62,8 @@ int glib_jsonrpc_server_register_async_command(GLibJsonRpcServer *jsonrpc_server
                                                GLibJsonRpcCommandAsyncCallback *async_callback,
                                                gpointer user_data);
 // The json node ownershap is transfered.
-int  glib_jsonrpc_server_send_async_response(GLibJsonRpcServer *server,
+int  glib_jsonrpc_server_send_async_response(GLibJsonRpcAsyncQuery *query,
+                                             int error_num,
                                              JsonNode *response);
 
 

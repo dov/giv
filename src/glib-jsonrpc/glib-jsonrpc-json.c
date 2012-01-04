@@ -73,9 +73,24 @@ JsonNode *glib_jsonrpc_json_string_to_json_node(const gchar *str)
 JsonNode *glib_jsonrpc_json_csv_to_json_array(const gchar *str)
 {
   gchar **str_list = g_strsplit(str, ",", -1);
+  JsonNode *node = glib_jsonrpc_json_strv_to_json_array(str_list);
+  g_strfreev(str_list);
+  return node;
+}
 
+// Create a string node
+JsonNode *glib_jsonrpc_json_new_string_node(const gchar *str)
+{
+  JsonNode *node = json_node_new(JSON_NODE_VALUE);
+  json_node_set_string(node, str);
+  return node;
+}
+
+// Create a gchar** into a json array
+JsonNode *glib_jsonrpc_json_strv_to_json_array(gchar **strv)
+{
   JsonArray *array = json_array_new();
-  gchar **p = str_list;
+  gchar **p = strv;
   while(*p)
     {
       JsonNode *node = json_node_new(JSON_NODE_VALUE);
@@ -85,6 +100,5 @@ JsonNode *glib_jsonrpc_json_csv_to_json_array(const gchar *str)
     }
   JsonNode *node = json_node_new(JSON_NODE_ARRAY);
   json_node_take_array(node, array);
-  g_strfreev(str_list);
   return node;
 }

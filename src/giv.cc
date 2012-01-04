@@ -16,6 +16,7 @@
 int main(int argc, char **argv)
 {
     GtkWidget *giv;
+    g_thread_init(NULL);
     gtk_init(&argc, &argv);
 
     giv = giv_win_new(argc, argv);

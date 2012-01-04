@@ -94,7 +94,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.20</font><br>
+    <font size=+2>Version 0.9.21</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
@@ -413,7 +413,47 @@ loaders for the following formats:
 <li>Dicom
 <li>FITS
 <li>Tiff
+<li>npy (Numerical python)
 </ul>
+
+<: subsection("Remote access protocol") :>
+giv can be remote controlled through json-rpc commands. The parameters of the commands are always given in an array.
+
+<ul>
+<li>load_file FILENAME - Load a file into giv.
+<li>giv_string GIVSTRING - Change the giv annotation.
+<li>pick_coordinate - Giv will change its cursor and wait for the user to click on a coordinate. The coordinate is returned.
+</ul>
+
+Here is an example in python calling the <b>pick_coordinate</b> command:
+<blockquote>
+<pre>
+import httplib,json
+
+conn = httplib.HTTPConnection('localhost:8222')
+
+request = {'method':"pick_coordinate",
+           'params':[]} 
+
+conn.request("POST", url='', body= json.dumps(request))
+response = json.loads(conn.getresponse().read())
+if 'error' in response:
+  print response['error']['message']
+else:
+  print response['result']
+</pre>
+</blockquote>
+<p>
+giv also contains an embedded JSONRPC client that come in two forms, the simplified and the full forms.
+<p>
+The simplified form splits the arguments on whitespace and takes the first argument as the name of the remote method and the rest as the parameters.
+<pre>
+giv -remote "load_file /home/dov/pictures/maja.pgm"
+</pre>
+The full forms allows specifying the parameters in json syntax. The following command is equivalent to the above code:
+<pre>
+./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
+</pre>
 
 <: section("Future plans") :>
 <blockquote>
@@ -424,6 +464,5 @@ loaders for the following formats:
     <LI> Create a property window to show meta data. E.g. data from a dicom file. </LI>
     <LI> Speed up dealing with huge datasets. </LI>
     <LI> Create a measuring tool for measuring areas, histograms, etc. </LI>
-    <LI> json-rpc interface for remote control. </LI>
   </UL>  
 </blockquote>

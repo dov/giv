@@ -87,7 +87,7 @@ if ARGUMENTS.get('mingw', 0):
                  "src/plugins/npy.dll",
                  ],
                 ["makensis giv.wine.nsi"])
-    env.Append(LINKFLAGS=['-mwindows'])
+    env.Append(LINKFLAGS=[])
 
     # TBD - make this installation dependent
     env['PACKAGE_DOC_DIR'] = '../doc'
@@ -126,7 +126,7 @@ env.Append(CPPPATH=[],
            LIBS=['gtkimageviewer_local', 'agg', 'glib-jsonrpc_local']
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 json-glib-1.0 gio-2.0")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 json-glib-1.0 gio-2.0 gthread-2.0")
 
 SConscript(['src/SConscript',
             'doc/SConscript',
