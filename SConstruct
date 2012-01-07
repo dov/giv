@@ -87,7 +87,7 @@ if ARGUMENTS.get('mingw', 0):
                  "src/plugins/npy.dll",
                  ],
                 ["makensis giv.wine.nsi"])
-    env.Append(LINKFLAGS=[])
+    env.Append(LINKFLAGS=['-mwindows'])
 
     # TBD - make this installation dependent
     env['PACKAGE_DOC_DIR'] = '../doc'

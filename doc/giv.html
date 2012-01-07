@@ -22,7 +22,7 @@
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2011-12-23  </font>
+    <font size=-1>Last modified: 2012-01-07   </font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -497,7 +497,7 @@ loaders for the following formats:
 <li>npy (Numerical python)
 </ul>
 
-<h3><a name="SEC4.1">4.1. Remote access protocol</a></h3>
+<h2><a name="SEC5">5. Remote access protocol</a></h2>
 
 giv can be remote controlled through json-rpc commands. The parameters of the commands are always given in an array.
 
@@ -508,36 +508,34 @@ giv can be remote controlled through json-rpc commands. The parameters of the co
 </ul>
 
 Here is an example in python calling the <b>pick_coordinate</b> command:
-<blockquote>
-<pre>
-import httplib,json
 
-conn = httplib.HTTPConnection('localhost:8222')
+<table border><tr><th bgcolor=#E0E0FF><a href="pick-coordinate.py">pick-coordinate.py</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>import httplib,json 
+<font size=-1 color=red>  2:  </font> 
+<font size=-1 color=red>  3:  </font>conn = httplib.HTTPConnection('localhost:8222') 
+<font size=-1 color=red>  4:  </font> 
+<font size=-1 color=red>  5:  </font>request = {'method':"pick_coordinate", 
+<font size=-1 color=red>  6:  </font>           'params':[]}  
+<font size=-1 color=red>  7:  </font> 
+<font size=-1 color=red>  8:  </font>conn.request("POST", url='', body= json.dumps(request)) 
+<font size=-1 color=red>  9:  </font>response = json.loads(conn.getresponse().read()) 
+<font size=-1 color=red> 10:  </font>if 'error' in response: 
+<font size=-1 color=red> 11:  </font>  print response['error']['message'] 
+<font size=-1 color=red> 12:  </font>else: 
+<font size=-1 color=red> 13:  </font>  print response['result'] </pre></table>
 
-request = {'method':"pick_coordinate",
-           'params':[]} 
-
-conn.request("POST", url='', body= json.dumps(request))
-response = json.loads(conn.getresponse().read())
-if 'error' in response:
-  print response['error']['message']
-else:
-  print response['result']
-</pre>
-</blockquote>
 <p>
 giv also contains an embedded JSONRPC client that come in two forms, the simplified and the full forms.
 <p>
 The simplified form splits the arguments on whitespace and takes the first argument as the name of the remote method and the rest as the parameters.
 <pre>
-giv -remote "load_file /home/dov/pictures/maja.pgm"
+  giv -remote "load_file /home/dov/pictures/maja.pgm"
 </pre>
 The full forms allows specifying the parameters in json syntax. The following command is equivalent to the above code:
 <pre>
-./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
+  ./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
 </pre>
 
-<h2><a name="SEC5">5. Future plans</a></h2>
+<h2><a name="SEC6">6. Future plans</a></h2>
 
 <blockquote>
   Here is a list of possible future development. The direction taken

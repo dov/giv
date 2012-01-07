@@ -3003,7 +3003,7 @@ cb_menu_about(GtkAction *action,
                               "\n"
                               "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt></span>\n",
                               ("The G(reat|tk) Image Viewer"),
-                              ("Copyright &#x00a9; Dov Grobgeld, 2011\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2012\n"),
                               ("Programming by: Dov Grobgeld\n"),
                               ("dov.grobgeld@gmail.com"));
     gtk_label_set_markup (GTK_LABEL (label), markup);

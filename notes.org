@@ -16,4 +16,8 @@
 
 * <2011-12-30 Fri>
 ** Async commands
-   - Something is wrong with async communication as there is no handle to the query but only to the server. What if there are several queries done simultanously. How would the server differentiate between them?
+   - Something is wrong with async communication as there is no handle to the query but only to the server. What if there are several queries done simultanously. How would the server differentiate between them? *Ok*
+* <2012-01-06 Fri>
+** Done/Todo
+   - [ ] Create a command line tool for windows with a parser like the one included in giv.
+   
