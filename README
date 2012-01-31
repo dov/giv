@@ -1,8 +1,5 @@
-Release notes for version 0.1.21
-Friday 2012-01-06 
+Release notes for version 0.1.22
+Friday 2012-01-31 
 
-This version adds remote control of giv through a JSonRpc protocol.
-This makes giv suitable for a remote viewer for a running application.
-There are commands available for changing the image and the vector
-view of an already running giv, as well as prompting the user to 
-click on a coordinate and retrieving the pixel coordinate.
+This version is a recompilation under Windows with new glib libraries that 
+fixed a previous crash.

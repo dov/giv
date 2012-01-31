@@ -1,3 +1,9 @@
+2012-01-31  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * configure.in: Bumped version to 0.1.22
+
+        * Recompiled Windows version with glib binaries with fix for previous crash.
+
 2012-01-05  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * configure.in: Bumped version to 0.1.21.
