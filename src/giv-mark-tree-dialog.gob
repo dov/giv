@@ -275,11 +275,12 @@ static void get_iter_from_mark_set(GivMarkTreeDialog *self,
     gchar *string_last_leaf = NULL;
     GtkTreeIter *parent, *new_iter;
     gchar *key;
+    gchar *basename = g_path_get_basename(filename);
     
     if (string_path == NULL)
-      key = g_strdup_printf("%s", filename);
+      key = g_strdup(basename);
     else
-      key = g_strdup_printf("%s///%s", filename, string_path);
+      key = g_strdup_printf("%s///%s", basename, string_path);
 
     *iter = (GtkTreeIter*)g_hash_table_lookup(selfp->hash_giv_path_to_iter, key);
     
@@ -295,17 +296,18 @@ static void get_iter_from_mark_set(GivMarkTreeDialog *self,
 			&string_last_leaf);
 
 	get_iter_from_string_path(self,
-                                  filename,
+                                  basename,
 				  string_path_no_last_leaf,
 				  model,
 				  // output 
 				  &parent);
       }
     else {
-        string_last_leaf = g_strdup(filename);
+        string_last_leaf = g_strdup(basename);
 	parent = NULL;
     }
     
+    g_free(basename);
     new_iter = g_new0(GtkTreeIter, 1);
     new_iter->user_data = 0;
     gtk_tree_store_append(model, new_iter, parent);
