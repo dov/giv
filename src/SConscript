@@ -3,7 +3,7 @@ Import('env')
 
 libpath = ["#/src","#/src/plis",'#/src'] + env['LIBPATH']
 libs = env['LIBS'] 
-cpppath = ["gtkimageviewer"] + env['CPPPATH']
+cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/"]
 cppdefines = ['PACKAGE_DOC_DIR=\'"${PACKAGE_DOC_DIR}"\'',
               'PACKAGE_PLUGIN_DIR=\'"${PACKAGE_PLUGIN_DIR}"\'',
               ]

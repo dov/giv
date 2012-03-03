@@ -1,0 +1,22 @@
+Import('env')
+
+env2 = env.Clone()
+env2.Library("json-glib_local",
+             ["json-array.c",
+              "json-builder.c",
+              "json-debug.c",
+              "json-enum-types.c",
+              "json-gboxed.c",
+              "json-generator.c",
+              "json-gobject.c",
+              "json-gvariant.c",
+              "json-marshal.c",
+              "json-node.c",
+              "json-object.c",
+              "json-parser.c",
+              "json-path.c",
+              "json-reader.c",
+              "json-scanner.c",
+              "json-serializable.c"],
+             CPPDEFINES=['JSON_COMPILATION'],
+             CPPPATH=['..']+env['CPPPATH'])
