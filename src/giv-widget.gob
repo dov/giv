@@ -88,8 +88,8 @@ class Giv:Widget from Gtk:Image:Viewer
         };
                                   
     private bool is_dragging = FALSE;
-    private bool do_view_marks = TRUE;
-    private bool do_view_cross_hair = FALSE;
+    private bool do_show_marks = TRUE;
+    private bool do_show_cross_hair = FALSE;
     private bool do_show_balloon = FALSE;
     private bool do_no_transparency = FALSE;
     private bool do_show_grid = FALSE;
@@ -111,7 +111,7 @@ class Giv:Widget from Gtk:Image:Viewer
     {
         GivWidget *self = GET_NEW;
         if (pixbuf)
-            gdk_pixbuf_ref(pixbuf);
+            g_object_ref(pixbuf);
         selfp->img_org = pixbuf;
         selfp->giv_parser = giv_parser_new();
         giv_parser_set_reference_callback(selfp->giv_parser,
@@ -259,15 +259,13 @@ class Giv:Widget from Gtk:Image:Viewer
         printf("min_x min_y max_x max_y = %f %f %f %f\n",
                min_x, min_y, max_x, max_y);
 #endif
-        double scroll_x_dist, scroll_y_dist, scroll_x_center, scroll_y_center;
-        double scroll_min_x, scroll_min_y, scroll_max_x, scroll_max_y;
         double margin = 0;
         const GdkPixbuf *pb = gtk_image_viewer_get_image(GTK_IMAGE_VIEWER(self));
         
         if (pb) {
             int img_w = gdk_pixbuf_get_width(pb);
             int img_h = gdk_pixbuf_get_height(pb);
-            // gdk_pixbuf_unref(pb);
+            // g_object_unref(pb);
             
             min_x = min_y = 0;
             max_x = img_w;
@@ -275,16 +273,6 @@ class Giv:Widget from Gtk:Image:Viewer
         }
         else {
             margin= 10;
-            
-            scroll_x_dist = max_x - min_x;
-            scroll_y_dist = max_y - min_y;
-            scroll_x_center = 0.5*(max_x + min_x);
-            scroll_y_center = 0.5*(max_y + min_y);
-            
-            scroll_min_x = scroll_x_center - scroll_x_dist * 0.5;
-            scroll_max_x = scroll_x_center + scroll_x_dist * 0.5;
-            scroll_min_y = scroll_y_center - scroll_y_dist * 0.5;
-            scroll_max_y = scroll_y_center + scroll_y_dist * 0.5;
             
             // The following is a hack around the problem of too thin
             // data in x or y... It should be solved in the gtk_image_viewer.
@@ -328,15 +316,15 @@ class Giv:Widget from Gtk:Image:Viewer
                    GdkPixbuf *img)
     {
         if (selfp->img_org)
-            gdk_pixbuf_unref(selfp->img_org);
+            g_object_unref(selfp->img_org);
         if (selfp->img_display) {
-            gdk_pixbuf_unref(selfp->img_display);
+            g_object_unref(selfp->img_display);
             selfp->img_display = NULL;
         }
 
         selfp->img_org = img;
         if (selfp->img_org) {
-            gdk_pixbuf_ref(selfp->img_org);
+            g_object_ref(selfp->img_org);
             apply_color_map(self);
         }
 
@@ -402,7 +390,7 @@ class Giv:Widget from Gtk:Image:Viewer
             gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
             return 1;
         case 'm':
-            giv_widget_set_show_marks(self, !selfp->do_view_marks);
+            giv_widget_set_show_marks(self, !selfp->do_show_marks);
             gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
             return 1;
         case 'g':
@@ -410,7 +398,7 @@ class Giv:Widget from Gtk:Image:Viewer
             gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
             return 1;
         case 'x':
-            giv_widget_set_show_cross_hair(self, !selfp->do_view_cross_hair);
+            giv_widget_set_show_cross_hair(self, !selfp->do_show_cross_hair);
             gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
             return 1;
         case 'f':
@@ -501,26 +489,61 @@ class Giv:Widget from Gtk:Image:Viewer
                              do_show_balloon);
     }
 
+    public bool get_show_balloon(self)
+    {
+        return selfp->do_show_balloon;
+    }
+
+    public void toggle_show_balloon(self)
+    {
+        giv_widget_set_show_balloon(self,!selfp->do_show_balloon);
+    }
+
     public void set_show_marks(self,
                                gboolean do_show_marks)
     {
-        gboolean need_signal = selfp->do_view_marks != do_show_marks;
-        selfp->do_view_marks = do_show_marks;
-        if (need_signal)
-            emit_bool_signal(self,
-                             VIEW_MARKS_CHANGED_SIGNAL,
-                             do_show_marks);
+        gboolean need_signal = selfp->do_show_marks != do_show_marks;
+        selfp->do_show_marks = do_show_marks;
+        if (need_signal) {
+            giv_widget_show_marks_changed(self,do_show_marks);
+            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self),TRUE);
+        }
+    }
+
+    public bool get_show_marks(self)
+    {
+        return selfp->do_show_marks;
+    }
+
+    public void toggle_show_marks(self)
+    {
+        giv_widget_set_show_marks(self,!selfp->do_show_marks);
     }
 
     public void set_show_cross_hair(self,
                                     gboolean do_show_cross_hair)
     {
-        gboolean need_signal = selfp->do_view_cross_hair != do_show_cross_hair;
-        selfp->do_view_cross_hair = do_show_cross_hair;
+        gboolean need_signal = selfp->do_show_cross_hair != do_show_cross_hair;
+        selfp->do_show_cross_hair = do_show_cross_hair;
         if (need_signal)
+            giv_widget_cross_hair_changed(self,
+                                          do_show_cross_hair);
+#if 0
             emit_bool_signal(self,
                              CROSS_HAIR_CHANGED_SIGNAL,
                              do_show_cross_hair);
+#endif
+        
+    }
+
+    public bool get_show_cross_hair(self)
+    {
+        return selfp->do_show_cross_hair;
+    }
+
+    public void toggle_show_cross_hair(self)
+    {
+        giv_widget_set_show_cross_hair(self,!selfp->do_show_cross_hair);
     }
 
     signal last NONE (INT)
@@ -532,11 +555,12 @@ class Giv:Widget from Gtk:Image:Viewer
                             gboolean show_cross_hair);
 
     signal last NONE (INT)
-    void view_marks_changed(self,
+    void show_marks_changed(self,
                             gboolean show_marks);
 
     signal last NONE (POINTER)
     void file_reference(self, const gchar *filename);
+
 }
 
 %{
@@ -572,14 +596,14 @@ cb_image_annotate(GivWidget *self,
                          shift_x, shift_y,
                          width, height);
     renderer.set_do_no_transparency(selfp->do_no_transparency);
-    if (!selfp->is_dragging && selfp->do_view_marks)
+    if (!selfp->is_dragging && selfp->do_show_marks)
         renderer.paint();
 
     gint li_width, li_height;
     gdk_window_get_size(GTK_WIDGET(self)->window, 
                         &li_width, &li_height
                         );
-    if (selfp->do_view_cross_hair && selfp->img_org) {
+    if (selfp->do_show_cross_hair && selfp->img_org) {
         int w = gdk_pixbuf_get_width(selfp->img_org);
         int h = gdk_pixbuf_get_height(selfp->img_org);
 
@@ -647,7 +671,7 @@ cb_image_annotate(GivWidget *self,
         gint li_shift_x, li_shift_y;
         gdouble li_scale_x, li_scale_y;
         if (selfp->w_label_image)
-            gdk_pixbuf_unref(selfp->w_label_image);
+            g_object_unref(selfp->w_label_image);
 
         selfp->w_label_image = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
                                               TRUE,
@@ -718,13 +742,13 @@ apply_color_map(GivWidget *self)
     if (!selfp->img_org)
         return;
     if (selfp->img_display)
-        gdk_pixbuf_unref(selfp->img_display);
+        g_object_unref(selfp->img_display);
 
     if (selfp->colormap == GIV_PSEUDO_COLOR_OFF
         //        || !selfp->img_is_mono
         ) {
         selfp->img_display = selfp->img_org;
-        gdk_pixbuf_ref(selfp->img_display);
+        g_object_ref(selfp->img_display);
     }
     else {
         int width = gdk_pixbuf_get_width(selfp->img_org);

@@ -20,4 +20,16 @@
 * <2012-01-06 Fri>
 ** Done/Todo
    - [ ] Create a command line tool for windows with a parser like the one included in giv.
-   
+* <2012-04-22 Sun>
+** Done/Todo
+    - Changed the menu checkbuttons to reflect the internal giv-widget states:
+      - [X] balloon
+      - [X] horizontal-flip
+      - [X] vertical-flip
+      - [X] show marks
+      - [X] cross hair - erased as it doesn't work.
+    - Save the following settings:
+      - [X] Sub pixel coordinate.
+      - [ ] Auto resize.
+
+    

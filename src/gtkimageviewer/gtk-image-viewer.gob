@@ -1098,12 +1098,6 @@ class Gtk:Image:Viewer from Gtk:Widget
            selfp->frozen);
 #endif
     if (!selfp->frozen) {
-        GValue ___param_values[6];
-        GValue ___return_val;
-        int i;
-
-        int signal_shift_x = offs_x;
-        int signal_shift_y = offs_y;
         double signal_scale_x = scale_x;
         double signal_scale_y = scale_y;
 
@@ -1112,43 +1106,13 @@ class Gtk:Image:Viewer from Gtk:Widget
           signal_scale_x = -signal_scale_x;
         if (selfp->do_flip_vertical)
           signal_scale_y = -signal_scale_y;
-              
-        memset (&___return_val, 0, sizeof (___return_val));
-        memset (&___param_values, 0, sizeof (___param_values));
-        
-        ___param_values[0].g_type = 0;
-        g_value_init (&___param_values[0], G_TYPE_FROM_INSTANCE (self));
-        g_value_set_instance (&___param_values[0], (gpointer) self);
-        
-        ___param_values[1].g_type = 0;
-        g_value_init (&___param_values[1], G_TYPE_POINTER);
-        g_value_set_pointer (&___param_values[1], img_scaled);
-        
-        ___param_values[2].g_type = 0;
-        g_value_init (&___param_values[2], G_TYPE_INT);
-        g_value_set_int (&___param_values[2], -signal_shift_x);
-        
-        ___param_values[3].g_type = 0;
-        g_value_init (&___param_values[3], G_TYPE_INT);
-        g_value_set_int (&___param_values[3], -signal_shift_y);
-        
-        ___param_values[4].g_type = 0;
-        g_value_init (&___param_values[4], G_TYPE_DOUBLE);
-        g_value_set_double (&___param_values[4], signal_scale_x);
-        
-        ___param_values[5].g_type = 0;
-        g_value_init (&___param_values[5], G_TYPE_DOUBLE);
-        g_value_set_double (&___param_values[5], signal_scale_y);
-        
-        //        printf("Emitting!\n");
-        g_signal_emitv (___param_values,
-                        object_signals[IMAGE_ANNOTATE_SIGNAL],
-                        0 /* detail */,
-                        &___return_val);
-        
-        //printf("Done emitting!\n");
-        for (i=0; i<6; i++)
-            g_value_unset (&___param_values[i]);
+
+        gtk_image_viewer_image_annotate(self,
+                                        img_scaled,
+                                        -offs_x,
+                                        -offs_y,
+                                        signal_scale_x,
+                                        signal_scale_y);
     }
 
     // Add checkerboard below images that have alpha channel
@@ -1778,39 +1742,11 @@ class Gtk:Image:Viewer from Gtk:Widget
       need_signal =TRUE;
     }
 
-    if (need_signal)
-      {
-        // Emit flip signal
-        {
-          GValue ___param_values[3];
-          GValue ___return_val;
-          int i;
-          
-          memset (&___return_val, 0, sizeof (___return_val));
-          memset (&___param_values, 0, sizeof (___param_values));
-          
-          ___param_values[0].g_type = 0;
-          g_value_init (&___param_values[0], G_TYPE_FROM_INSTANCE (self));
-          g_value_set_instance (&___param_values[0], (gpointer) self);
-          
-          ___param_values[1].g_type = 0;
-          g_value_init (&___param_values[1], G_TYPE_INT);
-          g_value_set_int (&___param_values[1], selfp->do_flip_horizontal);
-          
-          ___param_values[2].g_type = 0;
-          g_value_init (&___param_values[2], G_TYPE_INT);
-          g_value_set_int (&___param_values[2], selfp->do_flip_vertical);
-          
-          g_signal_emitv (___param_values,
-                          object_signals[FLIP_CHANGED_SIGNAL],
-                          0 /* detail */,
-                          &___return_val);
-          
-          for (i=0; i<3; i++)
-            g_value_unset (&___param_values[i]);
-          
+    if (need_signal) {
+          gtk_image_viewer_flip_changed(self,
+                                        selfp->do_flip_horizontal,
+                                        selfp->do_flip_vertical);
           gtk_image_viewer_redraw(self, TRUE);
-        }
       }
   }
 

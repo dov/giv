@@ -17,6 +17,9 @@ requires 2.0.0
 
 class Giv:Settings from G:Object {
     public gboolean do_same_filetype_on_next = FALSE;
+    public gboolean default_show_subpixel = FALSE;
+    public gboolean default_auto_resize = FALSE;
+    public gboolean default_auto_contrast = FALSE;
     private char *keyfile_path = NULL destroy { g_free(keyfile_path); };
 
     public GObject *
@@ -38,6 +41,18 @@ class Giv:Settings from G:Object {
                                                                     "settings",
                                                                     "do_same_filetype_on_next",
                                                                     NULL);
+            self->default_show_subpixel = g_key_file_get_boolean(keyfile,
+                                                                 "settings",
+                                                                 "default_show_subpixel",
+                                                                 NULL);
+            self->default_auto_resize = g_key_file_get_boolean(keyfile,
+                                                                 "settings",
+                                                                 "default_auto_resize",
+                                                                 NULL);
+            self->default_auto_contrast = g_key_file_get_boolean(keyfile,
+                                                                 "settings",
+                                                                 "default_auto_contrast",
+                                                                 NULL);
         }
         else
             g_error_free(error);
@@ -56,6 +71,14 @@ class Giv:Settings from G:Object {
                                "settings",
                                "do_same_filetype_on_next",
                                self->do_same_filetype_on_next);
+        g_key_file_set_boolean(keyfile,
+                               "settings",
+                               "default_show_subpixel",
+                               self->default_show_subpixel);
+        g_key_file_set_boolean(keyfile,
+                               "settings",
+                               "default_auto_contrast",
+                               self->default_auto_contrast);
 
         gchar *data = g_key_file_to_data(keyfile,NULL, NULL);
         gchar *dirname = g_path_get_dirname(selfp->keyfile_path);

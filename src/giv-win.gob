@@ -103,7 +103,6 @@ static void cb_view_sub_pixel (GtkAction *action, gpointer data);
 static void cb_view_hflip (GtkAction *action, gpointer data);
 static void cb_view_vflip (GtkAction *action, gpointer data);
 static void cb_view_colormap (GtkAction *action, gpointer data);
-static void cb_view_cross_hair (GtkAction *action, gpointer data);
 static void cb_view_pixel_grid (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
 static void cb_view_auto_contrast (GtkAction *action, gpointer data);
@@ -130,7 +129,6 @@ static void cb_menu_print (GtkAction *action, gpointer data);
 static void cb_menu_mark_browser (GtkAction *action, gpointer data);
 static void cb_menu_contrast_view (GtkAction *action, gpointer data);
 static void cb_menu_info_dialog (GtkAction *action, gpointer data);
-static gboolean giv_check_img_for_mono(GdkPixbuf *im);
 static gboolean giv_check_img_for_mono(GivImage *im);
 static void cb_change_pseudo_color(GtkRadioAction* action,
                                    GtkRadioAction*,
@@ -138,10 +136,15 @@ static void cb_change_pseudo_color(GtkRadioAction* action,
 static void cb_image_reference(GtkWidget *widget,
                                const char *filename,
                                gpointer user_data);
-static void cb_set_orientation(giv_parser_orientation_t hflip,
-                               giv_parser_orientation_t vflip,
-                               gpointer self);
 static void menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container);
+static void
+cb_balloon_changed(GtkWidget *widget,
+                   bool show_balloon,
+                   gpointer data);
+static void
+cb_marks_changed(GtkWidget *widget,
+                 bool show_balloon,
+                 gpointer data);
 
 static void
 cb_file_list_drag_data_received (GtkWidget          *widget,
@@ -374,11 +377,6 @@ static GtkToggleActionEntry toggle_entries[] =
     "Colormap Bar", NULL,    
     "Colormap Bar",
     G_CALLBACK (cb_view_colormap), FALSE },
-  { "ViewCrossHair",
-    NULL,
-    "View Cross Hair", NULL,    
-    "View Cross hair",
-    G_CALLBACK (cb_view_cross_hair), FALSE },
   { "ViewPixelGrid",
     NULL,
     "View Pixel Grid", NULL,    
@@ -470,13 +468,13 @@ class Giv:Win from Gtk:Window
 //    private GdkPixbuf *img_org = NULL
 //        destroy {
 //            if (img_org) {
-//                gdk_pixbuf_unref(img_org);
+//                g_object_unref(img_org);
 //            };
 //        };
     private GdkPixbuf *img_display = NULL
         destroy {
             if (img_display) {
-                gdk_pixbuf_unref(img_display);
+                g_object_unref(img_display);
             };
         };
         
@@ -485,18 +483,14 @@ class Giv:Win from Gtk:Window
     private GdkPixbuf *w_label_image = NULL
         destroy {
             if (w_label_image) {
-                gdk_pixbuf_unref(w_label_image);
+                g_object_unref(w_label_image);
             };
         };
     private gint cb_annotate_id;
     private bool do_view_marks = true;
     private bool do_view_colormap = false;
     private bool img_is_mono = false;
-    private bool do_show_balloon = false;
     private bool do_show_sub_pixel = false;
-    private bool do_flip_horizontal = false;
-    private bool do_flip_vertical = false;
-    private bool do_view_cross_hair = false;
     private bool do_square_aspect_ratio = true;
     private bool do_auto_fit_marks = TRUE;
     private bool do_auto_reload = FALSE;
@@ -724,7 +718,7 @@ class Giv:Win from Gtk:Window
         
         gtk_window_set_icon (GTK_WINDOW(self),
                              pixbuf_icon);
-        gdk_pixbuf_unref(pixbuf_icon);
+        g_object_unref(pixbuf_icon);
 
         num_top_levels++;
         g_signal_connect (G_OBJECT(self), "destroy",
@@ -825,6 +819,14 @@ class Giv:Win from Gtk:Window
                          "image-annotate",
                          G_CALLBACK(cb_image_annotate),
                          self);
+        g_signal_connect(selfp->w_imgv,
+                         "balloon-changed",
+                         G_CALLBACK(cb_balloon_changed),
+                         self);
+        g_signal_connect(selfp->w_imgv,
+                         "show-marks-changed",
+                         G_CALLBACK(cb_marks_changed),
+                         self);
 
         // Scrolling is like moving
         g_signal_connect(selfp->w_imgv, "scroll-event",
@@ -923,6 +925,18 @@ class Giv:Win from Gtk:Window
         gtk_widget_hide(selfp->w_color_map_bar);
 
         gdk_flush();
+
+        // Apply settings
+        gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Sub-pixel")),
+          selfp->giv_settings->default_show_subpixel);
+        gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/AutoResize")),
+          selfp->giv_settings->default_auto_resize);
 
         // Handle the command line
         if (argc == argp+1) {
@@ -1093,7 +1107,7 @@ class Giv:Win from Gtk:Window
         if (selfp->img_org)
             giv_image_unref(selfp->img_org);
         if (selfp->img_display) {
-            gdk_pixbuf_unref(selfp->img_display);
+            g_object_unref(selfp->img_display);
             selfp->img_display = NULL;
         }
 
@@ -1250,7 +1264,7 @@ class Giv:Win from Gtk:Window
                 selfp->img_org = NULL;
             }
             if (selfp->img_display) {
-                gdk_pixbuf_unref(selfp->img_display);
+                g_object_unref(selfp->img_display);
                 selfp->img_display = NULL;
             }
 
@@ -1394,7 +1408,7 @@ class Giv:Win from Gtk:Window
         if (selfp->img_org)
             giv_image_unref(selfp->img_org);
         if (selfp->img_display)
-            gdk_pixbuf_ref(selfp->img_display);
+            g_object_ref(selfp->img_display);
         selfp->img_org = image;
         apply_color_map(self);
         gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
@@ -1603,6 +1617,48 @@ menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container)
     gtk_widget_show (widget);
 }
 
+static void
+cb_balloon_changed(GtkWidget *widget,
+                   bool show_balloon,
+                   gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/Balloons")),
+        show_balloon);
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Balloons")),
+        show_balloon);
+
+}
+
+static void
+cb_marks_changed(GtkWidget *widget,
+                 bool show_marks,
+                 gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->popup_manager,
+                                      "/popup/ViewMenu/Marks")),
+        show_marks);
+
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Marks")),
+        show_marks);
+}
+
+
 static gint
 cb_button_press_event (GtkWidget * widget,
                        GdkEventButton * event,
@@ -1698,6 +1754,8 @@ cb_key_press_event (GtkWidget * widget,
                     gpointer user_data)
 {
     GivWin *self = (GivWin *)user_data;
+    gboolean handled = FALSE;
+
     gint k = event->keyval;
     if (k == 'a') {
         selfp->do_no_transparency = !selfp->do_no_transparency;
@@ -1833,33 +1891,6 @@ cb_key_press_event (GtkWidget * widget,
             }
         }
     }
-    if (k == 'm') {
-        // Toggle the marks by pressing the toggle button in the menu.
-        // Is there a better way?
-        gtk_check_menu_item_set_active(
-            GTK_CHECK_MENU_ITEM(
-                gtk_ui_manager_get_widget(selfp->menu_manager,
-                                          "/menubar/ViewMenu/Marks")),
-            !selfp->do_view_marks);
-    }
-    if (k == 'c') {
-        // Toggle the marks by pressing the toggle button in the menu.
-        // Is there a better way?
-        gtk_check_menu_item_set_active(
-            GTK_CHECK_MENU_ITEM(
-                gtk_ui_manager_get_widget(selfp->menu_manager,
-                                          "/menubar/ViewMenu/CrossHair")),
-            !selfp->do_view_cross_hair);
-    }
-    if (k == 'b') {
-        // Toggle the marks by pressing the toggle button in the menu.
-        // Is there a better way?
-        gtk_check_menu_item_set_active(
-            GTK_CHECK_MENU_ITEM(
-                gtk_ui_manager_get_widget(selfp->menu_manager,
-                                          "/menubar/ViewMenu/Balloons")),
-            !selfp->do_show_balloon);
-    }
     if (k == 'i') {
 #if 0
         // TBD: create a popup window
@@ -1870,7 +1901,7 @@ cb_key_press_event (GtkWidget * widget,
 #endif
     }
     
-    return 0;
+    return handled;
 }
 
 static gint
@@ -2038,109 +2069,52 @@ static void cb_view_menu_bar (GtkAction *action, gpointer data)
 static void cb_view_marks (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-    GSList *proxies = NULL;
-    GSList *p;
-
-    if (action)
-        proxies = gtk_action_get_proxies(action);
-    selfp->do_view_marks = !selfp->do_view_marks;
-
-    // Block to prevent an infinite loop of activating and deactivating.
-    p = proxies;
-    while(p) {
-        gtk_action_block_activate_from(action, GTK_WIDGET(p->data));
-        p = p->next;
-    }
-                                   
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->menu_manager,
-                                      "/menubar/ViewMenu/Marks")),
-        selfp->do_view_marks);
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->popup_manager,
-                                      "/popup/ViewMenu/Marks")),
-        selfp->do_view_marks);
-    
-    p = proxies;
-    while(p) {
-        gtk_action_unblock_activate_from(action, GTK_WIDGET(p->data));
-        p = p->next;
-    }
-    
-    giv_win_redraw(self);
+    gboolean do_view_marks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action));
+    giv_widget_set_show_marks(GIV_WIDGET(selfp->w_imgv),do_view_marks);
 }
 
 static void cb_view_balloons (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-    GSList *proxies = NULL;
-    GSList *p;
+    giv_widget_set_show_balloon(GIV_WIDGET(selfp->w_imgv),
+                                gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action)));
 
-    if (action)
-        proxies = gtk_action_get_proxies(action);
-    selfp->do_show_balloon = !selfp->do_show_balloon;
-
-    // Block to prevent an infinite loop of activating and deactivating.
-    p = proxies;
-    while(p) {
-        gtk_action_block_activate_from(action, GTK_WIDGET(p->data));
-        p = p->next;
-    }
-                                   
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->menu_manager,
-                                      "/menubar/ViewMenu/Balloons")),
-        selfp->do_show_balloon);
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->popup_manager,
-                                      "/popup/ViewMenu/Balloons")),
-        selfp->do_show_balloon);
-    
-    p = proxies;
-    while(p) {
-        gtk_action_unblock_activate_from(action, GTK_WIDGET(p->data));
-        p = p->next;
-    }
-
-    // Force redraw to calculate the label image
-    giv_win_popdown_balloon(self);
-    if (selfp->do_show_balloon) {
-        // Force redraw to calculate the label image
-        giv_win_redraw(self);
-        giv_widget_show_balloon(GIV_WIDGET(selfp->w_imgv),
-                                (int)selfp->last_cx, (int)selfp->last_cy);
-    }
 }
 
 static void cb_view_sub_pixel (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
 
-    selfp->do_show_sub_pixel = !selfp->do_show_sub_pixel;
+    selfp->do_show_sub_pixel = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action));
 }
 
 static void cb_view_hflip (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
+    gboolean do_vertical_flip, do_horizontal_flip;
+    gtk_image_viewer_get_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                              &do_horizontal_flip,
+                              &do_vertical_flip);
+    do_horizontal_flip = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action));
 
-    selfp->do_flip_horizontal = !selfp->do_flip_horizontal;
     gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
-                              selfp->do_flip_horizontal,
-                              selfp->do_flip_vertical);
+                              do_horizontal_flip,
+                              do_vertical_flip);
 }
 
 static void cb_view_vflip (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
 
-    selfp->do_flip_vertical = !selfp->do_flip_vertical;
+    gboolean do_vertical_flip, do_horizontal_flip;
+    gtk_image_viewer_get_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                              &do_horizontal_flip,
+                              &do_vertical_flip);
+    do_vertical_flip = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action));
+
     gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(selfp->w_imgv),
-                              selfp->do_flip_horizontal,
-                              selfp->do_flip_vertical);
+                              do_horizontal_flip,
+                              do_vertical_flip);
 }
 
 static void cb_view_colormap (GtkAction *action, gpointer data)
@@ -2158,25 +2132,11 @@ static void cb_view_colormap (GtkAction *action, gpointer data)
         gtk_widget_hide(selfp->w_color_map_bar);
 }
 
-static void cb_view_cross_hair (GtkAction *action, gpointer data)
-{
-    GivWin *self = GIV_WIN(data);
-
-    selfp->do_view_cross_hair = !selfp->do_view_cross_hair;
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->menu_manager,
-                                      "/menubar/ViewMenu/CrossHair")),
-        selfp->do_view_cross_hair);
-
-    giv_win_redraw(self);
-}
-
 static void cb_view_pixel_grid (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
     GtkWidget *menu_widget = gtk_ui_manager_get_widget(selfp->menu_manager,
-                                                       "/menubar/ViewMenu/CrossHair");
+                                                       "/menubar/ViewMenu/ViewPixelGrid");
 
     gboolean old_val = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
     giv_widget_set_show_grid(GIV_WIDGET(selfp->w_imgv), !old_val);
@@ -2554,7 +2514,7 @@ cb_menu_clear (GtkAction *action, gpointer data)
     giv_widget_clear_giv(GIV_WIDGET(selfp->w_imgv));
     giv_image_unref(selfp->img_org);
     selfp->img_org = NULL;
-    gdk_pixbuf_unref(selfp->img_display);
+    g_object_unref(selfp->img_display);
     selfp->img_display = NULL;
     gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv), NULL);
     
@@ -2856,8 +2816,8 @@ void draw_to_cairo(cairo_t *cr,
     cairo_set_source_surface(cr, img_srf, 0, 0);
     cairo_paint(cr);
     cairo_surface_destroy(img_srf);
-    gdk_pixbuf_unref(cimg);
-    gdk_pixbuf_unref(img_scaled);
+    g_object_unref(cimg);
+    g_object_unref(img_scaled);
 #else
     if (selfp->img_display) {
         // Draw img_display
@@ -2881,7 +2841,7 @@ void draw_to_cairo(cairo_t *cr,
         cairo_paint(cr);
         cairo_restore(cr);
         cairo_surface_destroy(img_srf);
-        gdk_pixbuf_unref(cimg);
+        g_object_unref(cimg);
     }
 
     if (selfp->do_view_marks) {
@@ -3099,10 +3059,6 @@ cb_flip_changed(GtkImageViewer *imgv,
                 gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-#if 0
-    selfp->do_flip_vertical = do_flip_vertical;
-    selfp->do_flip_horizontal = do_flip_horizontal;
-#endif
 
     gtk_check_menu_item_set_active(
         GTK_CHECK_MENU_ITEM(
@@ -3297,14 +3253,14 @@ apply_color_map(GivWin *self)
                                                  min, max);
     
     if (selfp->img_display)
-        gdk_pixbuf_unref(selfp->img_display);
+        g_object_unref(selfp->img_display);
 
     const guint8 *tmap = NULL;
     if (selfp->colormap == PSEUDO_COLOR_OFF
         //        || !selfp->img_is_mono
         ) {
         selfp->img_display = org_pixbuf;
-        gdk_pixbuf_ref(selfp->img_display);
+        g_object_ref(selfp->img_display);
     }
     else {
         int width = gdk_pixbuf_get_width(org_pixbuf);
@@ -3406,7 +3362,7 @@ apply_color_map(GivWin *self)
     gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                selfp->img_display);
 #endif
-    gdk_pixbuf_unref(org_pixbuf);
+    g_object_unref(org_pixbuf);
 
     // Notify the colorbar
     giv_color_map_set_rgb_colormap(GIV_COLOR_MAP(selfp->w_color_map_bar),
@@ -3955,7 +3911,7 @@ draw_caliper(GivWin *self,
     if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
         return;
 
-#if 0 
+#if _WIN32
     // This is stil broken!
 
     // As I can't get pango cairo to work under Windows, I use the specific windows

@@ -29,6 +29,9 @@ class Giv:Settings:Editor from Gtk:Dialog
 {
     private GObject *giv_settings = NULL destroy { if (giv_settings) g_object_unref(giv_settings); };
     private GtkWidget *w_button_same_file_type = NULL;
+    private GtkWidget *w_button_default_show_subpixel = NULL;
+    private GtkWidget *w_button_default_auto_resize = NULL;
+    private GtkWidget *w_button_default_auto_contrast = NULL;
 
     public GtkWidget*
     new (GivSettings *giv_settings)
@@ -72,6 +75,79 @@ class Giv:Settings:Editor from Gtk:Dialog
                          GtkAttachOptions(0),
                          0,0);
 
+        // Default sub-pixel
+        row++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Default subpixel"),
+                         1, 2,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+        
+        selfp->w_button_default_show_subpixel = check_button_new_from_bool(giv_settings->default_show_subpixel);
+        g_object_set(selfp->w_button_default_show_subpixel,
+                     "tooltip-markup",
+                     "Whether to turn on sub pixel display by default",
+                     NULL);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         selfp->w_button_default_show_subpixel,
+                         2, 3,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+
+        // Default auto_resize
+        row++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Default auto-resize"),
+                         1, 2,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+        
+        selfp->w_button_default_auto_resize = check_button_new_from_bool(giv_settings->default_auto_resize);
+        g_object_set(selfp->w_button_default_auto_resize,
+                     "tooltip-markup",
+                     "Whether to do auto resize by default",
+                     NULL);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         selfp->w_button_default_auto_resize,
+                         2, 3,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+
+        // Default auto_contrast
+        row++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Default auto-contrast"),
+                         1, 2,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+        
+        selfp->w_button_default_auto_contrast = check_button_new_from_bool(giv_settings->default_auto_contrast);
+        g_object_set(selfp->w_button_default_auto_contrast,
+                     "tooltip-markup",
+                     "Whether to do auto resize by default",
+                     NULL);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         selfp->w_button_default_auto_contrast,
+                         2, 3,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+
+
         // Buttons
         gtk_dialog_add_button(GTK_DIALOG(self),
                               GTK_STOCK_APPLY,
@@ -100,6 +176,12 @@ class Giv:Settings:Editor from Gtk:Dialog
     {
         GIV_SETTINGS(selfp->giv_settings)->do_same_filetype_on_next
             = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_same_file_type));
+        GIV_SETTINGS(selfp->giv_settings)->default_show_subpixel
+            = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_show_subpixel));
+        GIV_SETTINGS(selfp->giv_settings)->default_auto_resize
+            = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_auto_resize));
+        GIV_SETTINGS(selfp->giv_settings)->default_auto_contrast
+            = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_auto_contrast));
     }
 
 }

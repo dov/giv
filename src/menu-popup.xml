@@ -17,7 +17,6 @@
       <menuitem name="Balloons" action="ViewBalloonAction" />
       <menuitem name="HorizontalFlip" action="ViewHorizontalFlip" />
       <menuitem name="VerticalFlip" action="ViewVerticalFlip" />
-      <menuitem name="CrossHair" action="ViewCrossHair" />
       <menuitem name="AutoResize" action="AutoResize" />
       <menu name="ColorTableMenu" action="ColorTableMenuAction">
         <menuitem name="PseudoColorOff" action="PseudoColorNone" />

@@ -1,3 +1,8 @@
+2012-04-22  Dov Grobgeld  <dov.grobgeld@gmail.com>
+
+        * giv-win.gob : Changed toggle of balloon to be a function of the internal 
+        giv-widget state.
+
 2012-03-04  Dov Grobgeld  <dov.grobgeld@gmail.com>
 
         * Added private copy of glib-jsonrpc.

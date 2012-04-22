@@ -1,10 +1,10 @@
 import re, os, glob
 
 if ARGUMENTS.get('debug', 0):
-    cppflags = ['-g', '-Wall','-fPIC']
+    cppflags = ['-g', '-Wall']
     variant = 'Debug'
 else:
-    cppflags = ['-O2','-fPIC']
+    cppflags = ['-O2']
     variant = 'Release'
 
 env = Environment(LIBPATH=[],
@@ -130,7 +130,7 @@ env.Append(CPPPATH=[],
                  'json-glib_local']
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 gio-2.0 gthread-2.0")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0")
 
 SConscript(['src/SConscript',
             'doc/SConscript',
