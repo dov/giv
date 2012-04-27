@@ -31,5 +31,7 @@
     - Save the following settings:
       - [X] Sub pixel coordinate.
       - [ ] Auto resize.
-
-    
+* <2012-04-27 Fri>
+** Done/Todo
+   - [X] Recursively turn on and off child nodes when toggling the display of a parent in the model viewer.
+   - [X] Why is initial scaling different from the scaling received with "fill"? Due to the sticky autoscale setting. Fixed by forcing fill on initial load of dataset.

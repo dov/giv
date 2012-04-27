@@ -552,6 +552,7 @@ class Giv:Win from Gtk:Window
     private GLibJsonRpcServer *jsonrpc_server;
     private GLibJsonRpcAsyncQuery *json_query = NULL;
     private gboolean do_pick_coordinate = FALSE;
+    private gboolean do_fit_on_load_image_when_idle = FALSE;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -1002,6 +1003,7 @@ class Giv:Win from Gtk:Window
         }
 
         selfp->idle_index = selfp->filename_list_index;
+        selfp->do_fit_on_load_image_when_idle = TRUE;
         selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
                                         self);
 #if 0
@@ -1018,8 +1020,10 @@ class Giv:Win from Gtk:Window
                                                  scale, scale,
                                                  shift_x, shift_y);
         }
+#if 0
         else if (!selfp->img_org)
             fit_marks_in_window(self);
+#endif
         else if (!selfp->do_auto_fit_marks) {
             gtk_image_viewer_zoom_reset(GTK_IMAGE_VIEWER(selfp->w_imgv));
         }
@@ -3799,6 +3803,11 @@ cb_load_image_when_idle(gpointer user_data)
     GivWin *self = (GivWin *)user_data;
     giv_win_set_current_file(self, selfp->idle_index);
     selfp->idle_handle = -1;
+
+    if (selfp->do_fit_on_load_image_when_idle) {
+        fit_marks_in_window(self);
+        selfp->do_fit_on_load_image_when_idle = FALSE;
+    }
 
     return false;
 }
