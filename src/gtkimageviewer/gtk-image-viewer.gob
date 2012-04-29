@@ -106,6 +106,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gboolean do_flip_horizontal = FALSE;
   private gboolean do_use_transfer_map = FALSE;
   private gboolean do_fill_on_resize = TRUE;
+  private gint fill_on_resize_margin = 0;
   /* The one shot block is used by shrink wrapping to inhibit rescaling
      on resize. Is there a better way? */
   private gboolean one_shot_block_fill_on_resize = FALSE;
@@ -1677,6 +1678,13 @@ class Gtk:Image:Viewer from Gtk:Widget
   }
 
   public void
+  set_fill_on_resize_margin(self,
+                            gboolean margin)
+  {
+      selfp->fill_on_resize_margin = margin;
+  }
+
+  public void
   one_shot_block_fill_on_resize(self)
   {
       selfp->one_shot_block_fill_on_resize = TRUE;
@@ -1759,12 +1767,15 @@ class Gtk:Image:Viewer from Gtk:Widget
   public void
   zoom_fit(self)
   {
+    gdouble margin = 0;
+    if (!selfp->image)
+        margin = selfp->fill_on_resize_margin;
     gtk_image_viewer_zoom_to_box(self,
                                  selfp->scroll_min_x,
                                  selfp->scroll_min_y,
                                  selfp->scroll_max_x,
                                  selfp->scroll_max_y,
-                                 0,
+                                 margin,
                                  TRUE);
   }
 

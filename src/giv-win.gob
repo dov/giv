@@ -552,7 +552,8 @@ class Giv:Win from Gtk:Window
     private GLibJsonRpcServer *jsonrpc_server;
     private GLibJsonRpcAsyncQuery *json_query = NULL;
     private gboolean do_pick_coordinate = FALSE;
-    private gboolean do_fit_on_load_image_when_idle = FALSE;
+    private gboolean do_fit_on_load_image = FALSE;
+    private gdouble margin = 10;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -805,6 +806,9 @@ class Giv:Win from Gtk:Window
                            selfp->w_scrolled_win, TRUE, TRUE, 0);
 
         selfp->w_imgv = giv_widget_new(NULL);
+        gtk_image_viewer_set_fill_on_resize_margin(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                                   selfp->margin);
+
         gtk_widget_show(selfp->w_imgv);
         g_signal_connect(selfp->w_imgv, "file-reference",
                          G_CALLBACK(cb_image_reference), self);
@@ -1003,7 +1007,7 @@ class Giv:Win from Gtk:Window
         }
 
         selfp->idle_index = selfp->filename_list_index;
-        selfp->do_fit_on_load_image_when_idle = TRUE;
+        selfp->do_fit_on_load_image = TRUE;
         selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
                                         self);
 #if 0
@@ -1063,6 +1067,11 @@ class Giv:Win from Gtk:Window
         ((GivParser*)selfp->giv_parser)->parse_file(filename);
         selfp->quiver_scale = ((GivParser*)selfp->giv_parser)->get_quiver_scale();
 #endif
+        if (selfp->do_fit_on_load_image || selfp->do_auto_fit_marks) {
+            fit_marks_in_window(self);
+            selfp->do_fit_on_load_image = false;
+        }
+        
         giv_win_redraw(self);
         return 0;
     }
@@ -3534,7 +3543,7 @@ fit_marks_in_window(GivWin *self)
     printf("min_x min_y max_x max_y = %f %f %f %f\n",
            min_x, min_y, max_x, max_y);
 #endif
-    double margin = 0;
+    double margin = selfp->margin;
     
 #if 0
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(selfp->w_scrolled_win),
@@ -3549,6 +3558,7 @@ fit_marks_in_window(GivWin *self)
         min_x = min_y = 0;
         max_x = img_w;
         max_y = img_h;
+        margin = 0;
     }
     else {
         margin= 10;
@@ -3568,7 +3578,7 @@ fit_marks_in_window(GivWin *self)
             min_y = avg_y - aspect_ratio*0.5*(max_x-min_x);
             max_y = avg_y + aspect_ratio*0.5*(max_x-min_x);
         }
-        
+
         gtk_image_viewer_set_scroll_region(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                            min_x, min_y,
                                            max_x, max_y);
@@ -3580,9 +3590,10 @@ fit_marks_in_window(GivWin *self)
     }
     
 #if 0
-    printf("min_x min_y max_x max_y = %f %f %f %f\n",
-           min_x, min_y, max_x, max_y);
+    printf("min_x min_y max_x max_y margin = %f %f %f %f %f\n",
+           min_x, min_y, max_x, max_y,1.0*margin);
 #endif
+
     gtk_image_viewer_zoom_to_box(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                  min_x,
                                  min_y,
@@ -3803,11 +3814,6 @@ cb_load_image_when_idle(gpointer user_data)
     GivWin *self = (GivWin *)user_data;
     giv_win_set_current_file(self, selfp->idle_index);
     selfp->idle_handle = -1;
-
-    if (selfp->do_fit_on_load_image_when_idle) {
-        fit_marks_in_window(self);
-        selfp->do_fit_on_load_image_when_idle = FALSE;
-    }
 
     return false;
 }
