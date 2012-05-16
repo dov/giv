@@ -48,7 +48,12 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     dataset_p->font_name = NULL;
     dataset_p->file_name = NULL;
     dataset_p->color = color_of_black; 
+    dataset_p->shadow_color = color_of_black;
+    dataset_p->shadow_offset_x = 0.5; 
+    dataset_p->shadow_offset_y = 0.5;
+    dataset_p->text_style = TEXT_STYLE_NORMAL;
     dataset_p->outline_color = color_of_black;
+    dataset_p->outline_color.alpha = 128*256;
     dataset_p->quiver_color = color_of_black;
     dataset_p->quiver_scale = 1.0;
 #if 0
@@ -70,12 +75,17 @@ void free_giv_data_set(giv_dataset_t *dataset_p)
     g_free(dataset_p->path_name);
     if (dataset_p->set_name)
         g_free(dataset_p->set_name);
-    g_array_free(dataset_p->points, TRUE);
     if (dataset_p->file_name)
         g_free(dataset_p->file_name);
     if (dataset_p->balloon_string)
         g_string_free(dataset_p->balloon_string, TRUE);
-    
+    for (int i=0; i<(int)dataset_p->points->len; i++)
+        {
+          point_t p = g_array_index(dataset_p->points, point_t, i);
+          if (p.op == OP_TEXT)
+            g_free(p.text_object->string);
+        }
+    g_array_free(dataset_p->points, TRUE);
     g_free(dataset_p);
 }
 

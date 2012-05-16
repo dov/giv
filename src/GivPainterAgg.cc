@@ -249,6 +249,7 @@ GivPainterAgg::add_text(const char *text,
         pango_layout_set_markup(d->layout, text, -1);
     else
         pango_layout_set_text (d->layout, text, -1);
+    pango_layout_set_alignment(d->layout, PangoAlignment((text_align-1)%3));
 
     pango_layout_get_extents(d->layout,
                              NULL,

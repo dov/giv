@@ -27,6 +27,8 @@ enum
   STRING_CHANGE_COLOR,
   STRING_CHANGE_OUTLINE_COLOR,
   STRING_CHANGE_QUIVER_COLOR,
+  STRING_CHANGE_SHADOW_COLOR,
+  STRING_CHANGE_SHADOW_OFFSET,
   STRING_CHANGE_QUIVER_SCALE,
   STRING_CHANGE_LINE_WIDTH,
   STRING_CHANGE_MARKS,
@@ -56,7 +58,8 @@ enum
   STRING_STYLE,
   STRING_DEF_STYLE,
   STRING_HIDE,
-  STRING_IGNORE
+  STRING_IGNORE,
+  STRING_TEXT_STYLE
 };
 
 #define COLOR_NONE 0xfffe
@@ -304,8 +307,8 @@ string_strdup_word (const char *string, int idx)
   return word;
 }
 
-char *
-string_strdup_rest (const char *string, int idx)
+static char *
+string_strdup_rest (const char *string, int idx, bool parse_escape)
 {
   const char *p = string;
   int in_word = 0;
@@ -317,10 +320,12 @@ string_strdup_rest (const char *string, int idx)
   /* printf("p = 0x%x\n", p); */
   while (*p)
     {
+      char ch = *p;
+
       /* printf("%c\n", *p); fflush(stdout); */
       if (!in_word)
 	{
-	  if (*p != ' ' && *p != '\n' && *p != '\t')
+	  if (ch != ' ' && ch != '\n' && ch != '\t')
 	    {
 	      in_word = 1;
 	      word_count++;
@@ -330,7 +335,7 @@ string_strdup_rest (const char *string, int idx)
 	}
       else if (in_word)
 	{
-	  if (*p == ' ' || *p == '\n' || *p == '\t')
+	  if (ch == ' ' || ch == '\n' || ch == '\t')
 	    {
 	      if (idx == word_count)
 		break;
@@ -347,6 +352,36 @@ string_strdup_rest (const char *string, int idx)
       word = g_new (char, nchr + 1);
       strncpy (word, word_start, nchr);
       word[nchr] = 0;
+      if (parse_escape)
+        {
+          gchar *word_copy = g_strdup(word);
+          char *p = word_copy;
+          char *pd = word;
+          while(*p)
+            {
+              char ch = *p;
+              if (ch == '\\')
+                {
+                  p++;
+                  if (!*p)
+                    break;
+                  if (*p=='n')
+                    ch = '\n';
+                  else if (*p == '\\')
+                    ch = '\\';
+                  else
+                    {
+                      // ignore the escape character
+                      ch = '\\';
+                      p--;
+                    }
+                }
+              *pd++ = ch;
+              p++;
+            }
+          *pd=0;
+          g_free(word_copy);
+        }
     }
   return word;
 }
@@ -414,6 +449,14 @@ parse_string (const char *string, const char *fn, gint linenum)
       {
 	type = STRING_CHANGE_QUIVER_COLOR;
       }
+      NCASE ("$shadow_color")
+      {
+	type = STRING_CHANGE_SHADOW_COLOR;
+      }
+      NCASE ("$shadow_offset")
+      {
+	type = STRING_CHANGE_SHADOW_OFFSET;
+      }
       NCASE ("$quiver_scale")
       {
 	type = STRING_CHANGE_QUIVER_SCALE;
@@ -453,6 +496,10 @@ parse_string (const char *string, const char *fn, gint linenum)
       NCASE ("$font")
       {
           type = STRING_FONT;
+      }
+      NCASE ("$text_style")
+      {
+          type = STRING_TEXT_STYLE;
       }
       NCASE ("$nomark")
       {
@@ -647,7 +694,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             tm->text_align = 1;
             if (S_[1] >= '0' && S_[1] <= '9') 
                 tm->text_align = atoi(&S_[1]);
-            tm->string = string_strdup_rest(S_, 3);
+            tm->string = string_strdup_rest(S_, 3, TRUE);
             p.op = OP_TEXT;
             p.text_object = tm;
             g_array_append_val(marks->points, p);
@@ -658,7 +705,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         break;
     case STRING_BALLOON:
         {
-            char *s = string_strdup_rest(S_,1);
+            char *s = string_strdup_rest(S_,1,TRUE);
             if (!marks->balloon_string)
                 marks->balloon_string = g_string_new(s);
             else {
@@ -769,7 +816,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_FONT:
         if (marks->font_name)
             g_free(marks->font_name);
-        marks->font_name = string_strdup_rest(S_, 1);
+        marks->font_name = string_strdup_rest(S_, 1, TRUE);
         break;
     case STRING_CHANGE_COLOR:
         {
@@ -811,6 +858,28 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             g_free(color_name);
             break;
         }
+    case STRING_CHANGE_SHADOW_COLOR:
+        {
+            char *color_name = string_strdup_word(S_, 1);
+            GivColor color = {0,0,0,0};
+            if ((slip)color_name == "none")
+                marks->shadow_color.alpha = COLOR_NONE;
+            else {
+                if (color_parse(color_name,&color))
+                    marks->shadow_color = color;
+            }
+            g_free(color_name);
+            break;
+        }
+    case STRING_CHANGE_SHADOW_OFFSET:
+        {
+            char *arg1 = string_strdup_word(S_, 1);
+            char *arg2 = string_strdup_word(S_, 2);
+            marks->shadow_offset_x = atof(arg1);
+            marks->shadow_offset_y = atof(arg2);
+            g_free(arg1);
+            g_free(arg2);
+        }
     case STRING_CHANGE_QUIVER_SCALE:
         marks->quiver_scale = string_to_atof(S_, 1);
 
@@ -848,12 +917,12 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_PATH_NAME:
         if (marks->path_name)
             g_free(marks->path_name);
-        marks->path_name = string_strdup_rest(S_, 1);
+        marks->path_name = string_strdup_rest(S_, 1,FALSE);
         break;
     case STRING_DEF_STYLE:
         {
             char *style_name = string_strdup_word(S_, 1);
-            char *style_string = string_strdup_rest(S_, 2);
+            char *style_string = string_strdup_rest(S_, 2,FALSE);
             giv_parser_giv_style_add_string(gp, style_name, style_string);
             g_free(style_name);
             g_free(style_string);
@@ -870,6 +939,14 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         {
             marks->is_visible = false;
             break;
+        }
+    case STRING_TEXT_STYLE:
+        {
+          char *text_style = string_strdup_word(S_,1);
+          if (strcmp(text_style, "shadow") == 0)
+            marks->text_style = TEXT_STYLE_DROP_SHADOW;
+          g_free(text_style);
+          break;
         }
     default:
         ;

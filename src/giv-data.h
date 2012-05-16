@@ -38,6 +38,12 @@ enum GivArrowType
     ARROW_TYPE_BOTH = 3,
 };
 
+enum GivTextStyle
+{
+  TEXT_STYLE_NORMAL,
+  TEXT_STYLE_DROP_SHADOW
+};
+
 typedef struct {
     guint16 red;
     guint16 green;
@@ -50,6 +56,7 @@ typedef struct
     GivColor color;
     GivColor outline_color;
     GivColor quiver_color;
+    GivColor shadow_color;
     gdouble line_width;
     gdouble quiver_scale;
     gint line_style;
@@ -57,6 +64,7 @@ typedef struct
     gdouble text_size;
     gboolean do_scale_fonts;
     gboolean do_pango_markup;
+    enum GivTextStyle text_style;
     gint num_dashes;
     gdouble mark_size;
     gboolean do_scale_marks;
@@ -75,6 +83,8 @@ typedef struct
     GString *balloon_string;
     char *font_name;
     gdouble *dashes;
+    gdouble shadow_offset_x;
+    gdouble shadow_offset_y;
 } giv_dataset_t;
 
 typedef struct

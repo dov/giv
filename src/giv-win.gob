@@ -460,22 +460,16 @@ class Giv:Win from Gtk:Window
         destroy {
         if (img_org) {
             giv_image_unref(img_org);
+            img_org = NULL;
         }
     };
     private double contrast_min = -1;
     private double contrast_max = -1;
     private gchar *format = NULL destroy { g_free(format); };
-//    private GdkPixbuf *img_org = NULL
-//        destroy {
-//            if (img_org) {
-//                g_object_unref(img_org);
-//            };
-//        };
     private GdkPixbuf *img_display = NULL
         destroy {
-            if (img_display) {
-                g_object_unref(img_display);
-            };
+            if (img_display) 
+              g_object_unref(img_display);
         };
         
     // This image is a copy of the img display but with label
@@ -1051,7 +1045,7 @@ class Giv:Win from Gtk:Window
     {
         num_top_levels--;
         gtk_widget_destroy(GTK_WIDGET(self));
-        
+
         if (num_top_levels == 0)
             gtk_main_quit();
     }
@@ -1118,13 +1112,12 @@ class Giv:Win from Gtk:Window
         selfp->auto_reload_trigger = false;
         
         if (selfp->img_org)
+          {
             giv_image_unref(selfp->img_org);
-        if (selfp->img_display) {
-            g_object_unref(selfp->img_display);
-            selfp->img_display = NULL;
-        }
-
+            selfp->img_org = NULL;
+          }
         selfp->img_org = new_img;
+
         if (selfp->do_auto_contrast)
             giv_image_get_min_max(new_img,
                                   // output
@@ -1272,10 +1265,11 @@ class Giv:Win from Gtk:Window
         // If the new entry does not contain an image, then clear
         // the old image.
         if (!has_image) {
-            if (selfp->img_org) {
+            if (selfp->img_org)
+              {
                 giv_image_unref(selfp->img_org);
                 selfp->img_org = NULL;
-            }
+              }
             if (selfp->img_display) {
                 g_object_unref(selfp->img_display);
                 selfp->img_display = NULL;
@@ -1419,9 +1413,10 @@ class Giv:Win from Gtk:Window
                           GivImage *image)
     {
         if (selfp->img_org)
+          {
             giv_image_unref(selfp->img_org);
-        if (selfp->img_display)
-            g_object_ref(selfp->img_display);
+            selfp->img_org = NULL;
+          }
         selfp->img_org = image;
         apply_color_map(self);
         gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
@@ -1874,7 +1869,6 @@ cb_key_press_event (GtkWidget * widget,
               selfp->current_slice = 0;
 
           // Redraw the image
-          giv_image_ref(selfp->img_org);
           giv_win_set_image(GIV_WIN(self),
                             selfp->img_org);
           giv_win_set_image_info(GIV_WIN(self));
@@ -3264,9 +3258,8 @@ apply_color_map(GivWin *self)
     GdkPixbuf *org_pixbuf = giv_image_get_pixbuf(selfp->img_org,
                                                  selfp->current_slice,
                                                  min, max);
-    
     if (selfp->img_display)
-        g_object_unref(selfp->img_display);
+      g_object_unref(selfp->img_display);
 
     const guint8 *tmap = NULL;
     if (selfp->colormap == PSEUDO_COLOR_OFF

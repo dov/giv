@@ -219,11 +219,39 @@ void GivRenderer::paint()
             for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
                 point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-                if (p.op == OP_TEXT) {
+                if (p.op == OP_TEXT)
+                  {
                     double m_x = p.x * scale_x - shift_x;
                     double m_y = p.y * scale_y - shift_y;
                     const char *text = p.text_object->string;
                     int text_align = p.text_object->text_align;
+                    if (dataset->text_style == TEXT_STYLE_DROP_SHADOW)
+                      {
+                        double rr = cs*dataset->shadow_color.red;
+                        double gg = cs*dataset->shadow_color.green;
+                        double bb = cs*dataset->shadow_color.blue;
+                        double alpha = cs*dataset->shadow_color.alpha;
+
+                        double shift_x = dataset->shadow_offset_x;
+                        double shift_y = dataset->shadow_offset_y;
+                        if (dataset->do_scale_fonts)
+                          {
+                            shift_x *= scale_x;
+                            shift_y *= scale_y;
+                          }
+                        painter.set_color(rr,gg,bb,alpha);
+                        painter.add_text(text,
+                                         m_x+shift_x,
+                                         m_y+shift_y,
+                                         text_align,
+                                         dataset->do_pango_markup);
+                        // Reset color
+                        rr = cs*dataset->color.red;
+                        gg = cs*dataset->color.green;
+                        bb = cs*dataset->color.blue;
+                        alpha = cs*dataset->color.alpha;
+                        painter.set_color(rr,gg,bb,alpha);
+                      }
                     painter.add_text(text, m_x, m_y, text_align, dataset->do_pango_markup);
                 }
             }

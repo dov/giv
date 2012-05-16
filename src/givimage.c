@@ -161,7 +161,7 @@ GivImage *giv_image_new_from_file(const char *filename,
                    gdk_pixbuf_get_pixels(pixbuf),
                    row_stride * height);
         }
-        gdk_pixbuf_unref(pixbuf);
+        g_object_unref(pixbuf);
     }
     // Space separated value. A simple text format parser. Still
     // doesn't support comments. Fix this!
@@ -335,6 +335,7 @@ void giv_image_unref(GivImage *img)
 
     if (img->ref_count !=0)
         return;
+    g_free(img->buf.buf);
     g_hash_table_unref(img->attribute_map);
     g_free(img);
 }

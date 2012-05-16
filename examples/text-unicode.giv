@@ -24,3 +24,11 @@ $color red/80
 T5 100 50 <span size="xx-large">x<sup>2</sup>+y<sup>2</sup>=z<sub>2</sub></span>
 T5 100 20 <u><span color="red">R</span><span color="green">G</span><span color="blue">B</span></u>
 
+$pango_markup 
+$color green
+$scale_font 1
+$font sans
+$text_style shadow
+$shadow_color black/0.3
+$shadow_offset 1 1
+T5 100 200 Multi\nlines\nare\nnice.
