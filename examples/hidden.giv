@@ -1,0 +1,12 @@
+# Test the hidden features
+$color red
+$hide
+$marks fcircle
+0 0
+100 100
+
+$color green
+$mark fcircle
+$marks fcircle
+0 100
+100 0

@@ -97,6 +97,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
         gtk_tree_view_column_set_attributes (column, cell,
                                              "active", 1,
                                              NULL);
+
         /* gtk_tree_view_column_set_resizable(column, TRUE); */
         gtk_tree_view_column_set_title (column, "Visible");
         gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view), column);
@@ -136,12 +137,15 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
             get_iter_from_mark_set(self, mark_set, selfp->model,
                                    &iter);
             
+            // Whether the mark set is originally visible
+            gtk_tree_store_set (selfp->model, iter, 1, mark_set->is_visible, -1);
+            
             /* This is a very ugly way of summing up the value with that of the
                previous columns. That are currently stored in user_data2 of
                the iterators.
             */
             *((int*)&iter->user_data2) += mark_set->points->len;
-            
+
             gtk_tree_store_set(selfp->model, iter,
                                2, (intptr_t)iter->user_data2,
                                -1);
@@ -360,7 +364,6 @@ static void set_state_tree_node_children(GtkTreeModel *model,
   for (int i=0; i<n_children; i++)
   {
     GtkTreeIter iter;
-    gboolean value;
     gtk_tree_model_iter_nth_child(model,
                                   &iter,
                                   parent_iter,
