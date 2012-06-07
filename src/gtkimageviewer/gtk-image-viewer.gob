@@ -611,13 +611,20 @@ class Gtk:Image:Viewer from Gtk:Widget
     if (event->state & GDK_CONTROL_MASK)
      */
     {
+      double zoom_strength = 1.4;
       gdouble x = event->x;
       gdouble y = event->y;
+
+      if (event->state & GDK_SHIFT_MASK)
+          zoom_strength = 1.1;
+      if (event->state & GDK_CONTROL_MASK)
+          zoom_strength = 2.0;
+
       if (event->direction)
           //zoom_in(self, (int)x,(int)y);
-          gtk_image_viewer_zoom_out(self, (int)x,(int)y,1.1);
+          gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength);
       else
-          gtk_image_viewer_zoom_in(self, -1,-1,1.1);
+          gtk_image_viewer_zoom_in(self, x,y,zoom_strength);
       return 1;
     }
     return 0;
@@ -1310,8 +1317,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                                              zoom_factor[0],
                                              zoom_factor[1],
                                              x, y,
-                                             selfp->canvas_width/2,
-                                             selfp->canvas_height/2);
+                                             x,y);
     
     return 1;
   }
@@ -1345,10 +1351,8 @@ class Gtk:Image:Viewer from Gtk:Widget
     gtk_image_viewer_zoom_around_fixed_point(self,
                                              zoom_factor[0],
                                              zoom_factor[1],
-                                             selfp->canvas_width/2,
-                                             selfp->canvas_height/2,
-                                             selfp->canvas_width/2,
-                                             selfp->canvas_height/2);
+                                             x,y,
+                                             x,y);
     return 1;
   }
 
