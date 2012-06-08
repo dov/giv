@@ -36,9 +36,10 @@ SetOutPath $INSTDIR\bin
 File src\Giv.exe
 File src\giv-image.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgcc_s_sjlj-1.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libexpat-1.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libstdc++-6.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\iconv.dll
-File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpcre-0.dll
+File \usr\i686-w64-mingw32\sys-root\mingw\bin\libpcre-1.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libintl-8.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libffi-6.dll
 File \usr\i686-w64-mingw32\sys-root\mingw\bin\libgdk-win32*.dll
