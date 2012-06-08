@@ -90,6 +90,8 @@ static void vadjustment_value_changed (GtkAdjustment *vadjustment,
 static void hadjustment_value_changed (GtkAdjustment *hadjustment,
                                        gpointer       data);
 
+static gboolean turn_off_insensitive(GtkWidget *widget);
+
 %}
 
 
@@ -138,6 +140,8 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gdouble cache_width = -1;
   private gdouble cache_height = -1;
   private gboolean frozen = FALSE;
+  private gboolean is_insensitive = FALSE;
+  private gint timeout_id = 0;
   
   init(self)
   {
@@ -227,6 +231,7 @@ class Gtk:Image:Viewer from Gtk:Widget
       GDK_POINTER_MOTION_MASK |
       GDK_POINTER_MOTION_HINT_MASK | 
       GDK_KEY_PRESS_MASK |
+      GDK_FOCUS_CHANGE_MASK |
       GDK_LEAVE_NOTIFY_MASK |
       GDK_ENTER_NOTIFY_MASK;
     attributes.visual = gtk_widget_get_visual (widget);
@@ -414,7 +419,11 @@ class Gtk:Image:Viewer from Gtk:Widget
   enter_notify_event(GtkWidget *widget,
                      GdkEventCrossing *event)
   {
-    // printf("Enter notify\n");
+    GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
+    selfp->is_insensitive = TRUE;
+    if (selfp->timeout_id)
+        g_source_remove(selfp->timeout_id);
+    selfp->timeout_id = g_timeout_add(200, (GSourceFunc) turn_off_insensitive, self);
     if (!GTK_WIDGET_HAS_FOCUS (widget))
       gtk_widget_grab_focus (widget);
     
@@ -426,9 +435,13 @@ class Gtk:Image:Viewer from Gtk:Widget
   leave_notify_event(GtkWidget *widget,
                      GdkEventCrossing *event)
   {
+    GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
     // printf("Leave notify\n");
     if (!GTK_WIDGET_HAS_FOCUS (widget))
       gtk_widget_grab_focus (widget);
+    if (selfp->timeout_id)
+        g_source_remove(selfp->timeout_id);
+    selfp->is_insensitive = TRUE;
     
     return TRUE;
   }
@@ -491,7 +504,10 @@ class Gtk:Image:Viewer from Gtk:Widget
     int button = event->button;
     double x = event->x;
     double y = event->y;
-  
+
+    if (selfp->is_insensitive)
+        return TRUE;
+
     if (button == 1)
         gtk_image_viewer_zoom_in(self, (int)x, (int)y, 2);
     else if (button == 2)
@@ -2256,4 +2272,24 @@ fix_gdk_pixbuf_scale_nn(const GdkPixbuf *src,
     }
     g_free(dest_addr);
 }
+
+static gboolean turn_off_insensitive(GtkWidget *data)
+{
+  GtkImageViewer *self = GTK_IMAGE_VIEWER (data);
+
+  // Recursively get top level window and check if it has focus
+  GtkWidget *w = GTK_WIDGET(data);
+  while(!GTK_IS_WINDOW(w))
+      w = gtk_widget_get_parent(w);
+  
+  if (!gtk_window_has_toplevel_focus(GTK_WINDOW(w)))
+      return TRUE;
+
+  selfp->is_insensitive = FALSE;
+  // Invalidate the timeout id
+  selfp->timeout_id = 0;
+
+  return FALSE;
+}
+
 %}

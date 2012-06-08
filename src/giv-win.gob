@@ -3923,8 +3923,8 @@ draw_caliper(GivWin *self,
     if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
         return;
 
-#if _WIN32
-    // This is stil broken!
+#if 0 && _WIN32
+    // This is stil broken, but fortunately the "normal" pango backend works.
 
     // As I can't get pango cairo to work under Windows, I use the specific windows
     // backend which fortunately works.
@@ -3963,7 +3963,7 @@ draw_caliper(GivWin *self,
 #else
     // Draw the distance in the middle
 #ifdef _WIN32
-    PangoFontDescription *font_descr = pango_font_description_from_string("TimesNewRoman 15");
+    PangoFontDescription *font_descr = pango_font_description_from_string("Arial 15");
 #else
     PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
 #endif
