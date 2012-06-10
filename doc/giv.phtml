@@ -3,7 +3,6 @@
 <html>
 <head>
 <title>GIV user manual</title>
-<!-- Changed by: Dov Grobgeld, 18-Jul-2008 -->
 </head>
 <:
 
@@ -94,11 +93,11 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.21</font><br>
+    <font size=+2>Version 0.9.23</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2012-01-07   </font>
+    <font size=-1>Last modified: 2012-06-10    </font>
 </h2>
 
 <: section("Description") :>
@@ -110,8 +109,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <li>Support for 8-bit, floating point, 16-bit, and 32-bit gray and color images.
     <li>Plugin support for external loaders.
     <li>Support for multi-slice images.
-    <li>Includes loaders for the npy-format, FITS-format, and a simple DICOM 
-  reader.
+    <li>Includes plugins for reading the npy-format, FITS-format, and DICOM.
     <li>An interactive contrast tool  allows interactively changing
   contrast and brightness.
 
@@ -194,6 +192,9 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 	      <li>square
 	      <li>fsquare
 	    </ul>
+    <:TR():><: td() :>$hide
+        <: td() :>$hide
+	<: td() :>Initially hide the dataset. It may be turned on by the marks viewer.
 	  
     <:TR():><: td() :>$scale_marks
         <: td() :>$scale_marks
@@ -224,6 +225,21 @@ sub code_snippet {   # usage: code_snippet($filename, title)
         <: td() :>$font Monospace 24
         <: td() :>Font to be used for drawing text. The name of the font
           is according to requirements of pango font string representation.
+    <:TR():><: td() :>$text_style
+        <: td() :>$text_style shadow
+        <: td() :>The style used to draw the text. The only valid style is "shadow".
+    <:TR():><: td() :>$shadow_color
+        <: td() :>$shadow_color black/0.3
+        <: td() :>For the shadow style, the color of shadows.
+    <:TR():><: td() :>$shadow_offset
+        <: td() :>$shadow_offset 1 1
+        <: td() :>For the shadow style, the x and y offsets of the shadow.
+    <:TR():><: td() :>$pango_markup
+        <: td() :>$pango_markup
+        <: td() :>Indicates that the text should be interpreted as a pango markup string. See: http://developer.gnome.org/pango/stable/PangoMarkupFormat.html
+    <:TR():><: td() :>$scale_font
+        <: td() :>$scale_font 1
+        <: td() :>Indicates that the text should be scaled with the current zoom level. Default is not to zoom up text.
     <:TR():><: td() :>$balloon
         <: td() :>$balloon Suspect
         <: td() :>Adds another line to the popup balloon that is shown
@@ -258,6 +274,7 @@ Text is drawn by adding the "T" control character in front of a line. The "T" ma
 The following example illustrates the various anchor options.
 <: code_snippet("text-align.giv") :>
 <p>
+
 The following screenshot shows the various alignments relative to the
 anchor points.
 <center>
@@ -266,6 +283,10 @@ anchor points.
     </tr>
   </table>
 <center>
+<p>
+The encoding of giv files is always utf8. Bidi is supported through pango.
+<p>
+The backslash character is used as an escape character, so to get a literal backslash two slashes must be used. "\n" is used to indicate aline break.
 </blockquote>
 
 <: subsection("Giv file example") :>
@@ -300,9 +321,17 @@ giv. The result is shown in the screenshow below.
 <: TR() :><: td() :>-<br>Ctrl-B3
 	  <: td() :>Zoom out by a factor of 2
 <: TR() :><: td() :>Scroll wheel up
-	  <: td() :>Zoom in by a factor of 1.1
+	  <: td() :>Zoom in by a factor of 1.4
 <: TR() :><: td() :>Scroll wheel down
+	  <: td() :>Zoom out by a factor of 1.4
+<: TR() :><: td() :>Shift+Scroll wheel up
+	  <: td() :>Zoom in by a factor of 1.1
+<: TR() :><: td() :>Shift+Scroll wheel down
 	  <: td() :>Zoom out by a factor of 1.1
+<: TR() :><: td() :>Control+Scroll wheel up
+	  <: td() :>Zoom in by a factor of 2
+<: TR() :><: td() :>Control+Scroll wheel down
+	  <: td() :>Zoom out by a factor of 2
 <!--
 <: TR() :><: td() :>Shift+scroll wheel up
 	  <: td() :>Zoom in of quiver vectors by a factor of 1.1
