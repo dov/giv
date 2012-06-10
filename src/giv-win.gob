@@ -463,8 +463,8 @@ class Giv:Win from Gtk:Window
             img_org = NULL;
         }
     };
-    private double contrast_min = -1;
-    private double contrast_max = -1;
+    private double contrast_min = 0;
+    private double contrast_max = 255;
     private gchar *format = NULL destroy { g_free(format); };
     private GdkPixbuf *img_display = NULL
         destroy {
@@ -936,6 +936,11 @@ class Giv:Win from Gtk:Window
             gtk_ui_manager_get_widget(selfp->menu_manager,
                                       "/menubar/ViewMenu/AutoResize")),
           selfp->giv_settings->default_auto_resize);
+        gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/AutoContrast")),
+          selfp->giv_settings->default_auto_contrast);
         gtk_image_viewer_set_fill_on_resize(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                             selfp->giv_settings->default_auto_resize);
 
@@ -1125,15 +1130,13 @@ class Giv:Win from Gtk:Window
                                   // output
                                   &selfp->contrast_min,
                                   &selfp->contrast_max);
-        if (new_img->img_type == GIVIMAGE_U8
+        else if (new_img->img_type == GIVIMAGE_U8
             || new_img->img_type == GIVIMAGE_RGB_U8
             || new_img->img_type == GIVIMAGE_RGBA_U8) {
             gtk_widget_hide(selfp->w_color_map_bar);
             selfp->do_view_colormap = FALSE;
-            giv_color_map_set_min_max(GIV_COLOR_MAP(selfp->w_color_map_bar),
-                                      selfp->contrast_min,
-                                      selfp->contrast_max);
-
+            selfp->contrast_min = 0;
+            selfp->contrast_max = 256;
         }
         else {
             gtk_widget_show(selfp->w_color_map_bar);
@@ -1142,6 +1145,9 @@ class Giv:Win from Gtk:Window
                                       selfp->contrast_min,
                                       selfp->contrast_max);
         }
+        giv_color_map_set_min_max(GIV_COLOR_MAP(selfp->w_color_map_bar),
+                                  selfp->contrast_min,
+                                  selfp->contrast_max);
         gtk_check_menu_item_set_active(
             GTK_CHECK_MENU_ITEM(
                 gtk_ui_manager_get_widget(selfp->menu_manager,
