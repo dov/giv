@@ -37,6 +37,7 @@ static void strip_last_leaf(const char *string_path,
 
 class Giv:Mark:Tree:Dialog from Gtk:Dialog {
     private GtkWidget *w_giv = NULL;
+    private GtkWidget *w_tree_view = NULL;
     private GtkTreeStore *model = NULL;
     private GPtrArray *mark_set_list = NULL;
     private GHashTable *hash_giv_path_to_iter = NULL;
@@ -45,7 +46,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
     new(GivWin *w_giv)
     {
         GivMarkTreeDialog *self = GIV_MARK_TREE_DIALOG(GET_NEW);
-        GtkWidget *vbox, *scrolled_window, *tree_view;
+        GtkWidget *vbox, *scrolled_window;
         GtkTreeViewColumn *column;
         GtkCellRenderer *cell;
 
@@ -68,8 +69,8 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
         gtk_box_pack_start (GTK_BOX (vbox), scrolled_window, TRUE, TRUE, 0);
         
         selfp->model = gtk_tree_store_new (3, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INT);
-        tree_view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (selfp->model));
-        gtk_container_add (GTK_CONTAINER (scrolled_window), tree_view);
+        selfp->w_tree_view = gtk_tree_view_new_with_model (GTK_TREE_MODEL (selfp->model));
+        gtk_container_add (GTK_CONTAINER (scrolled_window), selfp->w_tree_view);
         
         /* First text column */
         column = gtk_tree_view_column_new();
@@ -81,7 +82,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
                                              "text", 0,
                                              NULL);
         gtk_tree_view_column_set_title (column, "Path");
-        gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view), column);
+        gtk_tree_view_append_column (GTK_TREE_VIEW (selfp->w_tree_view), column);
         
         /* Toggle column */
         column = gtk_tree_view_column_new();
@@ -100,7 +101,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
 
         /* gtk_tree_view_column_set_resizable(column, TRUE); */
         gtk_tree_view_column_set_title (column, "Visible");
-        gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view), column);
+        gtk_tree_view_append_column (GTK_TREE_VIEW (selfp->w_tree_view), column);
         
         /* Second column */
         column = gtk_tree_view_column_new();
@@ -115,7 +116,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
                                              "text", 2,
                                              NULL);
         gtk_tree_view_column_set_title (column, "#nodes");
-        gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view), column);
+        gtk_tree_view_append_column (GTK_TREE_VIEW (selfp->w_tree_view), column);
         
         /* Create the hash table that maps between giv paths and the
            iters of the tree.
@@ -127,6 +128,23 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
                                                              g_free,
                                                              g_free);
   
+        giv_mark_tree_dialog_update_tree_view(self);
+
+        gtk_widget_show_all(vbox);
+
+        return GTK_WIDGET(self);
+    }
+
+    public void update_tree_view(Giv:Mark:Tree:Dialog *self)
+    {
+        // TBD: Clear old mark tree
+
+        // Clear old hash table
+        g_hash_table_remove_all(selfp->hash_giv_path_to_iter);
+
+        // Clear old marks
+        gtk_tree_store_clear(selfp->model);
+
         selfp->mark_set_list = giv_win_get_giv_data(GIV_WIN(selfp->w_giv));
         for(int i=0; i<(int)selfp->mark_set_list->len; i++) {
             giv_dataset_t *mark_set = (giv_dataset_t*)g_ptr_array_index(selfp->mark_set_list,i);
@@ -183,11 +201,8 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
             /* g_free(&iter); */
             
         }
-        gtk_tree_view_expand_all(GTK_TREE_VIEW(tree_view));
+        gtk_tree_view_expand_all(GTK_TREE_VIEW(selfp->w_tree_view));
         
-        gtk_widget_show_all(vbox);
-        
-        return GTK_WIDGET(self);
     }
 
     override (Gtk:Dialog) void

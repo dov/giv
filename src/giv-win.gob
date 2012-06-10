@@ -1192,6 +1192,9 @@ class Giv:Win from Gtk:Window
             //            ((GivParser*)selfp->giv_parser)->clear();
             giv_win_load_image(self, filename);
         } 
+        if (selfp->w_mark_tree_dialog)
+            giv_mark_tree_dialog_update_tree_view(GIV_MARK_TREE_DIALOG(selfp->w_mark_tree_dialog));
+
         gchar *basename = g_path_get_basename(filename);
         gchar *new_title = g_strdup_printf("giv: %s", basename);
 
