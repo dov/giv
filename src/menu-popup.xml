@@ -4,20 +4,22 @@
     <menu name="FileMenu" action="FileMenuAction">
       <menuitem name="Open" action="OpenAction" />
       <menuitem name="Export" action="ExportAction" />
-      <menuitem name="NewWindow" action="NewWindowAction" />
-      <menuitem name="CloseWindow" action="CloseWindowAction" />
-      <menuitem name="ClearAction" action="ClearAction" />
       <menuitem name="Print" action="PrintAction" />
       <menuitem name="Preferences" action="PreferencesAction" />
       <menuitem name="Quit" action="QuitAction" />
     </menu>
     <menu name="ViewMenu" action="ViewMenuAction">
+      <menuitem name="MenuBar" action="ViewMenuBarAction" />
       <menuitem name="Marks" action="ViewMarksAction" />
       <menuitem name="Sub-pixel" action="ViewSubPixelAction" />
       <menuitem name="Balloons" action="ViewBalloonAction" />
       <menuitem name="HorizontalFlip" action="ViewHorizontalFlip" />
       <menuitem name="VerticalFlip" action="ViewVerticalFlip" />
+      <menuitem name="Pixel-grid" action="ViewPixelGrid" />
+      <menuitem name="ColorMapBar" action="ViewColorMap" />
       <menuitem name="AutoResize" action="AutoResize" />
+      <menuitem name="AutoContrast" action="AutoContrast" />
+      <menuitem name="AutoReload" action="AutoReload" />
       <menu name="ColorTableMenu" action="ColorTableMenuAction">
         <menuitem name="PseudoColorOff" action="PseudoColorNone" />
         <menuitem name="PseudoColorInvert" action="PseudoColorInvert" />
@@ -29,14 +31,21 @@
         <menuitem name="PseudoColorBGRY" action="PseudoColorBGRY" />
         <menuitem name="PseudoColorGRBW" action="PseudoColorGRBW" />
       </menu>
+      <menuitem name="Fill" action="FillAction" />
+      <menuitem name="ShrinkWrap" action="ShrinkWrapAction" />
     </menu>
     <menu name="ToolMenu" action="ToolMenuAction">
       <menuitem name="MarkBrowser" action="ToolMarkBrowserAction" />
+      <menuitem name="Contrast" action="ToolContrast" />
       <menuitem name="Info" action="ToolInfoAction" />
+      <menuitem name="Calibrate" action="ToolCalibrateAction" />
       <menuitem name="MeasureDistance" action="ToolMeasureDistanceAction" />
       <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
+      <menuitem name="CountMarks" action="ToolCountMarks" />
     </menu>
     <menu name="Help" action="HelpMenuAction" position="bot">
+      <menuitem name="Copyright" action="CopyrightAction" />
+      <menuitem name="Manual" action="ManualAction" />
       <menuitem name="About" action="AboutAction" />
     </menu>
   </popup>

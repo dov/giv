@@ -3,14 +3,12 @@
     <menu name="FileMenu" action="FileMenuAction">
       <menuitem name="Open" action="OpenAction" />
       <menuitem name="Export" action="ExportAction" />
-      <menuitem name="NewWindow" action="NewWindowAction" />
-      <menuitem name="CloseWindow" action="CloseWindowAction" />
-      <menuitem name="ClearAction" action="ClearAction" />
       <menuitem name="Print" action="PrintAction" />
       <menuitem name="Preferences" action="PreferencesAction" />
       <menuitem name="Quit" action="QuitAction" />
     </menu>
     <menu name="ViewMenu" action="ViewMenuAction">
+      <menuitem name="MenuBar" action="ViewMenuBarAction" />
       <menuitem name="Marks" action="ViewMarksAction" />
       <menuitem name="Sub-pixel" action="ViewSubPixelAction" />
       <menuitem name="Balloons" action="ViewBalloonAction" />
