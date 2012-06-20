@@ -13,6 +13,8 @@
 #include <math.h>
 #include "tiffio.h"
 
+#define GIV_IMAGE_ERROR g_spawn_error_quark ()
+
 static giv_plugin_support_t tiff_support = {
     TRUE,
     0,
@@ -120,6 +122,10 @@ GivImage *giv_plugin_load_file(const char *filename,
             }
 
             img = giv_image_new(image_type, w, h);
+            if (!img) {
+                *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", w, h);
+                return NULL;
+            }
             guchar *dst = img->buf.buf;
             int dst_bpp = giv_image_type_get_size(image_type);
             int dst_row_stride = giv_image_get_row_stride(img);

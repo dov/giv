@@ -1094,38 +1094,24 @@ class Giv:Win from Gtk:Window
 
         selfp->current_slice=0;
 
+        if (selfp->img_org) {
+          giv_image_unref(selfp->img_org);
+          selfp->img_org = NULL;
+        }
+
         if (slip(filename).m("p(g|p)m","i")) {
             if (selfp->img_comment)
                 g_free(selfp->img_comment);
             selfp->img_comment = read_pnm_comment(filename);
         }
 
-        if (error) {
-            // Silently ignore image failures on auto reload
-            if (selfp->do_auto_reload && selfp->auto_reload_trigger) {
-                // Force a new test
-                selfp->cached_mtime = 0;
-                return;
-            }
-            else {
-                app_error(self,
-                          "Failed to load image %s: %s\n",
-                          filename, error->message);
-                return;
-            }
-            g_error_free(error);
-        }
-        
         selfp->auto_reload_trigger = false;
         
-        if (selfp->img_org)
-          {
-            giv_image_unref(selfp->img_org);
-            selfp->img_org = NULL;
-          }
         selfp->img_org = new_img;
 
-        if (selfp->do_auto_contrast)
+        if (!new_img)
+            ; // Ignore
+        else if (selfp->do_auto_contrast)
             giv_image_get_min_max(new_img,
                                   // output
                                   &selfp->contrast_min,
@@ -1165,8 +1151,13 @@ class Giv:Win from Gtk:Window
 
         // Create a suitable gray level formatting for the image.
         if (selfp->format)
+        {
             g_free(selfp->format);
-        if (new_img->img_type <= GIVIMAGE_I32)
+            selfp->format = NULL;
+        }
+        if (!new_img)
+            ;
+        else if (new_img->img_type <= GIVIMAGE_I32)
             selfp->format = g_strdup("%.0f");
         else if (max-min > 1e-3 && max-min <= 1e-2) 
             selfp->format = g_strdup("%.5f");
@@ -1181,10 +1172,29 @@ class Giv:Win from Gtk:Window
         else
             selfp->format = g_strdup("%.4g");
 
-        selfp->img_is_mono = giv_check_img_for_mono(selfp->img_org);
+        if (new_img)
+            selfp->img_is_mono = giv_check_img_for_mono(selfp->img_org);
 
         apply_color_map(self);
+
         //giv_win_shrink_wrap(self);
+        if (error) {
+            // Silently ignore image failures on auto reload
+            if (selfp->do_auto_reload && selfp->auto_reload_trigger) {
+                // Force a new test
+                selfp->cached_mtime = 0;
+                return;
+            }
+            else {
+                app_error(self,
+                          "Failed to load image %s: %s\n",
+                          filename, error->message);
+            }
+
+            g_error_free(error);
+
+            // Run rest of image to clear the old image
+        }
     }
 
     public void load_file(self,
@@ -1334,7 +1344,8 @@ class Giv:Win from Gtk:Window
     public void set_image_info(self)
     {
         int fli = selfp->filename_list_index;
-        if (fli >= (int)selfp->filename_list->len)
+        if (fli >= (int)selfp->filename_list->len
+            || fli < 0)
             return;
 
         GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
@@ -1402,19 +1413,21 @@ class Giv:Win from Gtk:Window
             }
 
             // Add all attributes
-            GHashTable *attributes = giv_image_get_attribute_map(selfp->img_org);
-            GHashTableIter iter;
-            gpointer key, value;
-
-            info += "----------------------------\nAttributes:\n";
-            g_hash_table_iter_init (&iter, attributes);
-            while (g_hash_table_iter_next (&iter, &key, &value)) {
-                info += slipprintf("%s: %s\n", (gchar*)key, (gchar*)value);
+            if (selfp->img_org) {
+                GHashTable *attributes = giv_image_get_attribute_map(selfp->img_org);
+                GHashTableIter iter;
+                gpointer key, value;
+    
+                info += "----------------------------\nAttributes:\n";
+                g_hash_table_iter_init (&iter, attributes);
+                while (g_hash_table_iter_next (&iter, &key, &value)) {
+                    info += slipprintf("%s: %s\n", (gchar*)key, (gchar*)value);
+                }
+                slip window_name = slipprintf("Info: %s", basename);
+                giv_info_set_info(GIV_INFO(selfp->w_info_dialog),
+                                  window_name,
+                                  info);
             }
-            slip window_name = slipprintf("Info: %s", basename);
-            giv_info_set_info(GIV_INFO(selfp->w_info_dialog),
-                              window_name,
-                              info);
         }
         g_free(new_title);
         g_free(basename);
@@ -1872,7 +1885,7 @@ cb_key_press_event (GtkWidget * widget,
             dir = -1;
 
         // Check if multislice
-        if (selfp->img_org->depth>1) {
+        if (selfp->img_org && selfp->img_org->depth>1) {
           selfp->current_slice += dir;
           if (selfp->current_slice < 0)
               selfp->current_slice = selfp->img_org->depth-1;
@@ -3229,6 +3242,12 @@ cb_contrast_changed(GtkWidget* widget,
 static void
 apply_color_map(GivWin *self)
 {
+    if (selfp->img_display)
+    {
+      g_object_unref(selfp->img_display);
+      selfp->img_display = NULL;
+    }
+
     if (!selfp->img_org)
         return;
 
@@ -3271,6 +3290,14 @@ apply_color_map(GivWin *self)
     GdkPixbuf *org_pixbuf = giv_image_get_pixbuf(selfp->img_org,
                                                  selfp->current_slice,
                                                  min, max);
+    if (!org_pixbuf) {
+        app_error(self,
+                  "Failed allocating a color image of size %dx%d pixels",
+                  selfp->img_org->width,
+                  selfp->img_org->height);
+        return;
+    }
+        
     if (selfp->img_display)
       g_object_unref(selfp->img_display);
 

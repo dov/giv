@@ -50,7 +50,12 @@ GivImage *giv_image_new_full(GivImageType img_type,
     int buf_size = frame_stride * depth;
 
     // This should probably be aligned to be faster...
-    img->buf.buf = (guint8*)g_new0(guint8*, buf_size);
+    img->buf.buf = (guint8*)g_try_new0(guint8, buf_size);
+    if (!img->buf.buf) {
+        g_free(img);
+        return NULL;
+    }
+          
     img->attribute_map = g_hash_table_new_full(g_str_hash,
                                                g_str_equal,
                                                g_free,
@@ -132,6 +137,10 @@ GivImage *giv_image_new_from_file(const char *filename,
                                      width * height,
                                      2,
                                      1);
+            if (!img) {
+                *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", width, height);
+                return NULL;
+            }
 
             guchar *src_buf = gdk_pixbuf_get_pixels(pixbuf);
             guchar *dst_buf = img->buf.buf;
@@ -157,6 +166,10 @@ GivImage *giv_image_new_from_file(const char *filename,
                                      row_stride * height,
                                      2,
                                      1);
+            if (!img) {
+                *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", width, height);
+                return NULL;
+            }
             memcpy(img->buf.buf,
                    gdk_pixbuf_get_pixels(pixbuf),
                    row_stride * height);
@@ -605,6 +618,9 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
                                        bits_per_sample,
                                        width,
                                        height);
+    // If we failed to allocate an image
+    if (!pixbuf)
+        return NULL;
     guchar *pbuf = gdk_pixbuf_get_pixels(pixbuf);
     guchar *buf = img->buf.buf;
     int pb_rowstride = gdk_pixbuf_get_rowstride(pixbuf);

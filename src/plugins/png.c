@@ -12,6 +12,8 @@
 #include <math.h>
 #include "png.h"
 
+#define GIV_IMAGE_ERROR g_spawn_error_quark ()
+
 static giv_plugin_support_t png_support = {
     TRUE,
     0,
@@ -122,6 +124,10 @@ GivImage *giv_plugin_load_file(const char *filename,
         image_type = GIVIMAGE_RGB_U8;
 
     img = giv_image_new(image_type, width, height);
+    if (!img) {
+      *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", width, height);
+      return NULL;
+    }
 
     int png_transforms = PNG_TRANSFORM_PACKING;
     png_bytep *row_pointers = (png_bytep*)g_new0(gpointer, height);

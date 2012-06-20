@@ -74,14 +74,18 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename)
     switch (bpp) {
     case 8:
         img = giv_image_new(GIVIMAGE_U8,width,height);
-        memcpy(img->buf.buf, buf, width*height);
+        if (img)
+            memcpy(img->buf.buf, buf, width*height);
         break;
     case 16:
         img = giv_image_new(GIVIMAGE_U16,width,height);
-        memcpy(img->buf.buf, buf, width*height*2);
+        if (img)
+            memcpy(img->buf.buf, buf, width*height*2);
     default:
         ;
     }
+    if (!img) 
+      return NULL;
 
     // Insert attributes in the hash map
     DcmObject *dset = &dcm_img;
