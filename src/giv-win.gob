@@ -1893,6 +1893,7 @@ cb_key_press_event (GtkWidget * widget,
               selfp->current_slice = 0;
 
           // Redraw the image
+          giv_image_ref(selfp->img_org);
           giv_win_set_image(GIV_WIN(self),
                             selfp->img_org);
           giv_win_set_image_info(GIV_WIN(self));
@@ -3298,9 +3299,6 @@ apply_color_map(GivWin *self)
         return;
     }
         
-    if (selfp->img_display)
-      g_object_unref(selfp->img_display);
-
     const guint8 *tmap = NULL;
     if (selfp->colormap == PSEUDO_COLOR_OFF
         //        || !selfp->img_is_mono
@@ -4331,4 +4329,3 @@ static void create_remote_commands(GivWin *self)
 }
 
 %}
-

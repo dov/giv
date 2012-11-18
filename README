@@ -1,21 +1,5 @@
-Release notes for version 0.9.23
-Sunday 2012-06-10 
+Release notes for version 0.9.24beta1
+Thursday 2012-06-21 
 
-This is a major bug fix version that contain the following fixes:
+This is a test version of giv compiled for Windows64
 
-* If auto-contrast is off, leave 8-bit file contrast untouched on load.
-* In the marks viewer replaced full path filename with basename of the file.
-* Solved sync between menus and functionality for balloons, toggles, etc.
-* Added default options for auto-contrast, sub-pixel, and auto-fill.
-* Fixed display in the marker tree view which did not always reflect what marks were visible.
-* Made mark view properly update when opened when navigating between files.
-* Removed redundant redraws on autofit.
-* Fixed major memory leak. (Marks where not released when going to next file).
-* Added display of multi-line strings.
-* Made giv honor no auto-resive for giv files without images.
-* Changed mousewheel zooming so that it zooms around mouse pointer.
-* Added different strength zooming by control and shift mouse wheel.
-* Fixed broken measure tool text on Windows.
-* Made click zoom disabled when clicking in the window when giv is not the focused window.
-* Cleaned up menus so that top menu and right click menu show the same entries.
-* Documentation updates.

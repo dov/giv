@@ -343,7 +343,7 @@
 #define HAVE_NEW_H 1
 
 /* Define `pid_t' to `int' if <sys/types.h> does not define. */
-#define HAVE_NO_TYPEDEF_PID_T 1
+#undef HAVE_NO_TYPEDEF_PID_T 
 #ifdef HAVE_NO_TYPEDEF_PID_T
 typedef int pid_t;
 #endif

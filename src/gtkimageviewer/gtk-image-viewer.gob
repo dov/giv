@@ -1159,7 +1159,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                                    0xff505050,
                                    0xffa0a0a0
                                    );
-        gdk_pixbuf_unref(img_scaled);
+        g_object_unref(img_scaled);
         img_scaled = img_comp;
     }
     if (!selfp->frozen)
@@ -1173,7 +1173,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                        selfp->current_x0,
                        selfp->current_y0);
     
-    gdk_pixbuf_unref(img_scaled);
+    g_object_unref(img_scaled);
 
     // If we have just drawn the whole buffer, then copy the result
     // to the cache.
@@ -1520,12 +1520,12 @@ class Gtk:Image:Viewer from Gtk:Widget
     gboolean do_need_fill = (selfp->scroll_min_x == selfp->scroll_max_x)
       || (size_is_different && selfp->do_fill_on_resize);
     if (selfp->image)
-      gdk_pixbuf_unref(selfp->image);
+      g_object_unref(selfp->image);
     selfp->image = image;
 
     if (image)
       {
-        gdk_pixbuf_ref(image);
+        g_object_ref(image);
         selfp->scroll_min_x = 0;
         selfp->scroll_min_y = 0;
         selfp->scroll_width = gdk_pixbuf_get_width(image);
@@ -1544,7 +1544,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   get_image(self)
   {
     if (selfp->image)
-        gdk_pixbuf_ref(selfp->image);
+        g_object_ref(selfp->image);
     return selfp->image;
   }
 

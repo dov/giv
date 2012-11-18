@@ -35,3 +35,26 @@
 ** Done/Todo
    - [X] Recursively turn on and off child nodes when toggling the display of a parent in the model viewer.
    - [X] Why is initial scaling different from the scaling received with "fill"? Due to the sticky autoscale setting. Fixed by forcing fill on initial load of dataset.
+* <2012-06-21 Thu>
+** Windows 64 bit compilation
+   - Need to compile the following libraries as they are not provided by federa:
+     - [ ] cfitsio
+     - [ ] json-glib
+     - [ ] Fix dcm library
+*** cfitsio compilation
+    - Got sources from http://heasarc.gsfc.nasa.gov/fitsio/
+    - Commands:
+    #+begin_src sh
+   cd ~/src
+   tar -xf /tmp/cfitsio3300.tar.gz
+   cd cfitsio
+   env CC=x86_64-w64-mingw32-gcc ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/mingw64
+   make -j 4
+   make install
+    #+end_src
+   - Even though compilation of cfitsio succeeded linking failed. Need to figure out why. Meanwhile removed fitsio plugin from installation.
+   - Get errors like the following:
+   #+begin_example
+   /usr/lib/gcc/x86_64-w64-mingw32/4.7.0/../../../../x86_64-w64-mingw32/bin/ld: skipping incompatible /usr/local/mingw64/lib/libcfitsio.a when searching for -lcfitsio
+   #+end_example
+    - Solved fitsio problem by literal inclusion of sources.

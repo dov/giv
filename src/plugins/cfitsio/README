@@ -1,0 +1,2 @@
+This directory contains all c and h files from the cfitsio3300.tar.gz file
+(except those containing main() function).

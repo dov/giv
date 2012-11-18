@@ -37,14 +37,13 @@ src_giv_exe = ["giv.cc",
                "dovtk-lasso.c",
                ]
 
-if ARGUMENTS.get('mingw', 0):
+if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64',0):
     res = env.Command("giv.res.obj",
                       ["giv.rc",
                        "giv-logo.ico"
                       ],
-                      ["i686-w64-mingw32-windres giv.rc giv.res.obj"],
+                      ["${WINDRES} giv.rc giv.res.obj"],
                       chdir=1)
-    print "res = ", res
     src_giv_exe = src_giv_exe + res
     
 #env.Program("giv",

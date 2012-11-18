@@ -11,11 +11,11 @@ for p in [#'pgm.c',
 
 # Change this to Maemo
 if not env['SBOX']:
-    env.ParseConfig('${PKGCONFIG} --cflags --libs cfitsio')
     env.SharedLibrary('fits',
                       ['fits.c'],
-                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis']+env['LIBPATH'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis','#/src/plugins/cfitsio/${arch}/${VARIANT}']+env['LIBPATH'],
                       LIBS=['cfitsio','giv-image']+env['LIBS'],
+                      CPPPATH=['cfitsio']+env['CPPPATH']
                       )
     
     env.SharedLibrary('dicom',
@@ -37,11 +37,12 @@ if not env['SBOX']:
         png_lib = ['png15']
     else:
         png_lib = []
-    env.SharedLibrary('png',
-                      ['png.c'],
-                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
-                      LIBS=['giv-image']+png_lib+env['LIBS'],
-                      )
+#    env.SharedLibrary('png',
+#                      ['png.c'],
+#                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
+#                      LIBS=['giv-image']+png_lib+env['LIBS'],
+#                      )
     
-    SConscript('dcmtk/SConscript',
+    SConscript(['dcmtk/SConscript',
+                'cfitsio/SConscript'],
                exports='env')
