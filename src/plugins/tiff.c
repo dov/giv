@@ -61,6 +61,8 @@ GivImage *giv_plugin_load_file(const char *filename,
         gboolean has_colormap = FALSE;
         uint16 *rmap, *gmap, *bmap;
         uint16 pn=0, num_pages=0;
+        uint16 photometric;
+        gboolean do_invert = TRUE;
 
 	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
@@ -69,6 +71,7 @@ GivImage *giv_plugin_load_file(const char *filename,
         TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
         TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sample_format);
         TIFFGetField(tif, TIFFTAG_PAGENUMBER, &pn, &num_pages);
+        TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometric);
 
         if (TIFFGetField(tif, TIFFTAG_COLORMAP, &rmap, &gmap, &bmap))
             has_colormap = TRUE;
@@ -114,8 +117,11 @@ GivImage *giv_plugin_load_file(const char *filename,
                 image_type = GIVIMAGE_U16;
             else if (bps == 32)
                 image_type = GIVIMAGE_I32;
-            else if (bps == 1)
+            else if (bps == 1) {
                 image_type = GIVIMAGE_U8;
+                if (photometric == PHOTOMETRIC_MINISBLACK)
+                  do_invert = FALSE;
+            }
             else {
                 printf("Unknown Tiff type!\n");
                 return NULL;
@@ -148,12 +154,15 @@ GivImage *giv_plugin_load_file(const char *filename,
                     }
                 }
                 else if (bps == 1) {
-                    for (col_idx=0; col_idx<w/8; col_idx++) {
-                        int bit_idx;
-                        for (bit_idx=0; bit_idx<8; bit_idx++) {
-                            *dst_ptr++ = 1-((*src_ptr >> (7-bit_idx))&1);
-                        }
-                        src_ptr++;
+                    // This could certainly be speeded up
+                    for (col_idx=0; col_idx<w; col_idx++) {
+                        int bit_idx = col_idx % 8;
+                        int b = ((*src_ptr >> (7-bit_idx))&1);
+                        if (do_invert)
+                          b = 1-b;
+                        *dst_ptr++ = b;
+                        if (bit_idx==7)
+                          src_ptr++;
                     }
                 }
                 else {
