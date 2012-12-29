@@ -71,6 +71,7 @@ typedef struct {
     int depth;
     int row_stride;
     int frame_stride;
+    gboolean one_bit;
     union {
         guint8 *buf;
         guint16 *sbuf;
@@ -258,6 +259,16 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
  * @return 
  */
 int giv_image_type_get_size(GivImageType img_type);
+
+/** 
+ * Set an indicator that this is a one bit image.
+ * 
+ * @param img
+ * @param one_bit - Whether the image is a one bit image
+ * 
+ * @return 
+ */
+void giv_image_set_one_bit(GivImage *img, gboolean one_bit);
 
 #ifdef __cplusplus
 }

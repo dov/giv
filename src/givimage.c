@@ -60,7 +60,9 @@ GivImage *giv_image_new_full(GivImageType img_type,
                                                g_str_equal,
                                                g_free,
                                                g_free);
-
+    // One bit is used for signalling one bit images. This should
+    // eventually be moved into image type. By default it is off.
+    img->one_bit = FALSE;
     return img;
 }
 
@@ -686,4 +688,9 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
         }
     }
     return pixbuf;
+}
+
+void giv_image_set_one_bit(GivImage *img,gboolean one_bit)
+{
+  img->one_bit = one_bit;
 }

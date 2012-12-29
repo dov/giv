@@ -1,6 +1,5 @@
 //======================================================================
-//  dicom.c - A simple dicom loader. Should be replaced with dcmtk
-//            based loader.
+//  dicom.c - A dicom loader based on dcmtk.
 //
 //  Dov Grobgeld <dov.grobgeld@gmail.com>
 //  Mon Nov  9 06:28:09 2009

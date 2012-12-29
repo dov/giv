@@ -1111,7 +1111,7 @@ class Giv:Win from Gtk:Window
 
         if (!new_img)
             ; // Ignore
-        else if (selfp->do_auto_contrast)
+        else if (selfp->do_auto_contrast || new_img->one_bit)
             giv_image_get_min_max(new_img,
                                   // output
                                   &selfp->contrast_min,

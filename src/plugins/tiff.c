@@ -63,6 +63,7 @@ GivImage *giv_plugin_load_file(const char *filename,
         uint16 pn=0, num_pages=0;
         uint16 photometric;
         gboolean do_invert = TRUE;
+        gboolean one_bit = FALSE;
 
 	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
@@ -119,6 +120,7 @@ GivImage *giv_plugin_load_file(const char *filename,
                 image_type = GIVIMAGE_I32;
             else if (bps == 1) {
                 image_type = GIVIMAGE_U8;
+                one_bit = TRUE;
                 if (photometric == PHOTOMETRIC_MINISBLACK)
                   do_invert = FALSE;
             }
@@ -132,6 +134,8 @@ GivImage *giv_plugin_load_file(const char *filename,
                 *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", w, h);
                 return NULL;
             }
+            giv_image_set_one_bit(img, one_bit);
+
             guchar *dst = img->buf.buf;
             int dst_bpp = giv_image_type_get_size(image_type);
             int dst_row_stride = giv_image_get_row_stride(img);
@@ -176,6 +180,10 @@ GivImage *giv_plugin_load_file(const char *filename,
 	    _TIFFfree(raster);
 	}
 	TIFFClose(tif);
+
+        char buf[32];
+        sprintf(buf,"%d",photometric);
+        giv_image_set_attribute(img, "photometric", buf);
     }
 
     return img;
