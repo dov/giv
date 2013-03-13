@@ -2883,7 +2883,8 @@ void draw_to_cairo(cairo_t *cr,
         GivRenderer renderer(datasets, painter,
                              scale_x, scale_y,
                              shift_x, shift_y,
-                             cnv_width, cnv_height);
+                             cnv_width, cnv_height,
+                             giv_widget_get_quiver_scale(GIV_WIDGET(selfp->w_imgv)));
         renderer.set_do_no_transparency(selfp->do_no_transparency);
         renderer.paint();
     }

@@ -1,10 +1,10 @@
 import re, os, glob
 
 if ARGUMENTS.get('debug', 0):
-    cppflags = ['-g', '-Wall']
+    cppflags = ['-g', '-Wall','-fPIC']
     variant = 'Debug'
 else:
-    cppflags = ['-O2']
+    cppflags = ['-O2','-fPIC']
     variant = 'Release'
 
 env = Environment(LIBPATH=[],

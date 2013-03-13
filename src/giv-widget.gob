@@ -105,6 +105,7 @@ class Giv:Widget from Gtk:Image:Viewer
     private gpointer file_reference_user_data;
     private int pixel_grid_min_zoom = 5;
     private GivColor pixel_grid_color;
+    private gdouble quiver_scale = 1.0;
    
     public GtkWidget *
     new (GdkPixbuf *pixbuf)
@@ -180,6 +181,11 @@ class Giv:Widget from Gtk:Image:Viewer
     public GivParser *get_giv_parser(self)
     {
         return selfp->giv_parser;
+    }
+
+    public double get_quiver_scale(self)
+    {
+        return selfp->quiver_scale;
     }
 
     public void show_balloon(self,
@@ -475,6 +481,31 @@ class Giv:Widget from Gtk:Image:Viewer
         return 0;
     }
 
+    override (Gtk:Widget)
+    gint
+    scroll_event (GtkWidget      *widget,
+                  GdkEventScroll *event)
+    {
+        GivWidget *self = GIV_WIDGET(widget);
+
+        // Zoom the quiver arrows. 
+        if (event->state & GDK_MOD1_MASK) {
+            if (event->direction)
+              selfp->quiver_scale *= 0.8;
+            else
+              selfp->quiver_scale *= 1.2;
+            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
+            
+            return 1;
+        }
+
+        PARENT_HANDLER(widget,event);
+
+        // Prevent propagation of the scroll event signals to the scroll bars.
+        g_signal_stop_emission_by_name(widget, "scroll-event");
+        return 1;
+    }
+
     public void set_show_balloon(self,
                                  gboolean do_show_balloon)
     {
@@ -594,7 +625,9 @@ cb_image_annotate(GivWidget *self,
     GivRenderer renderer(datasets, painter,
                          scale_x, scale_y,
                          shift_x, shift_y,
-                         width, height);
+                         width, height,
+                         selfp->quiver_scale
+                         );
     renderer.set_do_no_transparency(selfp->do_no_transparency);
     if (!selfp->is_dragging && selfp->do_show_marks)
         renderer.paint();
@@ -694,7 +727,8 @@ cb_image_annotate(GivWidget *self,
         GivRenderer renderer(datasets, painter,
                              li_scale_x, li_scale_y,
                              li_shift_x, li_shift_y,
-                             li_width, li_height);
+                             li_width, li_height,
+                             selfp->quiver_scale);
         renderer.set_do_no_transparency(selfp->do_no_transparency);
         renderer.paint();
     }

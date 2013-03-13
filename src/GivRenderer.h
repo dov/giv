@@ -13,7 +13,8 @@ class GivRenderer {
                 double _shift_x,
                 double _shift_y,
                 double width,
-                double height
+                double height,
+                double _quiver_scale
                 );
     void paint();
     void set_do_no_transparency(bool do_no_transparency)
@@ -30,6 +31,7 @@ class GivRenderer {
     double shift_y;
     double width;
     double height;
+    double quiver_scale;
     bool do_no_transparency;
 };
 

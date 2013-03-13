@@ -23,7 +23,8 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
                          double _shift_x,
                          double _shift_y,
                          double _width,
-                         double _height
+                         double _height,
+                         double _quiver_scale
                          ) : 
     datasets(_datasets),
     painter(_painter),
@@ -33,6 +34,7 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
     shift_y(_shift_y),
     width(_width),
     height(_height),
+    quiver_scale(_quiver_scale),
     do_no_transparency(false)
 {
 }
@@ -123,7 +125,7 @@ void GivRenderer::paint()
                         }
                     }
                     else if (p.op == OP_QUIVER) {
-                        double qscale = dataset->quiver_scale;
+                        double qscale = dataset->quiver_scale * this->quiver_scale;
                         double q_x = old_x + p.x * scale_x * qscale;
                         double q_y = old_y + p.y * scale_y * qscale;
                         painter.add_line_segment(old_x, old_y, q_x, q_y,
