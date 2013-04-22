@@ -96,7 +96,7 @@ class Giv:Histo from Gtk:Drawing:Area {
         for (int z_idx=0; z_idx<image->depth; z_idx++) {
             for (int row_idx=0; row_idx<image->height; row_idx++) {
                 for (int col_idx=0; col_idx<image->width; col_idx++) {
-                    double gl = giv_image_get_value(image, row_idx, col_idx, z_idx);
+                    double gl = giv_image_get_value(image, col_idx, row_idx, z_idx);
                     int idx = int(floor((gl-min)/(max-min)*255));
                     if (idx < 256
                         && idx >= 0)
