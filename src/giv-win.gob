@@ -1788,6 +1788,10 @@ cb_key_press_event (GtkWidget * widget,
     GivWin *self = (GivWin *)user_data;
     gboolean handled = FALSE;
 
+    // Control bindings go here
+    if (event->state & GDK_CONTROL_MASK) {
+        return false;
+    }
     gint k = event->keyval;
     if (k == 'a') {
         selfp->do_no_transparency = !selfp->do_no_transparency;

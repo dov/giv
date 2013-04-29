@@ -389,31 +389,48 @@ class Giv:Widget from Gtk:Image:Viewer
         gint k;
         
         k = event->keyval;
-        
-        switch (k) {
-        case 'b':
-            giv_widget_set_show_balloon(self, !selfp->do_show_balloon);
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
-            return 1;
-        case 'm':
-            giv_widget_set_show_marks(self, !selfp->do_show_marks);
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
-            return 1;
-        case 'g':
-            giv_widget_set_show_grid(self, !selfp->do_show_grid);
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
-            return 1;
-        case 'x':
-            giv_widget_set_show_cross_hair(self, !selfp->do_show_cross_hair);
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
-            return 1;
-        case 'f':
-            giv_widget_zoom_fill_image_or_giv(self);
-            return 1;
-        default:
-            ret = FALSE;
-          break;
-        }
+
+        if (event->state & GDK_CONTROL_MASK)
+            switch(k) {
+            case 'c':
+                if (selfp->do_show_balloon) {
+                    const char *balloon_text = gtk_label_get_text(GTK_LABEL(selfp->w_balloon_label));
+                    GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
+                    gtk_clipboard_set_text(clipboard,
+                                           balloon_text,
+                                           -1);
+                }
+                        
+                return 1;
+            default:
+                ret = FALSE;
+                break;
+            }
+        else
+          switch (k) {
+          case 'b':
+              giv_widget_set_show_balloon(self, !selfp->do_show_balloon);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'm':
+              giv_widget_set_show_marks(self, !selfp->do_show_marks);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'g':
+              giv_widget_set_show_grid(self, !selfp->do_show_grid);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'x':
+              giv_widget_set_show_cross_hair(self, !selfp->do_show_cross_hair);
+              gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(self), true);
+              return 1;
+          case 'f':
+              giv_widget_zoom_fill_image_or_giv(self);
+              return 1;
+          default:
+              ret = FALSE;
+            break;
+          }
 
         PARENT_HANDLER(widget, event);
 
