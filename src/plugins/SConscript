@@ -13,7 +13,7 @@ for p in [#'pgm.c',
 if not env['SBOX']:
     env.SharedLibrary('fits',
                       ['fits.c'],
-                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis','#/src/plugins/cfitsio/${arch}/${VARIANT}']+env['LIBPATH'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis','cfitsio']+env['LIBPATH'],
                       LIBS=['cfitsio','giv-image']+env['LIBS'],
                       CPPPATH=['cfitsio']+env['CPPPATH']
                       )
@@ -43,6 +43,9 @@ if not env['SBOX']:
 #                      LIBS=['giv-image']+png_lib+env['LIBS'],
 #                      )
     
-    SConscript(['dcmtk/SConscript',
-                'cfitsio/SConscript'],
+    if env['arch'] != 'linux':
+        SConscript(['cfitsio/SConscript'],
+                   exports = 'env')
+
+    SConscript(['dcmtk/SConscript'],
                exports='env')
