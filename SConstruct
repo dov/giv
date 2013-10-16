@@ -35,115 +35,55 @@ def create_dist(env, target, source):
         os.system("tar -zcf %s.tar.gz %s"%(vdir,vdir))
         os.system("rm -rf %s"%vdir)
 
-# All purpose template filling routine
-def template_fill(env, target, source):
-    out = open(str(target[0]), "wb")
-    inp = open(str(source[0]), "r")
+if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
+    if ARGUMENTS.get('mingw', 0):
+        env['HOST']='w32'
+        env['ARCH']='i686-w64-mingw32'
+        env['LIBGCCDLL'] = "libgcc_s_sjlj-1.dll"
+    elif ARGUMENTS.get('mingw64', 0):
+        env['HOST']='w64'
+        env['ARCH']='x86_64-w64-mingw32'
+        env['LIBGCCDLL'] = "libgcc_s_seh-1.dll"
 
-    for line in inp.readlines():
-        line = re.sub('@(.*?)@',
-                      lambda x: env[x.group(1)],
-                      line)
-        out.write(line)
-        
-    out.close()
-    inp.close()
+    # For plugins
+    env['ARCHDIR']='ming${HOST}'
 
-if ARGUMENTS.get('mingw', 0):
-    env['HOST']='w32'
-    env['LOCAL_DIR']='mingw32'
-    env['CC']='i686-w64-mingw32-gcc'
-    env['CXX']='i686-w64-mingw32-g++'
-    env['AR']='i686-w64-mingw32-ar'
-    env['RANLIB']='i686-w64-mingw32-ranlib'
-    env['PKGCONFIG'] = "env PKG_CONFIG_PATH=/usr/i686-w64-mingw32/sys-root/mingw/lib/pkgconfig:/usr/local/mingw32/lib/pkgconfig pkg-config"
-    env['OBJSUFFIX']=".obj"
-    env['PROGSUFFIX'] = ".exe"
-    env['SHOBJSUFFIX']=".obj"
-    env['SHLIBSUFFIX'] = ".dll"
-    env['SHLIBPREFIX'] = ""
-    env['PREFIX'] = "/usr/i686-w64-mingw32/sys-root"
-    env['ROOT'] = ""
-    env['DLLWRAP'] = "i686-w64-mingw32-dllwrap"
-    env['DLLTOOL'] = "i686-w64-mingw32-dlltool"
-    env['WINDRES'] = "i686-w64-mingw32-windres"
-    env['DLLWRAP_FLAGS'] = "--mno-cygwin --as=${AS} --export-all --driver-name ${CXX} --dll-tool-name ${DLLTOOL} -s"
-    env.Append(CPPFLAGS= ['-mms-bitfields'])
-
-    env['SYSROOT'] = r"\usr\i686-w64-mingw32\sys-root"
-    env.Command("giv.wine.nsi",
-                ["giv.wine.nsi.in",
-                 "SConstruct",
-                 "configure.in"
-                ],
-                template_fill
-                )
     env.Command("COPYING.dos",
                 "COPYING",
                 ["unix2dos < COPYING > COPYING.dos"])
     
-    env.Command("InstallGiv" + env['VER'] + ".exe",
+    env.Command("InstallGiv${VER}-${HOST}.exe",
                 ["src/giv.exe",
-                 "giv.wine.nsi",
+                 "giv.nsi",
                  "src/plugins/tiff.dll",
                  "src/plugins/fits.dll",
                  "src/plugins/dicom.dll",
                  "src/plugins/npy.dll",
                  ],
-                ["makensis giv.wine.nsi"])
+                ["makensis -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} giv.nsi"])
     env.Append(LINKFLAGS=['-mwindows'])
 
-    # TBD - make this installation dependent
     env['PACKAGE_DOC_DIR'] = '../doc'
     env['PACKAGE_PLUGIN_DIR'] = '../plugins'
-    env['arch']='mingw32'
-elif ARGUMENTS.get('mingw64', 0):
-    env['HOST']='w64'
-    env['LOCAL_DIR']='mingw64'
-    env['SYSROOT'] = r"\usr\x86_64-w64-mingw32\sys-root"
-    env['CC']='x86_64-w64-mingw32-gcc'
-    env['CXX']='x86_64-w64-mingw32-g++'
-    env['AR']='x86_64-w64-mingw32-ar'
-    env['RANLIB']='x86_64-w64-mingw32-ranlib'
-    env['PKGCONFIG'] = "env PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pkgconfig:/usr/local/${LOCAL_DIR}/lib/pkgconfig pkg-config"
+    env.Append(CPPFLAGS= ['-mms-bitfields'])
     env['OBJSUFFIX']=".obj"
     env['PROGSUFFIX'] = ".exe"
     env['SHOBJSUFFIX']=".obj"
     env['SHLIBSUFFIX'] = ".dll"
     env['SHLIBPREFIX'] = ""
-    env['PREFIX'] = "/usr/x86_64-w64-mingw32/sys-root"
-    env['ROOT'] = ""
-    env['DLLWRAP'] = "x86_64-w64-mingw32-dllwrap"
-    env['DLLTOOL'] = "x86_64-w64-mingw32-dlltool"
-    env['WINDRES'] = "x86_64-w64-mingw32-windres"
     env['DLLWRAP_FLAGS'] = "--mno-cygwin --as=${AS} --export-all --driver-name ${CXX} --dll-tool-name ${DLLTOOL} -s"
-    env.Append(CPPFLAGS= ['-mms-bitfields'])
+    env['ROOT'] = ""
+    env['SYSROOT'] = r"\\usr\\${ARCH}\\sys-root"
+    env['LOCAL_DIR']='ming${HOST}'
+    env['CC']='${ARCH}-gcc'
+    env['CXX']='${ARCH}-g++'
+    env['AR']='${ARCH}-ar'
+    env['RANLIB']='${ARCH}-ranlib'
+    env['DLLWRAP'] = "${ARCH}-dllwrap"
+    env['DLLTOOL'] = "${ARCH}-dlltool"
+    env['WINDRES'] = "${ARCH}-windres"
+    env['PKGCONFIG'] = "env PKG_CONFIG_PATH=/usr/${ARCH}/sys-root/mingw/lib/pkgconfig:/usr/local/${LOCAL_DIR}/lib/pkgconfig pkg-config"
 
-    env.Command("giv.wine.nsi",
-                ["giv.wine.nsi.in",
-                 "SConstruct",
-                 "configure.in"
-                ],
-                template_fill
-                )
-    env.Command("COPYING.dos",
-                "COPYING",
-                ["unix2dos < COPYING > COPYING.dos"])
-    
-    env.Command("InstallGiv" + env['VER'] + "-w64.exe",
-                ["src/giv.exe",
-                 "giv.wine.nsi",
-                 "src/plugins/tiff.dll",
-                 "src/plugins/dicom.dll",
-                 "src/plugins/npy.dll",
-                 ],
-                ["makensis giv.wine.nsi"])
-    env.Append(LINKFLAGS=['-mwindows'])
-
-    # TBD - make this installation dependent
-    env['PACKAGE_DOC_DIR'] = '../doc'
-    env['PACKAGE_PLUGIN_DIR'] = '../plugins'
-    env['arch']='mingw64'
 else:
     # Posix by default
     env['PKGCONFIG'] = "pkg-config"
@@ -156,7 +96,7 @@ else:
     env['PREFIX'] = "/usr/local"
     env['PACKAGE_DOC_DIR'] = '${PREFIX}/share/doc/giv'
     env['PACKAGE_PLUGIN_DIR'] = '${PREFIX}/lib/giv-1.0/plugins'
-    env['arch']='linux'
+    env['ARCHDIR']='linux'
 
 env['VARIANT'] = variant
 

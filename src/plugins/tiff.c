@@ -55,7 +55,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     GivImageType image_type;
 
     if (tif) {
-        uint32 w, h, config=9999, bps=9999, spp=9999, sample_format=9999;
+        uint32 w, h, config=9999, bps=1, spp=1, sample_format=9999;
 	size_t npixels;
 	uint8* raster;
         gboolean has_colormap = FALSE;

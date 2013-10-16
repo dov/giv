@@ -13,10 +13,12 @@
 
 #define CASE(s) if (!strcmp(s, S_))
 
+//extern "C" unsigned int __cdecl _get_output_format( void ){ return 0; }
+
 int main(int argc, char **argv)
 {
     GtkWidget *giv;
-    g_thread_init(NULL);
+    //    g_thread_init(NULL);
     gtk_init(&argc, &argv);
 
     giv = giv_win_new(argc, argv);
