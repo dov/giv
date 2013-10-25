@@ -1,4 +1,5 @@
 import re
+
 Import('env')
 
 libpath = ["#/src","#/src/plis",'#/src'] + env['LIBPATH']
@@ -82,13 +83,16 @@ giv_image_lib = env.SharedLibrary('giv-image',
 
 giv_exe = env.Program("giv",
                       src_giv_exe,
-                      LIBS = ['giv-widget', 'giv-image'] + libs+['plisx','pcre'],
+                      LIBS = (['giv-widget', 'giv-image', 'libgtkimageviewer_local']
+                              + libs +['plisx','pcre']
+                              ),
                       LIBPATH = libpath,
                       CPPDEFINES = cppdefines,
                       CPPPATH = cpppath
                       )
 env.Depends(giv_exe,
-            giv_image_lib)
+            [giv_image_lib])
+
 
 for gob in ("giv-win",
             "giv-mark-tree-dialog",
@@ -129,11 +133,12 @@ if not env['SBOX']:
                 ["valac -C --pkg=gtk+-2.0  -H giv-color-map.h --vapi=giv-color-map.vapi giv-color-map.vala"],
                 chdir=True)
 
-SConscript(['agg/SConscript',
-            'plis/SConscript',
-            'gtkimageviewer/SConscript',
-            'plugins/SConscript',
-            'glib-jsonrpc/SConscript',
-#            'pcre/SConscript',
-            ],
-           exports='env')
+env.SConscript(['agg/SConscript',
+                'plis/SConscript',
+                'gtkimageviewer/SConscript',
+                'plugins/SConscript',
+                'glib-jsonrpc/SConscript',
+                #            'pcre/SConscript',
+                ],
+               exports='env')
+

@@ -115,7 +115,7 @@ env.Append(CPPPATH=[],
                     "#/src/glib-jsonrpc/json-glib",
                     ],
            RPATH=["agg/src"],
-           LIBS=['gtkimageviewer_local',
+           LIBS=[#'gtkimageviewer_local',
                  'agg',
                  'glib-jsonrpc_local',
                  'json-glib_local']
@@ -123,10 +123,10 @@ env.Append(CPPPATH=[],
 
 env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0")
 
-SConscript(['src/SConscript',
-            'doc/SConscript',
-            ],
-           exports='env')
+env.SConscript(['src/SConscript',
+                'doc/SConscript',
+                ],
+               exports='env')
 
 env.Alias("install",
           [env.Install('/usr/local/bin',
@@ -150,3 +150,4 @@ env.Alias("dist",
           env.Command("giv-${VER}.tar.gz",
                       [],
                       create_dist))
+

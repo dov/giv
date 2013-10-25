@@ -1,5 +1,6 @@
 # -*- python -*-
 Import('env')
+
 import re
 
 # The following python subroutine and the subsequent scons command
@@ -27,7 +28,7 @@ def patch_src(env, target, source):
     inp.close()
 
 env.Library("gtkimageviewer_local",
-            "gtk-image-viewer-fixed.c")
+            ["gtk-image-viewer-fixed.c"])
 
 env.Command("gtk-image-viewer-fixed.c",
             ["gtk-image-viewer.c"],

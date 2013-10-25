@@ -108,6 +108,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gboolean do_flip_horizontal = FALSE;
   private gboolean do_use_transfer_map = FALSE;
   private gboolean do_fill_on_resize = TRUE;
+  private gboolean do_vertical_lock = FALSE;
   private gint fill_on_resize_margin = 0;
   /* The one shot block is used by shrink wrapping to inhibit rescaling
      on resize. Is there a better way? */
@@ -454,22 +455,31 @@ class Gtk:Image:Viewer from Gtk:Widget
     GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
     int ret = TRUE;
     gint k;
+    double vscale = 1.0;
 
     k = event->keyval;
 
     switch (k) {
     case '=':
     case '+':
-        gtk_image_viewer_zoom_in(self, -1, -1, 1.1);
+        if (!selfp->do_vertical_lock)
+            vscale = 1.1;
+        gtk_image_viewer_zoom_in(self, -1, -1, 1.1, vscale);
         break;
     case '>':
-        gtk_image_viewer_zoom_in(self, -1, -1, 2);
+        if (!selfp->do_vertical_lock)
+            vscale = 2;
+        gtk_image_viewer_zoom_in(self, -1, -1, 2, vscale);
         break;
     case '<':
-        gtk_image_viewer_zoom_out(self, 0, 0, 2);
+        if (!selfp->do_vertical_lock)
+            vscale = 2;
+        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, 2, vscale);
         break;
     case '-':
-        gtk_image_viewer_zoom_out(self, 0, 0, 1.1);
+        if (!selfp->do_vertical_lock)
+            vscale = 2;
+        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, 1.1, vscale);
         break;
     case '1':
     case 'n':
@@ -482,6 +492,10 @@ class Gtk:Image:Viewer from Gtk:Widget
         gtk_image_viewer_set_flip(self,
                                   selfp->do_flip_horizontal,
                                   !selfp->do_flip_vertical);
+        break;
+    case 'V':
+        gtk_image_viewer_set_vertical_lock(self,
+                                           !selfp->do_vertical_lock);
         break;
     case 'h':
         gtk_image_viewer_set_flip(self,
@@ -504,21 +518,31 @@ class Gtk:Image:Viewer from Gtk:Widget
     int button = event->button;
     double x = event->x;
     double y = event->y;
+    double vscale = 1.0;
 
     if (selfp->is_insensitive)
         return TRUE;
 
     if (button == 1)
-        gtk_image_viewer_zoom_in(self, (int)x, (int)y, 2);
+    {
+        if (!selfp->do_vertical_lock)
+            vscale = 2;
+        gtk_image_viewer_zoom_in(self, (int)x, (int)y, 2, vscale);
+    }
     else if (button == 2)
-      {
+    {
         gtk_grab_add (GTK_WIDGET(self));
         selfp->is_mouse_button2_pressed = TRUE;
         selfp->last_pan_anchor_x = x;
         selfp->last_pan_anchor_y = y;
-      }
+    }
     else if (button == 3)
-        gtk_image_viewer_zoom_out(self, (int)x, (int)y, 2);
+    {
+        if (!selfp->do_vertical_lock)
+            vscale = 2;
+
+        gtk_image_viewer_zoom_out(self, (int)x, (int)y, 2, vscale);
+    }
     
     selfp->button = event->button;
     
@@ -630,6 +654,7 @@ class Gtk:Image:Viewer from Gtk:Widget
       double zoom_strength = 1.4;
       gdouble x = event->x;
       gdouble y = event->y;
+      double vscale = 1.0;
 
       if (event->state & GDK_SHIFT_MASK)
           zoom_strength = 1.1;
@@ -638,9 +663,9 @@ class Gtk:Image:Viewer from Gtk:Widget
 
       if (event->direction)
           //zoom_in(self, (int)x,(int)y);
-          gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength);
+          gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength,vscale);
       else
-          gtk_image_viewer_zoom_in(self, x,y,zoom_strength);
+          gtk_image_viewer_zoom_in(self, x,y,zoom_strength, vscale);
       return 1;
     }
     return 0;
@@ -1300,12 +1325,19 @@ class Gtk:Image:Viewer from Gtk:Widget
   }
 
   public gint
-  zoom_in(self, int x, int y, double factor)
+  zoom_in(self, int x, int y, double factorx, double factory)
   {
     double zoom_factor[2];
     int zoom_idx;
-    if (factor < 0)
-      factor = 1.1;
+    double factor[2];
+
+    factor[0] = factorx;
+    factor[1] = factory;
+        
+    if (factorx < 0)
+      factorx = 1.1;
+    if (factory < 0)
+        factory = 1.1;
     
     zoom_factor[0] = selfp->current_scale_x;
     zoom_factor[1] = selfp->current_scale_y;
@@ -1313,6 +1345,11 @@ class Gtk:Image:Viewer from Gtk:Widget
     for (zoom_idx = 0; zoom_idx < 2; zoom_idx++)
       {
         double z = zoom_factor[zoom_idx];  /* A shortcut */
+
+        if (factor[zoom_idx] < 0)
+            factor[zoom_idx] = 0;
+
+        // Ignore this for non-uniform ratio...
         if (selfp->do_linear_zoom_steps) {
           if (z < 0.5)
             z = 1.0 / (1.0/z-1);
@@ -1320,7 +1357,7 @@ class Gtk:Image:Viewer from Gtk:Widget
             z = z+1;
         }
         else 
-          z *= factor;
+          z *= factor[zoom_idx];
         zoom_factor[zoom_idx] = z;
       }
     
@@ -1339,13 +1376,14 @@ class Gtk:Image:Viewer from Gtk:Widget
   }
 
   public gint
-  zoom_out(self, int x, int y, double factor)
+  zoom_out(self, int x, int y, double factorx, double factory)
   {
     double zoom_factor[2];
     int zoom_idx;
-    
-    if (factor<0)
-      factor = 1.1; 
+    double factor[2];
+
+    factor[0] = factorx;
+    factor[1] = factory;
     
     zoom_factor[0] = selfp->current_scale_x;
     zoom_factor[1] = selfp->current_scale_y;
@@ -1353,6 +1391,10 @@ class Gtk:Image:Viewer from Gtk:Widget
     for (zoom_idx = 0; zoom_idx < 2; zoom_idx++)
       {
         double z = zoom_factor[zoom_idx];  /* A shortcut */
+
+        if (factor[zoom_idx]<0)
+            factor[zoom_idx] = 1.1; 
+
         if (selfp->do_linear_zoom_steps) {
           if (z <= 1.0)
             z = 1.0 / (1.0/z+1);
@@ -1360,7 +1402,7 @@ class Gtk:Image:Viewer from Gtk:Widget
             z = z-1;
         }
         else 
-          z /= factor;
+          z /= factor[zoom_idx];
         zoom_factor[zoom_idx] = z;
       }
     
@@ -1627,6 +1669,12 @@ class Gtk:Image:Viewer from Gtk:Widget
       selfp->max_zoom = max_zoom;
   }
 
+  public gboolean
+  get_vlock(self)
+  {
+    return selfp->do_vertical_lock;
+  }
+
   public void
   get_scale_and_shift(self,
                       gdouble *scale_x,
@@ -1779,6 +1827,19 @@ class Gtk:Image:Viewer from Gtk:Widget
   }
 
   public void
+  set_vertical_lock(self,
+                    gboolean do_vertical_lock)
+  {
+      gboolean need_signal = selfp->do_vertical_lock != do_vertical_lock;
+      selfp->do_vertical_lock = do_vertical_lock;
+      if (need_signal) {
+          gtk_image_viewer_vertical_lock_changed(self,
+                                                 selfp->do_vertical_lock);
+          gtk_image_viewer_redraw(self, TRUE);
+      }
+  }
+
+  public void
   zoom_reset(self)
   {
       zoom_reset(self);
@@ -1796,7 +1857,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                                  selfp->scroll_max_x,
                                  selfp->scroll_max_y,
                                  margin,
-                                 TRUE);
+                                 selfp->do_vertical_lock);
   }
 
   // Signals
@@ -1821,6 +1882,10 @@ class Gtk:Image:Viewer from Gtk:Widget
   void flip_changed(self,
                     gboolean horizontal_flip,
                     gboolean vertical_flip);
+
+  signal last NONE (INT)
+  void vertical_lock_changed(self,
+                             gboolean vertical_lock);
 }
   
 %{

@@ -46,6 +46,7 @@ enum
   STRING_MARKS_REFERENCE,
   STRING_LOW_CONTRAST,
   STRING_VFLIP,
+  STRING_VLOCK,
   STRING_NO_VFLIP,
   STRING_HFLIP,
   STRING_NO_HFLIP,
@@ -529,6 +530,10 @@ parse_string (const char *string, const char *fn, gint linenum)
         {
           type = STRING_VFLIP;
         }
+      NCASE("$vlock")
+        {
+          type = STRING_VLOCK;
+        }
       NCASE("$novflip")
         {
           type = STRING_NO_VFLIP;
@@ -732,6 +737,10 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_VFLIP:
         if (gp->cb_set_orientation)
             (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNDEF, GIV_PARSER_ORIENTATION_FLIP, gp->cb_set_orientation_data);
+        break;
+    case STRING_VLOCK:
+        if (gp->cb_set_vlock)
+            (*(gp->cb_set_vlock))(1,gp->cb_set_vlock_data);
         break;
     case STRING_NO_VFLIP:
         if (gp->cb_set_orientation)
@@ -1106,6 +1115,15 @@ giv_parser_set_orientation_callback(GivParser *gp,
 {
     gp->cb_set_orientation = cb;
     gp->cb_set_orientation_data = user_data;
+}
+
+void
+giv_parser_set_vlock_callback(GivParser *gp,
+                              giv_parser_set_vlock_t cb,
+                              gpointer user_data)
+{
+    gp->cb_set_vlock = cb;
+    gp->cb_set_vlock_data = user_data;
 }
 
 void

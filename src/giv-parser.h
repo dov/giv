@@ -22,6 +22,7 @@ typedef void (*giv_parser_set_orientation_t)(giv_parser_orientation_t horint,
                                              giv_parser_orientation_t vorint,
                                              gpointer data);
 
+typedef void (*giv_parser_set_vlock_t)(gboolean vlock, gpointer data);
 
 typedef struct {
     GPtrArray* giv_datasets;
@@ -30,6 +31,8 @@ typedef struct {
     gpointer cb_file_reference_data;
     giv_parser_set_orientation_t cb_set_orientation;
     gpointer cb_set_orientation_data;
+    giv_parser_set_vlock_t cb_set_vlock;
+    gpointer cb_set_vlock_data;
 
     // Bounding box of data
     double global_mark_max_x;
@@ -48,6 +51,9 @@ void giv_parser_set_reference_callback(GivParser *giv_parser,
 void giv_parser_set_orientation_callback(GivParser *giv_parser,
                                          giv_parser_set_orientation_t fr,
                                          gpointer user_data);
+void giv_parser_set_vlock_callback(GivParser *giv_parser,
+                                   giv_parser_set_vlock_t vlock,
+                                   gpointer user_data);
 int giv_parser_parse_file(GivParser *giv_parser,
                           const char *filename);
 int giv_parser_parse_string(GivParser *giv_parser,

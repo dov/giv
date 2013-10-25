@@ -66,6 +66,8 @@ static void cb_image_reference(const char *filename,
 static void cb_set_orientation(giv_parser_orientation_t hflip,
                                giv_parser_orientation_t vflip,
                                gpointer self);
+static void cb_set_vlock(gboolean vlock,
+                         gpointer self);
 
 %}
 
@@ -89,6 +91,7 @@ class Giv:Widget from Gtk:Image:Viewer
                                   
     private bool is_dragging = FALSE;
     private bool do_show_marks = TRUE;
+    private bool do_vertical_locking = FALSE;
     private bool do_show_cross_hair = FALSE;
     private bool do_show_balloon = FALSE;
     private bool do_no_transparency = FALSE;
@@ -119,6 +122,9 @@ class Giv:Widget from Gtk:Image:Viewer
                                           &cb_image_reference, (gpointer)self);
         giv_parser_set_orientation_callback(selfp->giv_parser,
                                             &cb_set_orientation, (gpointer)self);
+        giv_parser_set_vlock_callback(selfp->giv_parser,
+                                      &cb_set_vlock,
+                                      (gpointer)self);
 
         if (pixbuf)
             gtk_image_viewer_set_image(GTK_IMAGE_VIEWER(self),
@@ -558,6 +564,12 @@ class Giv:Widget from Gtk:Image:Viewer
         }
     }
 
+    public void set_vertical_locking(self,
+                                     gboolean do_vertical_locking)
+    {
+        selfp->do_vertical_locking = do_vertical_locking;
+    }
+
     public bool get_show_marks(self)
     {
         return selfp->do_show_marks;
@@ -694,7 +706,6 @@ cb_image_annotate(GivWidget *self,
         y0 = (int)floor(1.0*shift_y/scale_y);
         x1 = (int)ceil((width+shift_x)/scale_x);
         y1 = (int)ceil((height+shift_y)/scale_y);
-        double color_scale = 1.0/0xffff;
 
         painter.set_giv_color(selfp->pixel_grid_color);
         painter.set_line_width(1);
@@ -962,6 +973,15 @@ static void cb_set_orientation(giv_parser_orientation_t orientation_hflip,
 
     gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(self),
                               hflip, vflip);
+}       
+
+static void cb_set_vlock(gboolean vlock,
+                         gpointer user_data)
+{
+    GivWidget *self = GIV_WIDGET(user_data);
+
+    gtk_image_viewer_set_vertical_lock(GTK_IMAGE_VIEWER(self),
+                                       vlock);
 }       
 
 %}

@@ -1,4 +1,5 @@
 Import('env')
+
 libs=['giv-widget','gtkimageviewer_local','aggx','plis','pcrex']
 for p in [#'pgm.c',
           'npy.c',
@@ -11,27 +12,43 @@ for p in [#'pgm.c',
 
 # Change this to Maemo
 if not env['SBOX']:
+    cpppath_fits = ['./cfitsio']
+    libpath_fits = ['./cfitsio']
+    libs_fits = ['cfitsio']
+
+    # Prefer system fits library if it exists
+    conf = Configure(env)
+    if conf.CheckLib('libcfitsio'):
+        print "Using system cfitsio library"
+        cpppath_fits = []
+        libpath_fits = []
+        libs_fits = []
+        env.ParseConfig('pkg-config --cflags --libs cfitsio')
+
     env.SharedLibrary('fits',
                       ['fits.c'],
-                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis','cfitsio']+env['LIBPATH'],
-                      LIBS=['cfitsio','giv-image']+env['LIBS'],
-                      CPPPATH=['cfitsio']+env['CPPPATH']
+                      LIBPATH=libpath_fits + ['..','../gtkimageviewer','../agg','../pcre','../plis']+env['LIBPATH'],
+                      LIBS=libs_fits + ['giv-image']+env['LIBS'],
+                      CPPPATH= cpppath_fits + env['CPPPATH']
                       )
     
-    env.SharedLibrary('dicom',
+    plugin_dicom = env.SharedLibrary('dicom',
                       ['dicom.cc'],
                       CPPPATH=['dcmtk/dcmdata/include',
                                'dcmtk/ofstd/include',
                                'dcmtk/config/include',
                                '..'
                                ] + env['CPPPATH'],
-                      LIBPATH=['..','#/src/plugins/dcmtk/${arch}/${VARIANT}'] + env['LIBPATH']+env['LIBPATH'],
+                      LIBPATH=['..','#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}'] + env['LIBPATH']+env['LIBPATH'],
                       LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
     env.SharedLibrary('tiff',
                       ['tiff.c'],
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['libtiff','giv-image']+env['LIBS'],
                       )
+    env.Depends(plugin_dicom,
+                ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
+                 '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])
 
     if ARGUMENTS.get('mingw', 0):
         png_lib = ['png15']
@@ -43,9 +60,9 @@ if not env['SBOX']:
 #                      LIBS=['giv-image']+png_lib+env['LIBS'],
 #                      )
     
-    if env['arch'] != 'linux':
-        SConscript(['cfitsio/SConscript'],
-                   exports = 'env')
+#    if env['ARCHDIR'] != 'linux':
+#        SConscript(['cfitsio/SConscript'],
+#                   exports = 'env')
 
     SConscript(['dcmtk/SConscript'],
                exports='env')
