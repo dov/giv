@@ -83,7 +83,13 @@ giv_image_lib = env.SharedLibrary('giv-image',
 
 giv_exe = env.Program("giv",
                       src_giv_exe,
-                      LIBS = (['giv-widget', 'giv-image', 'libgtkimageviewer_local']
+                      LIBS = (['giv-widget',
+                               'giv-image',
+                               'libgtkimageviewer_local',
+                               'glib-jsonrpc_local',
+                               'json-glib_local',
+                               'agg'
+                               ]
                               + libs +['plisx','pcre']
                               ),
                       LIBPATH = libpath,

@@ -55,11 +55,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
     env.Command("InstallGiv${VER}-${HOST}.exe",
                 ["src/giv.exe",
                  "giv.nsi",
-                 "src/plugins/tiff.dll",
-                 "src/plugins/fits.dll",
-                 "src/plugins/dicom.dll",
-                 "src/plugins/npy.dll",
-                 ],
+                 ] + glob.glob("src/plugins/*.dll"),
                 ["makensis -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} giv.nsi"])
     env.Append(LINKFLAGS=['-mwindows'])
 
@@ -116,9 +112,10 @@ env.Append(CPPPATH=[],
                     ],
            RPATH=["agg/src"],
            LIBS=[#'gtkimageviewer_local',
-                 'agg',
-                 'glib-jsonrpc_local',
-                 'json-glib_local']
+                 #'agg',
+                 #'glib-jsonrpc_local',
+                 #'json-glib_local'
+               ]
            )
 
 env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-2.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0")
