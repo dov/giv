@@ -5,7 +5,7 @@ AM_CONFIG_HEADER(config.h)
 PACKAGE=givwidget
 GIVWIDGET_API_VERSION=2.0
 
-AM_INIT_AUTOMAKE(giv, 0.9.24)
+AM_INIT_AUTOMAKE(giv, 0.9.25)
 
 dnl Use libtool to get shared libraries
 LT_PREREQ
