@@ -14,6 +14,7 @@
       <menuitem name="Balloons" action="ViewBalloonAction" />
       <menuitem name="HorizontalFlip" action="ViewHorizontalFlip" />
       <menuitem name="VerticalFlip" action="ViewVerticalFlip" />
+      <menuitem name="VerticalLock" action="ViewVerticalZoomLock" />
       <menuitem name="Pixel-grid" action="ViewPixelGrid" />
       <menuitem name="ColorMapBar" action="ViewColorMap" />
       <menuitem name="AutoResize" action="AutoResize" />

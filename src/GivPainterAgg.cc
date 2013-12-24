@@ -22,6 +22,7 @@
 #include "agg/agg_conv_stroke.h"
 #include "agg/agg_conv_marker.h"
 #include "agg/agg_vcgen_markers_term.h"
+#include "agg_conv_clipper.h"
 #include "giv_agg_arrowhead.h"
 #include "cairo.h"
 #include "math.h"
@@ -41,6 +42,7 @@ public:
     double red, green, blue, alpha;
     agg::rasterizer_scanline_aa<> pf;
     agg::path_storage path;
+    agg::path_storage bbox;
     agg::scanline_p8 sl;
     agg::vcgen_stroke stroke;
     agg::pixfmt_rgba32 pixf;
@@ -122,6 +124,13 @@ GivPainterAggPriv::GivPainterAggPriv(GdkPixbuf *pixbuf,
     stroke_dash.line_join(agg::miter_join_round);
     stroke_dash.line_cap(agg::round_cap);
     layout = pango_cairo_create_layout (cr);
+
+    // Create a bounding box that will be used for clipping
+    bbox.move_to(0, 0);
+    bbox.line_to(0, height);
+    bbox.line_to(width,height);
+    bbox.line_to(width,0);
+    bbox.close_polygon();
 }
 
 GivPainterAggPriv::~GivPainterAggPriv()
@@ -314,7 +323,14 @@ void GivPainterAgg::fill()
         color = agg::rgba(rr,gg,bb,1);
     }
 
-    d->pf.add_path(d->curve);
+    typedef agg::conv_clipper<agg::path_storage, agg::path_storage> poly_clipper;
+    poly_clipper clipped(d->path,
+                         d->bbox,
+                         agg::clipper_and,
+                         agg::clipper_non_zero,
+                         agg::clipper_non_zero);
+    
+    d->pf.add_path(clipped);
     if (d->do_antialiased)
         agg::render_scanlines_aa_solid(d->pf, d->sl, d->rbase, color);
     else

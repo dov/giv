@@ -661,6 +661,9 @@ class Gtk:Image:Viewer from Gtk:Widget
       if (event->state & GDK_CONTROL_MASK)
           zoom_strength = 2.0;
 
+      if (!selfp->do_vertical_lock)
+          vscale = zoom_strength;
+
       if (event->direction)
           //zoom_in(self, (int)x,(int)y);
           gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength,vscale);
@@ -1833,7 +1836,7 @@ class Gtk:Image:Viewer from Gtk:Widget
       gboolean need_signal = selfp->do_vertical_lock != do_vertical_lock;
       selfp->do_vertical_lock = do_vertical_lock;
       if (need_signal) {
-          gtk_image_viewer_vertical_lock_changed(self,
+          gtk_image_viewer_vertical_zoom_lock_changed(self,
                                                  selfp->do_vertical_lock);
           gtk_image_viewer_redraw(self, TRUE);
       }
@@ -1884,8 +1887,8 @@ class Gtk:Image:Viewer from Gtk:Widget
                     gboolean vertical_flip);
 
   signal last NONE (INT)
-  void vertical_lock_changed(self,
-                             gboolean vertical_lock);
+  void vertical_zoom_lock_changed(self,
+                             gboolean vertical_zoom_lock);
 }
   
 %{

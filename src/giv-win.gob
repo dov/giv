@@ -102,6 +102,7 @@ static void cb_view_balloons (GtkAction *action, gpointer data);
 static void cb_view_sub_pixel (GtkAction *action, gpointer data);
 static void cb_view_hflip (GtkAction *action, gpointer data);
 static void cb_view_vflip (GtkAction *action, gpointer data);
+static void cb_view_vertical_zoom_lock (GtkAction *action, gpointer data);
 static void cb_view_colormap (GtkAction *action, gpointer data);
 static void cb_view_pixel_grid (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
@@ -173,6 +174,11 @@ cb_flip_changed(GtkImageViewer *imgv,
                 gboolean do_flip_horizontal,
                 gboolean do_flip_vertical,
                 gpointer data);
+ 
+static void
+cb_vertical_zoom_lock_changed(GtkImageViewer *imgv,
+                              gboolean do_vertical_zoom_lock,
+                              gpointer data);
  
 static gint
 cb_button_press_event (GtkWidget * widget,
@@ -372,6 +378,11 @@ static GtkToggleActionEntry toggle_entries[] =
     "Vertical Flip", NULL,    
     "Vertical Flip",
     G_CALLBACK (cb_view_vflip), FALSE },
+  { "ViewVerticalZoomLock",
+    NULL,
+    "Vertical Zoom Lock", NULL,    
+    "Vertical Zoom Lock",
+    G_CALLBACK (cb_view_vertical_zoom_lock), FALSE },
   { "ViewColorMap",
     NULL,
     "Colormap Bar", NULL,    
@@ -866,6 +877,11 @@ class Giv:Win from Gtk:Window
         g_signal_connect(selfp->w_imgv,
                          "flip-changed",
                          G_CALLBACK(cb_flip_changed),
+                         self);
+        
+        g_signal_connect(selfp->w_imgv,
+                         "vertical-zoom-lock-changed",
+                         G_CALLBACK(cb_vertical_zoom_lock_changed),
                          self);
         
         g_signal_connect (selfp->w_imgv,
@@ -2153,6 +2169,17 @@ static void cb_view_vflip (GtkAction *action, gpointer data)
                               do_vertical_flip);
 }
 
+static void cb_view_vertical_zoom_lock (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+    gboolean do_vlock;
+
+    do_vlock = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(action));
+
+    gtk_image_viewer_set_vertical_lock(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                       do_vlock);
+}
+
 static void cb_view_colormap (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
@@ -3121,6 +3148,20 @@ cb_flip_changed(GtkImageViewer *imgv,
         do_flip_vertical);
 }        
  
+static void
+cb_vertical_zoom_lock_changed(GtkImageViewer *imgv,
+                              gboolean do_vertical_lock,
+                              gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+    gtk_check_menu_item_set_active(
+        GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/VerticalLock")),
+        do_vertical_lock);
+  
+}
+
 static inline gboolean
 line_hor_line_intersect(double x0, double y0, double x1, double y1,
                         double line_x0, double line_x1, double line_y,
