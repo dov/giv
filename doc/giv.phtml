@@ -93,11 +93,11 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.23</font><br>
+    <font size=+2>Version 0.9.25</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2012-06-10    </font>
+    <font size=-1>Last modified: 2014-01-10    </font>
 </h2>
 
 <: section("Description") :>
@@ -174,15 +174,17 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 	<th bgcolor=#eeeeff>Example
 	<th bgcolor=#eeeeff>Description
     <:TR():><: td() :>$color
-        <: td() :>$color pink3<br>$color gold/0.2<br>$color #ff0080/0.5
-	<: td() :>The color of the data set. If the color has a trailing "/<i>num</i>" then it is considered to be the alpha transperancy of the color.
+        <: td() :>$color pink3.
+	<: td() :>The color of the data set (See color section below). If the color has a trailing "/<i>num</i>" then it is considered to be the alpha transperancy of the color. 
     <:TR():><: td() :>$outline_color
         <: td() :>$color green
 	<: td() :>The outline color of a polygon
     <:TR():><: td() :>$noline
         <: td() :>$noline
 	<: td() :>Indicates that the no lines should be drawn for the data set.
-			    
+    <:TR():><: td() :>$line
+        <: td() :>$line
+	<: td() :>Lines should be drawn for the data set (default).
     <:TR():><: td() :>$marks
         <: td() :>$marks circle
 	<: td() :>The type of the mark. Valid marks are:
@@ -199,10 +201,6 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <:TR():><: td() :>$scale_marks
         <: td() :>$scale_marks
 	<: td() :>Indicates whether the marks should be scaled together with the image. Default is not to scale.
-
-    <:TR():><: td() :>$noline
-        <: td() :>$noline
-        <: td() :>Don't draw line between the coordinates.
 
     <:TR():><: td() :>$linedash
         <: td() :>$linedash 10 5
@@ -250,19 +248,37 @@ sub code_snippet {   # usage: code_snippet($filename, title)
         <: td() :>Indicates that the dataset should be filled.
     <:TR():><: td() :>$def_style
         <: td() :>$def_style Ref $color green
-        <: td() :>Defines a new style that may be referenced through the $style keyword.
+        <: td() :>Add an additional property to a style. (See style section)
     <:TR():><: td() :>$style
         <: td() :>$style Ref
-        <: td() :>Imports all dataset properties from the names style. This is simply a shortcut to explicitely writing all style properties.
+        <: td() :>Imports all dataset properties from the namedo style. This is simply a shortcut to explicitely writing all style properties.
     <:TR():><: td() :>$path
         <: td() :>$path reference/pads
-        <: td() :>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the name.
+        <: td() :>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the hierarchy tree.
     <:TR():><: td() :>$quiver_color
-        <: td() :>$color green
+        <: td() :>$quiver_color green
 	<: td() :>The color of a quiver arrow
     <:TR():><: td() :>$quiver_scale
         <: td() :>$quiver_scale 100
 	<: td() :>The original scale of the quiver plot
+    <:TR():><: td() :>$vflip
+        <: td() :>$vflip
+	<: td() :>Flip the vertical axis of the marks and images.
+    <:TR():><: td() :>$novflip
+        <: td() :>$novflip
+	<: td() :>Turn off the vertical flip.
+    <:TR():><: td() :>$hflip
+        <: td() :>$hflip
+	<: td() :>Flip the horizontal axis of the marks and images.
+    <:TR():><: td() :>$nohflip
+        <: td() :>$nohflip
+	<: td() :>Turn off the horizontal flip.
+    <:TR():><: td() :>$vlock
+        <: td() :>$vlock
+	<: td() :>Lock the vertical axis zoom. Useful e.g. for exploring time plots.
+    <:TR():><: td() :>$title
+        <: td() :>$title
+	<: td() :>Set the window title.
   </table>
   
 </blockquote>
@@ -287,6 +303,27 @@ anchor points.
 The encoding of giv files is always utf8. Bidi is supported through pango.
 <p>
 The backslash character is used as an escape character, so to get a literal backslash two slashes must be used. "\n" is used to indicate aline break.
+</blockquote>
+
+<: subsection("Colors") :>
+<blockquote>
+For all the properties that take colors as arguments the color may be given in several ways:
+<ul>
+<li>As a string name according to the <a href="http://en.wikipedia.org/wiki/X11_color_names">X11 color names</a>.
+<li>As a hexstring in the format <tt>#rrggbb</tt>.
+<li>It may have an optional slash followed by an alpha value between 0 and 1.
+</ul>
+Here are some valid color names:
+<ul>
+<li> <tt>green/0.5</tt>
+<li> <tt>#ff0000</tt>
+</ul>
+</blockquote>
+
+<: subsection("Styles") :>
+<blockquote>
+Instead of explicitly listing all properties for a dataset, this may be done inderectly by the creation of a style. A style is created and has properties added to it through the <tt>$def_style</tt> keyword. Each use of <tt>$def_style</tt> adds one property to the style. A style is then referenced in the beginning of a dataset with the <tt>$style</tt> keyword followed by the style name.
+<: code_snippet("style-ex.giv") :>
 </blockquote>
 
 <: subsection("Giv file example") :>
@@ -366,6 +403,8 @@ giv. The result is shown in the screenshow below.
 	  <: td() :>Choose next image when several $image references are given or next image for multi depth images.
 <: TR() :><: td() :>Shift-Up
 	  <: td() :>Choose previous $image image
+<: TR() :><: td() :>V
+	  <: td() :>Toggle vertical zoom locking.
 </table>
 </blockquote>
 
@@ -454,7 +493,7 @@ giv can be remote controlled through json-rpc commands. The parameters of the co
 
 Here is an example in python calling the <b>pick_coordinate</b> command:
 
-<: code_snippet("pick-coordinate.py") :>
+<: code_snippet("pick-coordinate.py", "pick-coordinate.py") :>
 
 <p>
 giv also contains an embedded JSONRPC client that come in two forms, the simplified and the full forms.
@@ -468,7 +507,7 @@ The full forms allows specifying the parameters in json syntax. The following co
   ./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
 </pre>
 
-<: section("Future plans") :>
+<: section("Future plans/Todo") :>
 <blockquote>
   Here is a list of possible future development. The direction taken
   depends on user feedback!
@@ -477,5 +516,6 @@ The full forms allows specifying the parameters in json syntax. The following co
     <LI> Create a property window to show meta data. E.g. data from a dicom file. </LI>
     <LI> Speed up dealing with huge datasets. </LI>
     <LI> Create a measuring tool for measuring areas, histograms, etc. </LI>
+    <li> Create a man page</li>
   </UL>  
 </blockquote>

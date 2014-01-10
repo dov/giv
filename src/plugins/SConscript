@@ -47,14 +47,14 @@ if not env['SBOX']:
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['libtiff','giv-image']+env['LIBS'],
                       )
+    env.SharedLibrary('png',
+                      ['png.c'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
+                      LIBS=['png','z','giv-image']+env['LIBS'],
+                      )
     env.Depends(plugin_dicom,
                 ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
                  '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])
-
-    if ARGUMENTS.get('mingw', 0):
-        png_lib = ['png15']
-    else:
-        png_lib = []
 
     SConscript(['dcmtk/SConscript'],
                exports='env')

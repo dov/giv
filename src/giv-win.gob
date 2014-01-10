@@ -599,6 +599,10 @@ class Giv:Win from Gtk:Window
                        "    -geometry  Set size of image viewer\n"
                        "    -zoom scale shift_x shift_y   Zoom the image\n"
                        "    -export fn                    Export to fn.\n"
+                       "    -port p    Set port for giv remote jsonrpc server. Default is 8222\n"
+                       "    -remote cmd   Run giv remote command cmd. Use \"-remote\n"
+                       "                  help\" to get a list of supported commands.\n"
+
                        );
                 exit(0);
             }
@@ -696,7 +700,9 @@ class Giv:Win from Gtk:Window
                 exit(0);
               }
 
-            // Fall through and run giv normally!
+            // Fail!
+            fprintf(stderr, "No giv remote client found!\n");
+            exit(-1);
           }
             
         selfp->cursor_plus = gdk_cursor_new(GDK_PLUS);
@@ -3029,7 +3035,7 @@ cb_menu_about(GtkAction *action,
                               "\n"
                               "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt></span>\n",
                               ("The G(reat|tk) Image Viewer"),
-                              ("Copyright &#x00a9; Dov Grobgeld, 2013\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2014\n"),
                               ("Programming by: Dov Grobgeld\n"),
                               ("dov.grobgeld@gmail.com"));
     gtk_label_set_markup (GTK_LABEL (label), markup);
@@ -4191,6 +4197,25 @@ static int cmd_ping(GLibJsonRpcServer *server,
   return 0;
 }
 
+static int cmd_help(GLibJsonRpcServer *server,
+                    const char *method,
+                    JsonNode *params,
+                    JsonNode **response,
+                    gpointer user_data)
+{
+  *response = json_node_new(JSON_NODE_VALUE);
+  json_node_set_string(*response,
+                       "The following remote commands are supported\n"
+                       "\n"
+                       "  * ping - Check that giv is alive\n"
+                       "  * load_file fn - Load an image or a giv file\n"
+                       "  * giv_string s - Replace the giv file\n"
+                       "  * pick_coordinate - Returns the next xy coordinate clicked bythe user\n"
+                       );
+  
+  return 0;
+}
+
 static int cmd_load_file(GLibJsonRpcServer *server,
                          const char *method,
                          JsonNode *params,
@@ -4375,6 +4400,10 @@ static void create_remote_commands(GivWin *self)
                                              "pick_coordinate",
                                              cmd_pick_coordinate,
                                              self);
+  glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
+                                       "help",
+                                       cmd_help,
+                                       self);
 }
 
 %}
