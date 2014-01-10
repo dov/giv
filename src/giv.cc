@@ -13,8 +13,6 @@
 
 #define CASE(s) if (!strcmp(s, S_))
 
-//extern "C" unsigned int __cdecl _get_output_format( void ){ return 0; }
-
 int main(int argc, char **argv)
 {
     GtkWidget *giv;

@@ -1860,7 +1860,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                                  selfp->scroll_max_x,
                                  selfp->scroll_max_y,
                                  margin,
-                                 selfp->do_vertical_lock);
+                                 !selfp->do_vertical_lock);
   }
 
   // Signals

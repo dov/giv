@@ -2030,9 +2030,9 @@ cb_motion_event(GtkWidget *widget,
             do_update_label = false;
     }
     else if (selfp->do_show_sub_pixel)
-         g_string_sprintf(info_label, " (%7.3f, %7.3f)", x, y);
+        g_string_sprintf(info_label, " (%7.3f, %7.3f)", x, y);
     else
-         g_string_sprintf(info_label, " (%4.0f, %4.0f)", x, y);
+        g_string_sprintf(info_label, " (%4.0f, %4.0f)", floor(x), floor(y));
     
     if (do_update_measure_distance) {
         double m_dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
