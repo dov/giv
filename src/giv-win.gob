@@ -89,6 +89,13 @@ enum
     DND_TEXT_URI_LIST
 };
 
+enum
+{
+  MEASURE_TYPE_DIAGONAL,
+  MEASURE_TYPE_HORIZONTAL,
+  MEASURE_TYPE_VERTICAL
+};
+  
 const int GIV_DEFAULT_PORT = 8222;
 
 /* Target types for dropping into the file list */
@@ -108,7 +115,9 @@ static void cb_view_pixel_grid (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
 static void cb_view_auto_contrast (GtkAction *action, gpointer data);
 static void cb_view_auto_reload (GtkAction *action, gpointer data);
-static void cb_menu_measure_distance (GtkAction *action, gpointer data);
+static void cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data);
+static void cb_menu_measure_distance_horizontal (GtkAction *action, gpointer data);
+static void cb_menu_measure_distance_vertical (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
 static void cb_menu_count_marks (GtkAction *action, gpointer data);
@@ -268,6 +277,7 @@ static GtkActionEntry entries[] =
   { "ToolMenuAction", NULL, "_Tools" },  
   { "HelpMenuAction", NULL, "_Help" },  
   { "ColorTableMenuAction", NULL, "_ColorTable" },  
+  { "ToolMeasureAction", NULL, "_MeasureDistance" },  
     
   { "OpenAction", GTK_STOCK_OPEN,
     "_Open", "<control>O",    
@@ -408,11 +418,21 @@ static GtkToggleActionEntry toggle_entries[] =
     "A_uto Reload", NULL,    
     "Auto Reload the image",
     G_CALLBACK (cb_view_auto_reload), FALSE },
-  { "ToolMeasureDistanceAction",
+  { "ToolMeasureDistanceDiagonalAction",
     NULL,    
-    "_Measure Distance", NULL,
-    "Measure Distance",
-    G_CALLBACK (cb_menu_measure_distance), FALSE },
+    "_Measure Distance Diagonal", NULL,
+    "Measure Distance Diagonal",
+    G_CALLBACK (cb_menu_measure_distance_diagonal), FALSE },
+  { "ToolMeasureDistanceHorizontalAction",
+    NULL,    
+    "_Measure Distance Horizontal", NULL,
+    "Measure Distance Horizontal",
+    G_CALLBACK (cb_menu_measure_distance_horizontal), FALSE },
+  { "ToolMeasureDistanceVerticalAction",
+    NULL,    
+    "_Measure Distance Vertical", NULL,
+    "Measure Distance Vertical",
+    G_CALLBACK (cb_menu_measure_distance_vertical), FALSE },
   { "ToolQuiverZoomAction",
     NULL,    
     "_Quiver Zoom", NULL,
@@ -527,6 +547,7 @@ class Giv:Win from Gtk:Window
     //   private giv_backstore_t *back_store = NULL;
     private DovtkLasso *lasso = NULL;
     private gboolean is_measuring_distance = FALSE;
+    private gint measure_type = 0;
     private gboolean is_counting_marks = FALSE;
     private int picking_mode = 0;
     private gboolean is_quiver_zoom = FALSE;
@@ -1599,19 +1620,24 @@ class Giv:Win from Gtk:Window
         int precision = 0;
         if (selfp->do_show_sub_pixel)
             precision = 3;
-        sprintf(format, " (%%.%df,%%.%df) dist=%%.3f%%s (%%.2f%%s,%%.2f%%s)",
+
+        sprintf(format, " (%%.%df,%%.%df) dist=%%.3f%%s",
                 precision,precision);
         
-        g_string_sprintf(info_label, format,
+        g_string_printf(info_label, format,
                          selfp->measure_x2,
                          selfp->measure_y2,
                          selfp->last_measure_distance_in_pixels*selfp->pixelsize,
-                         selfp->pixelsize_unit,
-                         (selfp->measure_x2 - selfp->measure_x1)*selfp->pixelsize,
-                         selfp->pixelsize_unit,
-                         (selfp->measure_y2 - selfp->measure_y1)*selfp->pixelsize,
                          selfp->pixelsize_unit
                          );
+        if (selfp->measure_type == MEASURE_TYPE_DIAGONAL)
+          g_string_append_printf(info_label,
+                                 " (%.2f%s,%.2f%s)",
+                                 (selfp->measure_x2 - selfp->measure_x1)*selfp->pixelsize,
+                                 selfp->pixelsize_unit,
+                                 (selfp->measure_y2 - selfp->measure_y1)*selfp->pixelsize,
+                                 selfp->pixelsize_unit);
+                               
     }
 
     private const gchar *get_filetype_for_index(self,
@@ -2043,6 +2069,11 @@ cb_motion_event(GtkWidget *widget,
     if (do_update_measure_distance) {
         double m_dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
                              + sqr(selfp->measure_y2-selfp->measure_y1));
+        if (selfp->measure_type == MEASURE_TYPE_VERTICAL)
+          m_dist = selfp->measure_y2-selfp->measure_y1;
+        else if (selfp->measure_type == MEASURE_TYPE_HORIZONTAL)
+          m_dist = selfp->measure_x2-selfp->measure_x1;
+
         selfp->last_measure_distance_in_pixels = m_dist;
 
         dovtk_lasso_update(selfp->lasso);
@@ -2451,13 +2482,13 @@ cb_menu_count_marks (GtkAction *action, gpointer data)
     return;
 }
 
-void
-cb_menu_measure_distance (GtkAction *action, gpointer data)
+static void
+menu_measure_distance (GivWin *self, GtkAction *action, int measure_type)
 {
-    GivWin *self = GIV_WIN(data);
-    
     selfp->is_measuring_distance = !selfp->is_measuring_distance;
+
     if (selfp->is_measuring_distance) {
+        selfp->measure_type = measure_type;
       //        selfp->back_store = create_backstore(selfp->w_imgv);
         selfp->measure_x1=-1;
         selfp->measure_y1=-1;
@@ -2467,6 +2498,7 @@ cb_menu_measure_distance (GtkAction *action, gpointer data)
         //        gdk_window_set_cursor(selfp->w_imgv->window, selfp->cursor_plus);
     }
     else {
+        // TBD - reset the menus.
         //free_giv_backstore (selfp->back_store);
         //selfp->back_store = NULL;
         dovtk_lasso_destroy(selfp->lasso);
@@ -2475,6 +2507,30 @@ cb_menu_measure_distance (GtkAction *action, gpointer data)
     }
   
     return;
+}
+
+void
+cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data)
+{
+  GivWin *self = GIV_WIN(data);
+
+  menu_measure_distance(self, action, MEASURE_TYPE_DIAGONAL);
+}
+
+void
+cb_menu_measure_distance_horizontal (GtkAction *action, gpointer data)
+{
+  GivWin *self = GIV_WIN(data);
+
+  menu_measure_distance(self, action, MEASURE_TYPE_HORIZONTAL);
+}
+
+void
+cb_menu_measure_distance_vertical (GtkAction *action, gpointer data)
+{
+  GivWin *self = GIV_WIN(data);
+
+  menu_measure_distance(self, action, MEASURE_TYPE_VERTICAL);
 }
 
 static gint
@@ -3944,139 +4000,184 @@ draw_caliper(GivWin *self,
              DovtkLassoContext lasso_context,
              double x0, double y0,
              double x1, double y1,
+             int measure_type,
              const char *caliper_text)
 {
     int margin = 0;
-    if (lasso_context != DOVTK_LASSO_CONTEXT_PAINT)
+    if (lasso_context != DOVTK_LASSO_CONTEXT_PAINT) {
         margin = 5;
+        cairo_set_line_width (cr, margin);
+    }
+    else
+        cairo_set_line_width (cr, 3);
 
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-
-    double angle = atan2(y1-y0,x1-x0);
-    cairo_translate(cr,
-                    0.5 * (x0+x1),
-                    0.5 * (y0+y1));
-    cairo_rotate(cr, angle);
-    double dist = sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
 
     if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         cairo_set_source_rgba(cr, 10*0x4d/255.0,1.0*0xaa/255.0,0,0.5);
     else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
         dovtk_lasso_set_color_label(selfp->lasso, cr, 1);
-    
-    cairo_rectangle(cr, -dist/2-margin, -20-margin,
-                    dist+2*margin, 20+2*margin);
-    cairo_fill(cr);
 
+    // Make a gradient for horizontal and vertical measurements
+    cairo_pattern_t *pat = NULL;
+    cairo_matrix_t matrix;
     if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
-        cairo_set_source_rgb(cr, 0x50/255.0,0x2d/255.0,0x16/255.0);
-    else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+      {
+        pat = cairo_pattern_create_linear (0.0, 0,
+                                           0.0, 20);
+        cairo_pattern_add_color_stop_rgba   (pat,
+                                             0,
+                                             0x50/255.0,
+                                             0x2d/255.0,
+                                             0x16/255.0,
+                                             0.95);
+        cairo_pattern_add_color_stop_rgba   (pat,
+                                             2.0/20,
+                                             10*0x4d/255.0,1.0*0xaa/255.0,0,0.5);
+        cairo_pattern_add_color_stop_rgba   (pat,
+                                             1.0,
+                                             10*0x4d/255.0,1.0*0xaa/255.0,0,0.0);
+      }
+
+    if (measure_type == MEASURE_TYPE_VERTICAL) {
+      int w = selfp->w_scrolled_win->allocation.width;
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
+        {
+          cairo_matrix_init_translate(&matrix, 0, y0);
+          cairo_matrix_scale(&matrix,1.0,-1.0);
+          cairo_pattern_set_matrix(pat, &matrix);
+          cairo_set_source (cr, pat);
+        }
+      else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
         dovtk_lasso_set_color_label(selfp->lasso, cr, 2);
 
-    double calip_height = 50;
-    cairo_move_to(cr, -dist/2+margin,calip_height/2+margin); 
-    double dy = -(calip_height+3*margin)/3;
-    cairo_rel_curve_to(cr,
-                       -15-2*margin,dy,
-                       -15-2*margin,2.5*dy,
-                       -15-2*margin,3*dy);
-    cairo_line_to(cr, -dist/2+margin,-calip_height/2-margin); 
-                  
-    cairo_close_path(cr);
-        
-    if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL) {
-        cairo_fill_preserve(cr);
-        cairo_set_line_width(cr, 5);
-        cairo_stroke(cr);
+      cairo_rectangle(cr, 0, y0-20, w, 20);
+      cairo_fill (cr);
+
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
+        {
+          cairo_matrix_init_translate(&matrix, 0, -y1);
+          cairo_pattern_set_matrix(pat, &matrix);
+          cairo_set_source (cr, pat);
+        }
+      else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
         dovtk_lasso_set_color_label(selfp->lasso, cr, 3);
+      cairo_rectangle(cr, 0, y1, w, 20);
+      cairo_fill(cr);
     }
+    else if (measure_type == MEASURE_TYPE_HORIZONTAL) {
+      int h = selfp->w_scrolled_win->allocation.height;
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
+        {
+          cairo_matrix_init_rotate(&matrix, M_PI/2);
+          cairo_matrix_translate(&matrix, x0, 0);
+          cairo_matrix_scale(&matrix,-1.0,1.0);
+          cairo_pattern_set_matrix(pat, &matrix);
+          cairo_set_source (cr, pat);
+        }
+      else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 2);
 
-    cairo_move_to(cr, dist/2-margin,calip_height/2+margin); 
-    cairo_rel_curve_to(cr,
-                       15+2*margin,dy,
-                       15+2*margin,2.5*dy,
-                       15+2*margin,3*dy);
-    cairo_line_to(cr, dist/2-margin,-calip_height/2-margin); 
-                  
-    cairo_close_path(cr);
+      cairo_rectangle(cr, x0-20, 0, 20, h);
+      cairo_fill (cr);
 
-    if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT) 
-        cairo_fill(cr);
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
+        {
+          cairo_matrix_init_rotate(&matrix, M_PI/2);
+          cairo_matrix_translate(&matrix, -x1, 0);
+          cairo_pattern_set_matrix(pat, &matrix);
+          cairo_set_source (cr, pat);
+        }
+      else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+        dovtk_lasso_set_color_label(selfp->lasso, cr, 3);
+      cairo_rectangle(cr, x1, 0, 20,h);
+      cairo_fill(cr);
+    }
     else {
-        cairo_set_line_width(cr, 5);
-        cairo_fill_preserve(cr);
-        cairo_stroke(cr);
-    }
-    
-    // No need to draw text for label context
-    if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
-        return;
+      cairo_translate(cr,
+                      0.5 * (x0+x1),
+                      0.5 * (y0+y1));
+  
+      double angle = atan2(y1-y0,x1-x0);
+      cairo_rotate(cr, angle);
+      double dist = sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+  
+      cairo_rectangle(cr, -dist/2-margin, -20-margin,
+                      dist+2*margin, 20+2*margin);
+      cairo_fill(cr);
+  
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
+          cairo_set_source_rgb(cr, 0x50/255.0,0x2d/255.0,0x16/255.0);
+      else if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL)
+          dovtk_lasso_set_color_label(selfp->lasso, cr, 2);
+  
+      double calip_height = 50;
+      cairo_move_to(cr, -dist/2+margin,calip_height/2+margin); 
+      double dy = -(calip_height+3*margin)/3;
+      cairo_rel_curve_to(cr,
+                         -15-2*margin,dy,
+                         -15-2*margin,2.5*dy,
+                         -15-2*margin,3*dy);
+      cairo_line_to(cr, -dist/2+margin,-calip_height/2-margin); 
+                    
+      cairo_close_path(cr);
+          
+      if (lasso_context == DOVTK_LASSO_CONTEXT_LABEL) {
+          cairo_fill_preserve(cr);
+          cairo_set_line_width(cr, 5);
+          cairo_stroke(cr);
+          dovtk_lasso_set_color_label(selfp->lasso, cr, 3);
+      }
+  
+      cairo_move_to(cr, dist/2-margin,calip_height/2+margin); 
+      cairo_rel_curve_to(cr,
+                         15+2*margin,dy,
+                         15+2*margin,2.5*dy,
+                         15+2*margin,3*dy);
+      cairo_line_to(cr, dist/2-margin,-calip_height/2-margin); 
+                    
+      cairo_close_path(cr);
+  
+      if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT) 
+          cairo_fill(cr);
+      else {
+          cairo_set_line_width(cr, 5);
+          cairo_fill_preserve(cr);
+          cairo_stroke(cr);
+      }
 
-#if 0 && _WIN32
-    // This is stil broken, but fortunately the "normal" pango backend works.
-
-    // As I can't get pango cairo to work under Windows, I use the specific windows
-    // backend which fortunately works.
-    LOGFONTW lf;
-    lf.lfHeight = 1;
-    lf.lfWidth = 0;
-    lf.lfEscapement = 0;
-    lf.lfOrientation = 0;
-    lf.lfWeight = FW_NORMAL;
-    lf.lfItalic = false;
-    lf.lfUnderline = false;
-    lf.lfStrikeOut = false;
-    lf.lfCharSet = DEFAULT_CHARSET;
-    lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
-    lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-    lf.lfQuality = 5; // CLEAR_TYPE_QUALITY
-    memcpy(lf.lfFaceName, L"Arial", sizeof(L"Arial"));
-    
-    cairo_font_face_t *ff = cairo_win32_font_face_create_for_logfontw(&lf);
-    cairo_matrix_t font_scale, ctm;
-    cairo_matrix_init_identity(&ctm);
-    cairo_matrix_init_identity(&font_scale);
-    cairo_matrix_scale(&font_scale, 20, 20);
-    cairo_font_options_t *fopt = cairo_font_options_create();
-    cairo_scaled_font_t*sf = cairo_scaled_font_create(ff, &font_scale, &ctm, fopt);
-    cairo_set_source_rgba(cr, 0, 0, 0, 0);
-    
-    cairo_set_scaled_font(cr, sf);
-    cairo_text_extents_t ext;
-    cairo_text_extents(cr, caliper_text, &ext);
-    cairo_move_to(cr, -0.5*ext.width,-ext.height*0.2);
-    cairo_show_text(cr, caliper_text);
-    cairo_font_face_destroy(ff);
-    cairo_font_options_destroy(fopt);
-    cairo_scaled_font_destroy(sf);
-#else
-    // Draw the distance in the middle
+      // No need to draw text for label context
+      if (lasso_context != DOVTK_LASSO_CONTEXT_LABEL) {
 #ifdef _WIN32
-    PangoFontDescription *font_descr = pango_font_description_from_string("Arial 15");
+        PangoFontDescription *font_descr = pango_font_description_from_string("Arial 15");
 #else
-    PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
+        PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
 #endif
-    PangoContext *context = pango_cairo_create_context(cr);
-    cairo_font_options_t *options =  cairo_font_options_create();
-    cairo_font_options_set_hint_style(options,CAIRO_HINT_STYLE_NONE);
-    pango_cairo_context_set_font_options(context, options);
-    PangoLayout *pango_layout = pango_layout_new(context);
+        PangoContext *context = pango_cairo_create_context(cr);
+        cairo_font_options_t *options =  cairo_font_options_create();
+        cairo_font_options_set_hint_style(options,CAIRO_HINT_STYLE_NONE);
+        pango_cairo_context_set_font_options(context, options);
+        PangoLayout *pango_layout = pango_layout_new(context);
+    
+        pango_layout_set_font_description(pango_layout, font_descr);
+        pango_layout_set_text(pango_layout, caliper_text, -1);
+        int layout_width, layout_height;
+        pango_layout_get_size(pango_layout, &layout_width, &layout_height);
+    
+        cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.9*layout_height/PANGO_SCALE);
+        if (lasso_context==DOVTK_LASSO_CONTEXT_PAINT)
+            cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
+    
+        pango_cairo_show_layout(cr, pango_layout);
+        g_object_unref(pango_layout);
+        pango_font_description_free(font_descr);
+        g_object_unref(context);
+        cairo_font_options_destroy(options);
+      }
+    }
 
-    pango_layout_set_font_description(pango_layout, font_descr);
-    pango_layout_set_text(pango_layout, caliper_text, -1);
-    int layout_width, layout_height;
-    pango_layout_get_size(pango_layout, &layout_width, &layout_height);
-
-    cairo_move_to(cr, -0.5*layout_width/PANGO_SCALE,-0.9*layout_height/PANGO_SCALE);
-    if (lasso_context==DOVTK_LASSO_CONTEXT_PAINT)
-        cairo_set_source_rgba(cr, 0,0,0,1); // 0x50/255.0,0x2d/255.0,0x16/255.0,1);
-
-    pango_cairo_show_layout(cr, pango_layout);
-    g_object_unref(pango_layout);
-    pango_font_description_free(font_descr);
-    g_object_unref(context);
-    cairo_font_options_destroy(options);
-#endif
+    if (pat)
+      cairo_pattern_destroy (pat);
 }
 
 /** 
@@ -4105,19 +4206,6 @@ my_lasso_draw(cairo_t *cr,
                                              selfp->measure_y2,
                                              &end_x, &end_y);
 
-#if 0
-    if (!do_mask) {
-        cairo_set_source_rgb(cr, 1,0,0);
-        cairo_set_line_width(cr,1);
-    }
-    else
-        cairo_set_line_width(cr, 5);
-
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-#endif
-
-    // Draw a rectangle
-    //    cairo_rectangle(cr, min_x, min_y, abs(end_x-start_x), abs(end_y-start_y));
     slip caliper_text;
     double dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
                        +sqr(selfp->measure_y2 - selfp->measure_y1));
@@ -4129,6 +4217,7 @@ my_lasso_draw(cairo_t *cr,
                  context,
                  start_x, start_y,
                  end_x, end_y,
+                 selfp->measure_type,
                  caliper_text);
 
 #if 0

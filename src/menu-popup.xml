@@ -39,7 +39,9 @@
       <menuitem name="Contrast" action="ToolContrast" />
       <menuitem name="Info" action="ToolInfoAction" />
       <menuitem name="Calibrate" action="ToolCalibrateAction" />
-      <menuitem name="MeasureDistance" action="ToolMeasureDistanceAction" />
+      <menu name="MeasureMenu" action="ToolMeasureAction">
+        <menuitem name="MeasureDistanceDiagonal" action="ToolMeasureDistanceDiagonalAction" />
+      </menu>
       <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
       <menuitem name="CountMarks" action="ToolCountMarks" />
     </menu>

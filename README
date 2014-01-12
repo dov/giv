@@ -1,5 +1,20 @@
-Release notes for version 0.9.24beta1
-Thursday 2012-06-21 
+Release notes for version 0.9.25
+2014-01-10 Fri
 
-This is a test version of giv compiled for Windows64
+giv is an image and vector overlay viewer. 
+
+New features:
+
+* Vertical locking.
+* Better polygon clipping at high zooms.
+
+Bug fixes:
+
+* Several bug fixes for binary tiff files.
+
+
+
+
+
+
 
