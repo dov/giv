@@ -45,8 +45,8 @@ typedef struct {
 } command_hash_value_t;
 
 typedef struct {
-  GMutex *mutex;
-  GCond *cond;
+  GMutex mutex;
+  GCond cond;
   GLibJsonRpcServer *server;
   JsonNode *reply;
   int error_num;
@@ -55,8 +55,6 @@ typedef struct {
 static GLibJsonRpcAsyncQueryPrivate *glib_jsonrpc_server_query_new(GLibJsonRpcServer *server)
 {
   GLibJsonRpcAsyncQueryPrivate *query = g_new0(GLibJsonRpcAsyncQueryPrivate, 1);
-  query->cond = g_cond_new();
-  query->mutex = g_mutex_new();
   query->server = server;
   query->reply = NULL;
   query->error_num = 0;
@@ -67,9 +65,7 @@ static GLibJsonRpcAsyncQueryPrivate *glib_jsonrpc_server_query_new(GLibJsonRpcSe
 
 static void glib_jsonrpc_async_query_free(GLibJsonRpcAsyncQueryPrivate *query)
 {
-  g_mutex_unlock(query->mutex);
-  g_cond_free(query->cond);
-  g_mutex_free(query->mutex); // Why does this crash?
+  g_mutex_unlock(&query->mutex);
   json_node_free(query->reply);
   g_free(query);
 }
@@ -257,9 +253,9 @@ handler (GThreadedSocketService *service,
                                          command_val->user_data);
           
           // Lock on a mutex 
-          g_mutex_lock(query->mutex);
-          g_cond_wait(query->cond, query->mutex);
-          g_mutex_unlock(query->mutex);
+          g_mutex_lock(&query->mutex);
+          g_cond_wait(&query->cond, &query->mutex);
+          g_mutex_unlock(&query->mutex);
 
           if (query->error_num != 0)
             response = create_fault_value_response(query->error_num,query->reply,id);
@@ -342,7 +338,8 @@ GLibJsonRpcServer *glib_jsonrpc_server_new(int port)
 					NULL,
 					&error))
     {
-      g_printerr ("%s\n", error->message);
+      // Silently ignore failed servers and return a NULL server.
+      // g_printerr ("%s\n", error->message);
       g_error_free(error);
       g_free(jsonrpc_server);
       return NULL;
@@ -417,9 +414,9 @@ int  glib_jsonrpc_server_send_async_response(GLibJsonRpcAsyncQuery *_query,
   GLibJsonRpcAsyncQueryPrivate *query = (GLibJsonRpcAsyncQueryPrivate *)_query;
   query->reply = reply;
   query->error_num = error_num;
-  g_mutex_lock(query->mutex);
-  g_cond_broadcast(query->cond);
-  g_mutex_unlock(query->mutex);
+  g_mutex_lock(&query->mutex);
+  g_cond_broadcast(&query->cond);
+  g_mutex_unlock(&query->mutex);
 
   return TRUE;
 }
@@ -430,3 +427,4 @@ void glib_jsonrpc_server_set_allow_non_loopback_connections(GLibJsonRpcServer *_
   GLibJsonRpcServerPrivate *server = (GLibJsonRpcServerPrivate *)_server;
   server->allow_non_loopback_connections = allow_non_loopback_connections;
 }
+
