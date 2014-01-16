@@ -411,6 +411,7 @@ class Giv:Widget from Gtk:Image:Viewer
         if (event->state & GDK_CONTROL_MASK)
             switch(k) {
             case 'c':
+                // Copy the balloon text
                 if (selfp->do_show_balloon) {
                     const char *balloon_text = gtk_label_get_text(GTK_LABEL(selfp->w_balloon_label));
                     GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
