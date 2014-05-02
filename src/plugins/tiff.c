@@ -100,7 +100,7 @@ GivImage *giv_plugin_load_file(const char *filename,
             int dst_spp = 1;
 
             // TBD - Support more types.
-            if (spp == 3 || has_colormap) {
+            if (spp == 3 || spp==4 || has_colormap) {
                 if (bps == 8)
                     image_type = GIVIMAGE_RGB_U8;
                 else if (bps == 16)
@@ -171,9 +171,14 @@ GivImage *giv_plugin_load_file(const char *filename,
                 }
                 else {
                     for (col_idx=0; col_idx<w; col_idx++) {
-                        for (clr_idx=0; clr_idx<spp*bps/8; clr_idx++) {
+                        for (clr_idx=0; clr_idx<dst_spp*bps/8; clr_idx++) {
                             *dst_ptr++ = *src_ptr++;
+
                         }
+                        // Skip alpha channel
+                        int i;
+                        for (i=0; i<spp-dst_spp; i++)
+                            src_ptr++;
                     }
                 }
 	    }
