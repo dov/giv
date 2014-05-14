@@ -2756,7 +2756,6 @@ export_to_file(GivWin *self,
         cairo_t *cr = cairo_create(surface);
         draw_to_cairo(cr, width, height, self);
         cairo_destroy (cr);
-        
         cairo_surface_destroy(surface);
     }
     else if (is_file_ext(basename, "png")) {
@@ -2764,7 +2763,9 @@ export_to_file(GivWin *self,
                                                                     width,
                                                                     height);
         cairo_t *cr = cairo_create(surface_image);
+
         draw_to_cairo(cr, width, height, self);
+
         cairo_destroy (cr);
         if (cairo_surface_write_to_png (surface_image, filename)
             != CAIRO_STATUS_SUCCESS) {
@@ -2971,7 +2972,8 @@ void draw_to_cairo(cairo_t *cr,
         g_object_unref(cimg);
     }
 
-    if (selfp->do_view_marks) {
+    bool show_marks = giv_widget_get_show_marks(GIV_WIDGET(selfp->w_imgv));
+    if (show_marks) {
         GivPainterCairo painter(cr);
         GivRenderer renderer(datasets, painter,
                              scale_x, scale_y,

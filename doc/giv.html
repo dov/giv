@@ -596,22 +596,7 @@ giv can be remote controlled through json-rpc commands. The parameters of the co
 
 Here is an example in python calling the <b>pick_coordinate</b> command:
 
-<table border><tr><th bgcolor=#E0E0FF><a href="pick-coordinate.py">pick-coordinate.py</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>#!/usr/bin/python 
-<font size=-1 color=red>  2:  </font> 
-<font size=-1 color=red>  3:  </font>import httplib,json 
-<font size=-1 color=red>  4:  </font> 
-<font size=-1 color=red>  5:  </font>conn = httplib.HTTPConnection('localhost:8222') 
-<font size=-1 color=red>  6:  </font> 
-<font size=-1 color=red>  7:  </font>request = {'method':"pick_coordinate", 
-<font size=-1 color=red>  8:  </font>           'params':[]}  
-<font size=-1 color=red>  9:  </font> 
-<font size=-1 color=red> 10:  </font>conn.request("POST", url='', body= json.dumps(request)) 
-<font size=-1 color=red> 11:  </font>response = json.loads(conn.getresponse().read()) 
-<font size=-1 color=red> 12:  </font>if 'error' in response: 
-<font size=-1 color=red> 13:  </font>  print response['error']['message'] 
-<font size=-1 color=red> 14:  </font>else: 
-<font size=-1 color=red> 15:  </font>  print response['result'] 
-<font size=-1 color=red> 16:  </font>   </pre></table>
+<table border><tr><th bgcolor=#E0E0FF><a href="pick-coordinate.py">pick-coordinate.py</a><tr><td bgcolor=#FFE0E0><pre</pre></table>
 
 <p>
 giv also contains an embedded JSONRPC client that come in two forms, the simplified and the full forms.
