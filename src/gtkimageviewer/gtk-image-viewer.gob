@@ -156,7 +156,7 @@ class Gtk:Image:Viewer from Gtk:Widget
     selfp->current_scale_y = 1.0;
     selfp->current_x0 = 0;
     selfp->current_y0 = 0;
-    selfp->min_zoom = 1.0/8;
+    selfp->min_zoom = 1.0/128;
     selfp->max_zoom = 128;
     selfp->scroll_width = -1;
     selfp->scroll_height = -1;
@@ -455,6 +455,9 @@ class Gtk:Image:Viewer from Gtk:Widget
     GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
     int ret = TRUE;
     gint k;
+    double big_scale = 2.0;
+    double small_scale = 1.1;
+    double basescale = 2.0;
     double vscale = 1.0;
 
     k = event->keyval;
@@ -463,23 +466,23 @@ class Gtk:Image:Viewer from Gtk:Widget
     case '=':
     case '+':
         if (!selfp->do_vertical_lock)
-            vscale = 1.1;
-        gtk_image_viewer_zoom_in(self, -1, -1, 1.1, vscale);
+            vscale = small_scale;
+        gtk_image_viewer_zoom_in(self, -1, -1, small_scale, vscale);
         break;
     case '>':
         if (!selfp->do_vertical_lock)
-            vscale = 2;
-        gtk_image_viewer_zoom_in(self, -1, -1, 2, vscale);
+            vscale = big_scale;
+        gtk_image_viewer_zoom_in(self, -1, -1, big_scale, vscale);
         break;
     case '<':
         if (!selfp->do_vertical_lock)
-            vscale = 2;
-        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, 2, vscale);
+            vscale = big_scale;
+        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
         break;
     case '-':
         if (!selfp->do_vertical_lock)
-            vscale = 2;
-        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, 1.1, vscale);
+            vscale = big_scale;
+        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
         break;
     case '1':
     case 'n':
@@ -1852,6 +1855,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   zoom_fit(self)
   {
     gdouble margin = 0;
+    printf("fit\n");
     if (!selfp->image)
         margin = selfp->fill_on_resize_margin;
     gtk_image_viewer_zoom_to_box(self,
