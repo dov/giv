@@ -24,6 +24,9 @@ class GivPainterAgg : public GivPainter {
     virtual int add_mark(GivMarkType mark_type,
                          double mark_size_x, double mark_size_y,
                          double x, double y);
+    virtual int add_ellipse(double x, double y,
+                            double sizex, double sizey,
+                            double angle);
     virtual int add_text(const char *text,
                          double x, double y,
                          int text_align,

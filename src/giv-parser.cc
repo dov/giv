@@ -17,6 +17,7 @@ enum
 {
   STRING_NOP,
   STRING_DRAW,
+  STRING_ELLIPSE,
   STRING_COMMENT,
   STRING_MOVE,
   STRING_QUIVER,
@@ -30,6 +31,7 @@ enum
   STRING_CHANGE_SHADOW_COLOR,
   STRING_CHANGE_SHADOW_OFFSET,
   STRING_CHANGE_QUIVER_SCALE,
+  STRING_CHANGE_QUIVER_HEAD,
   STRING_CHANGE_LINE_WIDTH,
   STRING_CHANGE_MARKS,
   STRING_CHANGE_NO_LINE,
@@ -607,6 +609,10 @@ parse_string (const char *string, const char *fn, gint linenum)
     {
       type = STRING_MOVE;
     }
+  else if (first_char == 'E' || first_char == 'e')
+    {
+      type = STRING_ELLIPSE;
+    }
   else if (first_char == 'Q' || first_char == 'q')
       type = STRING_QUIVER;
   else if (first_char == 'T' || first_char == 't')
@@ -661,6 +667,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         break;
     case STRING_DRAW:
     case STRING_MOVE:
+    case STRING_ELLIPSE:
     case STRING_QUIVER:
         if (type == STRING_DRAW) {
             if (sscanf(S_, "%lf %lf", &p.x, &p.y)==2) {
@@ -669,6 +676,25 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
                 else
                     p.op = OP_DRAW;
             }
+        }
+        else if (type == STRING_ELLIPSE) {
+            double x,y,xsize, ysize, angle;
+            sscanf(S_, "%s %lf %lf %lf %lf %lf", dummy, &x, &y, &xsize,&ysize,&angle);
+            p.op = OP_ELLIPSE;
+            p.x = x;
+            p.y = y;
+            g_array_append_val(marks->points, p);
+            p.op = OP_CONT;
+            p.x = xsize;
+            p.y = ysize;
+            g_array_append_val(marks->points, p);
+            p.op = OP_CONT;
+            p.x = angle;
+            g_array_append_val(marks->points, p);
+
+            // Assign p to x and y for min and max calculations.
+            p.x = x;
+            p.y = y;
         }
         else {
             if (sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y)==3) {
@@ -796,12 +822,16 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_ARROW:
         {
             char *arrow_string = string_strdup_word(S_,1);
+            if (arrow_string == NULL)
+                marks->arrow_type = ARROW_TYPE_END;
             if (strcmp(arrow_string, "start")==0)
                 marks->arrow_type = ARROW_TYPE_START;
             else if (strcmp(arrow_string, "both")==0)
                 marks->arrow_type = ARROW_TYPE_BOTH;
             else 
                 marks->arrow_type = ARROW_TYPE_END;
+            if (arrow_string)
+                free(arrow_string);
             break;
         }
     case STRING_CHANGE_NO_LINE:
@@ -888,6 +918,17 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             marks->shadow_offset_y = atof(arg2);
             g_free(arg1);
             g_free(arg2);
+        }
+    case STRING_CHANGE_QUIVER_HEAD:
+        {
+            char *arg = string_strdup_word(S_, 1);
+            if ((slip)arg == "none")
+                marks->quiver_head = false;
+            else {
+                marks->quiver_head = true;
+            }
+            g_free(arg);
+            break;
         }
     case STRING_CHANGE_QUIVER_SCALE:
         marks->quiver_scale = string_to_atof(S_, 1);

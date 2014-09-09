@@ -86,6 +86,7 @@ void GivRenderer::paint()
         //    It 0: Draw filled area of polygons.
         //    It 1: Draw contours of polygons and other line graphs
         //    It 2: Draw quiver
+        bool has_ellipse = false;
         for (int i=0; i<3; i++) {
 
             if ((i==0 && dataset->do_draw_polygon)
@@ -94,7 +95,7 @@ void GivRenderer::paint()
                 ) {
                 // Set properties for quiver
                 if (i==2) {
-                    painter.set_arrow(false, true);
+                    painter.set_arrow(false, dataset->quiver_head);
                     painter.set_line_width(2);
                 }
 
@@ -123,6 +124,10 @@ void GivRenderer::paint()
                                                      i==0);
                             need_paint = true;
                         }
+                    }
+                    else if (i < 2 && p.op == OP_ELLIPSE) {
+                        p_idx++; p_idx++;
+                        has_ellipse = true;
                     }
                     else if (p.op == OP_QUIVER) {
                         double qscale = dataset->quiver_scale * this->quiver_scale;
@@ -164,6 +169,31 @@ void GivRenderer::paint()
                 if (i>=1)
                     painter.stroke();
             }
+        }
+        if (has_ellipse) {
+            for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
+                point_t p = g_array_index(dataset->points, point_t, p_idx);
+
+                if (p.op == OP_ELLIPSE) {
+                    double x = p.x;
+                    double y = p.y;
+                    p_idx++;
+                    p = g_array_index(dataset->points, point_t, p_idx);
+                    double xsize = p.x;
+                    double ysize = p.y;
+                    p_idx++;
+                    p = g_array_index(dataset->points, point_t, p_idx);
+                    double angle = p.x;
+
+                    double m_x = x * scale_x - shift_x;
+                    double m_y = y * scale_y - shift_y;
+                    double m_xsize = xsize * fabs(scale_x);
+                    double m_ysize = ysize * fabs(scale_y);
+
+                    painter.add_ellipse(m_x, m_y, m_xsize, m_ysize, angle);
+                }
+            }
+            painter.draw_marks();
         }
         if (dataset->do_draw_marks) {
             GivMarkType mark_type = GivMarkType(dataset->mark_type);

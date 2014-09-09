@@ -226,6 +226,23 @@ int GivPainterAgg::add_mark(GivMarkType mark_type,
     return 0;
 }
 
+int GivPainterAgg::add_ellipse(double x, double y,
+                               double sizex, double sizey,
+                               double angle)
+{
+    agg::ellipse ell;
+    agg::trans_affine mtx;
+    mtx *= agg::trans_affine_translation(-x,-y);
+    mtx *= agg::trans_affine_rotation(angle);
+    mtx *= agg::trans_affine_translation(x,y);
+    
+    ell.init(x,y,sizex/2.0,sizey/2.0);
+    agg::conv_transform<agg::ellipse, agg::trans_affine> trans(ell, mtx);
+    d->pf.add_path(trans);
+
+    return 0;
+}
+
 int
 GivPainterAgg::add_text(const char *text,
                         double x, double y,

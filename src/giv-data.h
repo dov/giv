@@ -17,7 +17,10 @@ enum
   OP_MOVE = 0,
   OP_DRAW = 1,
   OP_TEXT = 2,
-  OP_QUIVER = 3
+  OP_QUIVER = 3,
+  OP_ELLIPSE = 4,
+  OP_CONT = 5            // Misc continue operation for ops with more than two cordinates
+
 };
 
 /* Mark types */
@@ -72,6 +75,7 @@ typedef struct
     gboolean do_draw_lines;
     gboolean do_draw_polygon;
     gboolean do_draw_polygon_outline;
+    gboolean quiver_head;
     gboolean has_quiver;
     GArray *points;
     gchar *path_name;

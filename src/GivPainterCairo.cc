@@ -189,6 +189,25 @@ GivPainterCairo::add_mark(GivMarkType mark_type,
     return 0;
 }
 
+int GivPainterCairo::add_ellipse(double x, double y,
+                                 double sizex, double sizey,
+                                 double angle)
+{
+    // TBD - Test if this is ok
+    printf("add_ellipse cairo\n");
+    cairo_save(d->cr);
+    cairo_translate(d->cr, -x, -y);
+    cairo_rotate(d->cr, angle);
+    cairo_translate(d->cr, x, y);
+    cairo_scale(d->cr, 1.0, sizey/sizex);
+    cairo_arc(d->cr, x, y, sizex, 0, 2*M_PI);
+    cairo_fill(d->cr);
+    cairo_restore(d->cr);
+    d->need_fill = 1;
+
+    return 0;
+}
+
 int 
 GivPainterCairo::add_text(const char *text,
                           double x, double y,

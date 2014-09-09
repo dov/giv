@@ -34,6 +34,9 @@ class GivPainter {
     virtual int add_mark(GivMarkType mark_type,
                          double mark_size_x, double mark_size_y,
                          double x, double y) = 0;
+    virtual int add_ellipse(double x, double y,
+                            double sizex, double sizey,
+                            double angle) = 0;
     virtual int add_line_segment(double x0, double y0,
                                  double x1, double y1,
                                  bool do_polygon = 0) = 0;
