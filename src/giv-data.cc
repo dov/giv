@@ -80,11 +80,16 @@ void free_giv_data_set(giv_dataset_t *dataset_p)
         g_free(dataset_p->file_name);
     if (dataset_p->balloon_string)
         g_string_free(dataset_p->balloon_string, TRUE);
+    if (dataset_p->font_name)
+        g_free(dataset_p->font_name);
     for (int i=0; i<(int)dataset_p->points->len; i++)
         {
           point_t p = g_array_index(dataset_p->points, point_t, i);
-          if (p.op == OP_TEXT)
+          if (p.op == OP_TEXT) {
             g_free(p.text_object->string);
+            g_free(p.text_object);
+          }
+          p.text_object=NULL;
         }
     g_array_free(dataset_p->points, TRUE);
     g_free(dataset_p);

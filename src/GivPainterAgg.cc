@@ -249,6 +249,10 @@ GivPainterAgg::add_text(const char *text,
                         int text_align,
                         bool do_pango_markup)
 {
+    // ignore zero length texts
+    if (text==NULL || strlen(text)==0)
+        return 0;
+
     if (d->do_paint_by_index) {
         return 0; // Don't paint text labels...
 #if 0

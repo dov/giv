@@ -97,7 +97,12 @@ static gboolean turn_off_insensitive(GtkWidget *widget);
 
 class Gtk:Image:Viewer from Gtk:Widget
 {
-  private GdkPixbuf *image=NULL;
+  private GdkPixbuf *image=NULL
+    destroy
+    {
+      if (image)
+          g_object_unref(image);
+    };
   private gdouble current_scale_x=1;
   private gdouble current_scale_y=1;
   private gdouble current_x0;

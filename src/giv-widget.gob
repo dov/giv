@@ -77,10 +77,18 @@ static void cb_set_vlock(gboolean vlock,
 
 class Giv:Widget from Gtk:Image:Viewer
 {
-    private GdkPixbuf *img_org = NULL;
+    private GdkPixbuf *img_org = NULL
+      destroy {
+      if (img_org)
+          g_object_unref(img_org);
+      };
 
     // possibly pseudo colored image
-    private GdkPixbuf *img_display = NULL;
+    private GdkPixbuf *img_display = NULL
+      destroy {
+      if (img_display)
+          g_object_unref(img_display);
+      };
     private GtkWidget *w_balloon_window = NULL;
     private GtkWidget *w_balloon_label = NULL;
     private GivParser *giv_parser = NULL
@@ -102,7 +110,11 @@ class Giv:Widget from Gtk:Image:Viewer
     private gint last_move_y = 0;
     // This image is a copy of the img display but with label
     // colors. It is never shown onto the screen.
-    private GdkPixbuf *w_label_image = NULL;
+    private GdkPixbuf *w_label_image = NULL
+      destroy {
+        if (w_label_image)
+            g_object_unref(w_label_image);
+      };
     private GivPseudoColor colormap = GIV_PSEUDO_COLOR_OFF;
     private giv_widget_file_reference_callback_t file_reference_cb;
     private gpointer file_reference_user_data;

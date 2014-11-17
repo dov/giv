@@ -1246,6 +1246,7 @@ int color_parse(const char *giv_color_name,
         else {
             color->alpha = 255 * atoi(alpha_string);
         }
+        g_free(color_name);
     }
     else {
         GdkColor gcolor;
