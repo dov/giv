@@ -31,7 +31,7 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     dataset_p->do_draw_marks = FALSE;
     dataset_p->do_draw_lines = TRUE;
     dataset_p->do_draw_polygon = FALSE;
-    dataset_p->quiver_head = FALSE;
+    dataset_p->quiver_head = TRUE;
     dataset_p->do_draw_polygon_outline = FALSE;
     dataset_p->do_scale_marks = default_scale_marks;
     dataset_p->has_quiver = FALSE;
