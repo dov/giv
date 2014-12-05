@@ -1,6 +1,6 @@
 Import('env')
 
-env['OUTLIBDIR'] = "#/src/plugins/dcmtk/${arch}/${VARIANT}"
+env['OUTLIBDIR'] = "#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}"
 
 env.Append(CPPPATH=["#/src/plugins/dcmtk/config/include",
                     "#/src/plugins/dcmtk/ofstd/include",
