@@ -737,11 +737,14 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     case STRING_BALLOON:
         {
             char *s = string_strdup_rest(S_,1,TRUE);
-            if (!marks->balloon_string)
-                marks->balloon_string = g_string_new(s);
+            if (!marks->balloon_string) {                
+                if (strlen(s))
+                    marks->balloon_string = g_string_new(s);
+            }
             else {
                 g_string_append(marks->balloon_string, "\n");
-                g_string_append(marks->balloon_string, s);
+                if (strlen(s))
+                    g_string_append(marks->balloon_string, s);
             }
             g_free(s);
             
