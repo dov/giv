@@ -420,6 +420,23 @@ class Giv:Widget from Gtk:Image:Viewer
                 }
                         
                 return 1;
+            case 'x':
+                {
+                    double x,y;
+                    gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(self),
+                                                             selfp->last_cx,
+                                                             selfp->last_cy,
+                                                             &x, &y);
+                    GString *text = g_string_new("");
+                    g_string_append_printf(text,"%.3f,%.3f",x,y);
+                    GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
+                    gtk_clipboard_set_text(clipboard,
+                                           text->str,
+                                           -1);
+                    g_string_free(text, TRUE);
+                    
+                }
+                return 1;
             default:
                 ret = FALSE;
                 break;
