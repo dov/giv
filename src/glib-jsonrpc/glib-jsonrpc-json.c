@@ -29,12 +29,11 @@ gchar *glib_jsonrpc_json_to_string(JsonNode *node)
   // Simplify for string. Should probably be optional.
   if (json_node_get_string (node) != NULL)
     return g_strdup(json_node_get_string (node));
-  
+
   // Serialize response into content_string
   JsonGenerator *gen = json_generator_new ();
   gsize len;
   json_generator_set_root (gen, node);
-
   gchar *json_string = json_generator_to_data(gen, &len);
   g_object_unref (gen);
   return json_string;

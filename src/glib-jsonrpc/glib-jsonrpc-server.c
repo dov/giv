@@ -55,6 +55,8 @@ typedef struct {
 static GLibJsonRpcAsyncQueryPrivate *glib_jsonrpc_server_query_new(GLibJsonRpcServer *server)
 {
   GLibJsonRpcAsyncQueryPrivate *query = g_new0(GLibJsonRpcAsyncQueryPrivate, 1);
+  g_cond_init(&query->cond);
+  g_mutex_init(&query->mutex);
   query->server = server;
   query->reply = NULL;
   query->error_num = 0;
@@ -65,7 +67,6 @@ static GLibJsonRpcAsyncQueryPrivate *glib_jsonrpc_server_query_new(GLibJsonRpcSe
 
 static void glib_jsonrpc_async_query_free(GLibJsonRpcAsyncQueryPrivate *query)
 {
-  g_mutex_unlock(&query->mutex);
   json_node_free(query->reply);
   g_free(query);
 }
@@ -252,7 +253,7 @@ handler (GThreadedSocketService *service,
                                          params,
                                          command_val->user_data);
           
-          // Lock on a mutex 
+          // Lock on a mutex
           g_mutex_lock(&query->mutex);
           g_cond_wait(&query->cond, &query->mutex);
           g_mutex_unlock(&query->mutex);
@@ -308,7 +309,7 @@ handler (GThreadedSocketService *service,
                              "Server: GlibJsonRPC server\r\n"
                              "\r\n"
                              "%s",
-                             len,
+                             (int)len,
                              content_string
                              );
       g_free(content_string);
@@ -427,4 +428,3 @@ void glib_jsonrpc_server_set_allow_non_loopback_connections(GLibJsonRpcServer *_
   GLibJsonRpcServerPrivate *server = (GLibJsonRpcServerPrivate *)_server;
   server->allow_non_loopback_connections = allow_non_loopback_connections;
 }
-
