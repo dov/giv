@@ -32,16 +32,25 @@ if not env['SBOX']:
                       LIBS=['giv-image']+env['LIBS'],
                       CPPPATH= env['CPPPATH']
                       )
-    
+
+    use_system_dcmtk = conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
+    dcmtk_path = []
+    dcmtk_libpath = []
+
+    if not use_system_dcmtk:
+         dcmtk_path = ['dcmtk/dcmdata/include',
+                       'dcmtk/ofstd/include',
+                       'dcmtk/config/include']
+         dcmtk_libpath = ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}']
+
     plugin_dicom = env.SharedLibrary('dicom',
                       ['dicom.cc'],
-                      CPPPATH=['dcmtk/dcmdata/include',
-                               'dcmtk/ofstd/include',
-                               'dcmtk/config/include',
+                      CPPPATH=dcmtk_path + [
                                '..'
                                ] + env['CPPPATH'],
-                      LIBPATH=['..','#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}'] + env['LIBPATH']+env['LIBPATH'],
+                      LIBPATH=['..'] + dcmtk_libpath + env['LIBPATH']+env['LIBPATH'],
                       LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
+
     env.SharedLibrary('tiff',
                       ['tiff.c'],
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
@@ -56,5 +65,6 @@ if not env['SBOX']:
                 ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
                  '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])
 
-    SConscript(['dcmtk/SConscript'],
-               exports='env')
+    if not use_system_dcmtk:
+        SConscript(['dcmtk/SConscript'],
+                   exports='env')

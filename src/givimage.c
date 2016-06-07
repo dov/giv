@@ -87,12 +87,18 @@ GivImage *giv_image_new_from_file(const char *filename,
     // TBD - run through a list of loaders. Right now just
     // use gdkpixbuf.
     gchar *extension = g_strrstr(filename, ".");
-    extension++;
+    if (extension)
+        extension++;
 
     if ((img = giv_plugin_load_image(filename,
                                      error)) != NULL) {
+        return img;
     }
-    else if (*error) {
+    if (*error) {
+        printf("Got error: %s\n", (*error)->message);
+        return NULL;
+    }
+    else if (!extension) {
     }
     else if (g_regex_match_simple("png"
                                   "|jpe?g"
@@ -185,7 +191,7 @@ GivImage *giv_image_new_from_file(const char *filename,
                                   G_REGEX_CASELESS,
                                   0)) {
         gchar *ssv_string;
-        guint length;
+        gsize length;
         
         g_file_get_contents(filename, &ssv_string, &length, error);
         gchar **lines = g_regex_split_simple("\r?\n",
@@ -235,13 +241,12 @@ GivImage *giv_image_new_from_file(const char *filename,
         g_strfreev(lines);
         g_free(ssv_string);
     }
-#if 0
     else if (g_regex_match_simple("npy",
                                   extension,
                                   G_REGEX_CASELESS,
                                   0)) {
         gchar *npy_string;
-        guint length;
+        gsize length;
         
         g_file_get_contents(filename, &npy_string, &length, error);
 
@@ -253,16 +258,16 @@ GivImage *giv_image_new_from_file(const char *filename,
 
         // Use regex to parse the header. Should update this to allow
         // user attributes.
-        GivRegex *regex = g_regex_new ("^\\{\\s*"
-                                       "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
-                                       "'fortran_order':\\s*(\\w+)\\s*,\\s*"
-                                       "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
-                                       "\\}", 0, 0, error);
+        GRegex *regex = g_regex_new ("^\\{\\s*"
+                                     "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
+                                     "'fortran_order':\\s*(\\w+)\\s*,\\s*"
+                                     "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
+                                     "\\}", 0, 0, error);
         if (*error) {
             printf("Programming GivRegEx error: %s\n", (*error)->message);
             exit(-1);
         }
-        GivMatchInfo *match_info = NULL;
+        GMatchInfo *match_info = NULL;
         gboolean is_match = g_regex_match_full(regex,
                                                npy_string+10,
                                                header_len,
@@ -275,7 +280,7 @@ GivImage *giv_image_new_from_file(const char *filename,
         gint width=-1, height = -1;
         GivImageType image_type;
         if (is_match) {
-            gchar *match_string = giv_match_info_fetch(match_info, 1);
+            gchar *match_string = g_match_info_fetch(match_info, 1);
 
             if (strcmp(match_string, "<f8")==0) 
                 image_type = GIVIMAGE_DOUBLE;
@@ -294,15 +299,15 @@ GivImage *giv_image_new_from_file(const char *filename,
             
             g_free(match_string);
             
-            match_string = giv_match_info_fetch(match_info, 2);
+            match_string = g_match_info_fetch(match_info, 2);
             is_fortran_type = strcmp(match_string, "True") == 0;
             g_free(match_string);
             
-            match_string = giv_match_info_fetch(match_info, 3);
+            match_string = g_match_info_fetch(match_info, 3);
             height = atoi(match_string);
             g_free(match_string);
             
-            match_string = giv_match_info_fetch(match_info, 4);
+            match_string = g_match_info_fetch(match_info, 4);
             width = atoi(match_string);
             g_free(match_string);
         }
@@ -331,11 +336,12 @@ GivImage *giv_image_new_from_file(const char *filename,
                giv_image_type_get_size(image_type) * width * height / 8);
         g_free(npy_string);
     }
-#endif
     else {
-        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Foo: Unknown filetype %s!", extension);
+        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Unknown filetype %s!", extension);
     }
-    
+
+    if (!img && !*error)
+        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Failed loading %s!", filename);
     return img;
 }
 

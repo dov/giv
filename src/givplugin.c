@@ -145,9 +145,8 @@ GivImage *giv_plugin_load_image(const char *filename,
             if (sup_file(filename,
                          chunk,
                          chunk_len)) {
-                GError *error = NULL;
                 img = load_file(filename,
-                                &error);
+                                error);
 
                 // TBD - handle plugin errors
                 break;
@@ -161,4 +160,10 @@ GivImage *giv_plugin_load_image(const char *filename,
     g_free(chunk);
     
     return img;
+}
+
+GQuark
+giv_plugin_error_quark (void)
+{
+  return g_quark_from_static_string ("giv-plugin");
 }

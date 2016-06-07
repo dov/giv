@@ -8,7 +8,12 @@ else:
     variant = 'Release'
 
 env = Environment(LIBPATH=[],
-                  CPPFLAGS = cppflags)
+                  CPPFLAGS = cppflags + ['-Wno-deprecated-declarations',
+                                         '-Wno-reorder',
+                                         '-Wno-unused-but-set-variable',
+                                         '-Wno-unused-function'],
+                  CXXFLAGS=['-std=c++1y']
+                  )
 
 env['SBOX'] = False
 

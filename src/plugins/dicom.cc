@@ -9,6 +9,7 @@
 #include "dcmtk/dcmdata/dcfilefo.h"
 #include "dcmtk/dcmdata/dcdeftag.h"
 #include "../givimage.h"
+#include "../givplugin.h"
 #include <glib.h>
 #include <sstream>
 #include <string.h>
@@ -23,13 +24,6 @@ using namespace std;
  */
 #define GUESS_ENDIAN 0
 
-static void toggle_endian2 (guint16          *buf16,
-                            gint              length);
-
-static void
-guess_and_set_endian2 (guint16 *buf16,
-		       int length);
-
 extern "C" gboolean giv_plugin_supports_file(const char *filename,
                                              guchar *start_chunk,
                                              gint start_chunk_len)
@@ -43,7 +37,8 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
     return is_dicom;
 }
 
-extern "C" GivImage *giv_plugin_load_file(const char *filename)
+extern "C" GivImage *giv_plugin_load_file(const char *filename,
+                                          GError **error)
 {
     DcmFileFormat dcm_img;
     OFCondition status = dcm_img.loadFile(filename);
@@ -66,8 +61,16 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename)
 	ds->findAndGetUint8Array(DCM_PixelData, (const Uint8*&)buf);
     }
     else
-        printf("Unsupported dicom!\n");
+        printf("Unsupported dicom bpp=%d spp=%d!\n", (int)bpp, (int)spp);
 
+    if (buf == NULL) {
+        g_set_error (error,
+                     GIV_PLUGIN_ERROR,
+                     GLIB_PLUGIN_ERROR_UNKNOWN,
+                     ("Failed finding pixel memory in dicom file"));
+        return NULL;
+    }
+        
     // Create the image
     GivImage *img = NULL;
     switch (bpp) {

@@ -8,6 +8,12 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define GIV_PLUGIN_ERROR               (giv_plugin_error_quark ())
+GQuark giv_plugin_error_quark (void);
+enum {
+  GLIB_PLUGIN_ERROR_UNKNOWN
+};
+
 // A structure for matching contents.
 typedef struct {
     // Can the format be matched by contents?

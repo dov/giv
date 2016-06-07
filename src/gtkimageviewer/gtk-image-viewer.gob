@@ -445,8 +445,10 @@ class Gtk:Image:Viewer from Gtk:Widget
     // printf("Leave notify\n");
     if (!GTK_WIDGET_HAS_FOCUS (widget))
       gtk_widget_grab_focus (widget);
-    if (selfp->timeout_id)
+    if (selfp->timeout_id) {
         g_source_remove(selfp->timeout_id);
+        selfp->timeout_id = 0;
+    }
     selfp->is_insensitive = TRUE;
     
     return TRUE;

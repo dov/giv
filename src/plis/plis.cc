@@ -576,7 +576,7 @@ int slip_read_file(slip filename,
     slip s;
     ifstream inf;
 
-    inf.open(filename);
+    inf.open(filename.c_str());
 
     if (!inf.is_open()) {
         contents = "Failed opening file!\n";
