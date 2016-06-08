@@ -60,6 +60,8 @@ using namespace plis;
 #undef PRINT_BY_IMAGE
 #endif
 
+#define MY_PI 3.141592653589793
+
 static const char ui_descr_menu_string[] =
 #include "menu-top-xml.i"
 ;
@@ -2530,20 +2532,20 @@ menu_measure_distance (GivWin *self, GtkAction *action, int measure_type)
         selfp->measure_type = measure_type;
         selfp->measure_x1=-1;
         selfp->measure_y1=-1;
-        if (selfp->lasso)
-            dovtk_lasso_destroy(selfp->lasso);
-        selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
-                                          &my_lasso_draw,
-                                          self);
+        if (!selfp->lasso)
+            selfp->lasso = dovtk_lasso_create(selfp->w_imgv,
+                                              &my_lasso_draw,
+                                              self);
+        else
+            dovtk_lasso_update(selfp->lasso);
     }
     else {
         // TBD - reset the menus.
         //free_giv_backstore (selfp->back_store);
         //selfp->back_store = NULL;
-        if (selfp->lasso)
-            dovtk_lasso_destroy(selfp->lasso);
-        selfp->lasso = NULL;
         gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+        dovtk_lasso_destroy(selfp->lasso);
+        selfp->lasso = NULL;
     }
   
     return;
@@ -3133,7 +3135,7 @@ cb_menu_about(GtkAction *action,
                               "\n"
                               "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt></span>\n",
                               ("The G(reat|tk) Image Viewer"),
-                              ("Copyright &#x00a9; Dov Grobgeld, 2014\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2016\n"),
                               ("Programming by: Dov Grobgeld\n"),
                               ("dov.grobgeld@gmail.com"));
     gtk_label_set_markup (GTK_LABEL (label), markup);
@@ -4111,7 +4113,7 @@ draw_caliper(GivWin *self,
       int h = selfp->w_scrolled_win->allocation.height;
       if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         {
-          cairo_matrix_init_rotate(&matrix, M_PI/2);
+          cairo_matrix_init_rotate(&matrix, MY_PI/2);
           cairo_matrix_translate(&matrix, x0, 0);
           cairo_matrix_scale(&matrix,-1.0,1.0);
           cairo_pattern_set_matrix(pat, &matrix);
@@ -4125,7 +4127,7 @@ draw_caliper(GivWin *self,
 
       if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         {
-          cairo_matrix_init_rotate(&matrix, M_PI/2);
+          cairo_matrix_init_rotate(&matrix, MY_PI/2);
           cairo_matrix_translate(&matrix, -x1, 0);
           cairo_pattern_set_matrix(pat, &matrix);
           cairo_set_source (cr, pat);

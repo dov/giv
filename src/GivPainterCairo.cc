@@ -9,6 +9,8 @@
 #include "glib.h"
 #include "math.h"
 
+#define MY_PI 3.141592653589793
+
 static
 void draw_arrows(cairo_t *cr,
                  double stroke_width,
@@ -200,7 +202,7 @@ int GivPainterCairo::add_ellipse(double x, double y,
     cairo_rotate(d->cr, angle);
     cairo_translate(d->cr, x, y);
     cairo_scale(d->cr, 1.0, sizey/sizex);
-    cairo_arc(d->cr, x, y, sizex, 0, 2*M_PI);
+    cairo_arc(d->cr, x, y, sizex, 0, 2*MY_PI);
     cairo_fill(d->cr);
     cairo_restore(d->cr);
     d->need_fill = 1;

@@ -209,13 +209,8 @@ extern "C"
 
 static int my_isinf(double x)
 {
-#ifdef HAVE_WINDOWS_H
-  return (! _finite(x)) && (! _isnan(x));
-#else
-  // Solaris 2.5.1 has finite() and isnan() but not isinf().
-  return (! finite(x)) && (! isnan(x));
-#endif
-}
+  return !isnan(x) && isnan(x - x);
+}  
 #endif /* HAVE_ISINF */
 
 
@@ -1453,11 +1448,7 @@ void OFStandard::ftoa(
   if (!dst || !siz) return;
 
   // check if val is NAN
-#ifdef HAVE_WINDOWS_H
-  if (_isnan(val))
-#else
   if (isnan(val))
-#endif
   {
     OFStandard::strlcpy(dst, "nan", siz);
     return;

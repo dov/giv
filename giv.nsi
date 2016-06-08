@@ -9,7 +9,7 @@ CRCCheck on ; (can be off)
 LicenseText "Giv is a free program. Here is its license."
 LicenseData "COPYING.dos"
 
-InstallDir "$PROGRAMFILES\Giv"
+InstallDir "$PROGRAMFILES${HOSTBITS}\Giv"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Giv" ""
 ; DirShow ; (make this hide to not let the user change it)
 DirText "Select the directory to install Giv in:"
@@ -61,13 +61,14 @@ File ${SYSROOT}\mingw\bin\libjpeg*.dll
 File ${SYSROOT}\mingw\bin\libpixman-1-0.dll
 File ${SYSROOT}\mingw\bin\libfontconfig*.dll
 File ${SYSROOT}\mingw\bin\libfreetype*.dll
+File ${SYSROOT}\mingw\bin\libbz2*.dll
+File ${SYSROOT}\mingw\bin\libwinpthread*.dll
 #File \usr\local\mingw32\bin\libjson-glib-1.0-0.dll
 File ${SYSROOT}\mingw\bin\gdk-pixbuf-query-loaders.exe
 
 SetOutPath $INSTDIR\etc
 File /r ${SYSROOT}\mingw\etc\gtk-2.0
 File /r ${SYSROOT}\mingw\etc\fonts
-File /r ${SYSROOT}\mingw\etc\pango
 SetOutPath $INSTDIR\etc\gtk-2.0
 File ${SYSROOT}\mingw\share\themes\MS-Windows\gtk-2.0\gtkrc
 
@@ -77,7 +78,6 @@ File src\plugins\*.dll
 
 # pango
 SetOutPath $INSTDIR\lib
-File /r ${SYSROOT}\mingw\lib\pango
 
 # pixbuf etc
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0

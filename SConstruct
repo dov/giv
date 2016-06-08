@@ -43,10 +43,12 @@ def create_dist(env, target, source):
 if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
     if ARGUMENTS.get('mingw', 0):
         env['HOST']='w32'
+        env['HOSTBITS']='32'
         env['ARCH']='i686-w64-mingw32'
         env['LIBGCCDLL'] = "libgcc_s_sjlj-1.dll"
     elif ARGUMENTS.get('mingw64', 0):
         env['HOST']='w64'
+        env['HOSTBITS']='64'
         env['ARCH']='x86_64-w64-mingw32'
         env['LIBGCCDLL'] = "libgcc_s_seh-1.dll"
 
@@ -61,7 +63,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
                 ["src/giv.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["makensis -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} giv.nsi"])
+                ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} giv.nsi"])
     env.Append(LINKFLAGS=['-mwindows'])
 
     env['PACKAGE_DOC_DIR'] = '../doc'
