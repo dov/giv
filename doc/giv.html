@@ -20,8 +20,10 @@
     <font size=+2>Version 0.9.26</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
+    <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
+    <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2014-01-10    </font>
+    <font size=-1>Last modified: 2016-06-08 Wed    </font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -37,9 +39,10 @@
     <li>Includes plugins for reading the npy-format, FITS-format, and DICOM.
     <li>An interactive contrast tool  allows interactively changing
   contrast and brightness.
-
     <LI> It can display lines and marks on top of an image with sub
       pixel accuracy. </LI>
+    <li> Balloon popups can be tied to any overlay and is shown when the 
+    mouse hovers above that overlay.</li>
     <LI> Pseudo coloring of gray level images.</LI>
     <LI> It is especially suited for computational geometry and vision
       scientific and educational applications.</LI>
@@ -451,60 +454,76 @@ giv. The result is shown in the screenshow below.
     <tr><th bgcolor=#eeeeff>Option
 	<th bgcolor=#eeeeff>Description
   
-<tr><td bgcolor=#ffeeee valign=top>q
-	  <td bgcolor=#ffeeee valign=top>Quit
-<tr><td bgcolor=#fbf2ee valign=top>=<br>Ctrl-B1
-	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 2
-<tr><td bgcolor=#ffeeee valign=top>-<br>Ctrl-B3
-	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 2
-<tr><td bgcolor=#fbf2ee valign=top>Scroll wheel up
-	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.4
-<tr><td bgcolor=#ffeeee valign=top>Scroll wheel down
-	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.4
-<tr><td bgcolor=#fbf2ee valign=top>Shift+Scroll wheel up
-	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.1
-<tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel down
-	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.1
-<tr><td bgcolor=#fbf2ee valign=top>Control+Scroll wheel up
-	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 2
-<tr><td bgcolor=#ffeeee valign=top>Control+Scroll wheel down
-	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 2
-<tr><td bgcolor=#fbf2ee valign=top>Alt + Scroll wheel up
-	  <td bgcolor=#fbf2ee valign=top>Zoom in of quiver vectors by a factor of 1.2
-<tr><td bgcolor=#ffeeee valign=top>Alt + Scroll wheel down
-	  <td bgcolor=#ffeeee valign=top>Zoom out of quiver vectors by a factor of 1.2
+<tr><td bgcolor=#ffeeee valign=top>1
+	  <td bgcolor=#ffeeee valign=top>Sets one image pixel equal to one screen pixel.
+<tr><td bgcolor=#fbf2ee valign=top>a
+	  <td bgcolor=#fbf2ee valign=top>Toggle anti aliasing
+<tr><td bgcolor=#ffeeee valign=top>b
+	  <td bgcolor=#ffeeee valign=top>Toggle the balloon popup.
+<tr><td bgcolor=#fbf2ee valign=top>c
+	  <td bgcolor=#fbf2ee valign=top>Reduce contrast. Useful for viewing overlay on binary images.
+<tr><td bgcolor=#ffeeee valign=top>i
+	  <td bgcolor=#ffeeee valign=top>Show information window
 <tr><td bgcolor=#fbf2ee valign=top>f
 	  <td bgcolor=#fbf2ee valign=top>Fill data to window
+<tr><td bgcolor=#ffeeee valign=top>g
+	  <td bgcolor=#ffeeee valign=top>Toggle the pixel grid. (Only shown at high zoom ratios).
+<tr><td bgcolor=#fbf2ee valign=top>h
+	  <td bgcolor=#fbf2ee valign=top>Horizontal flip
+<tr><td bgcolor=#ffeeee valign=top>m
+	  <td bgcolor=#ffeeee valign=top>Toggle overlay.
+<tr><td bgcolor=#fbf2ee valign=top>o
+	  <td bgcolor=#fbf2ee valign=top>Popup dataset browser.
+<tr><td bgcolor=#ffeeee valign=top>q
+	  <td bgcolor=#ffeeee valign=top>Quit
+<tr><td bgcolor=#fbf2ee valign=top>s
+	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
+<tr><td bgcolor=#ffeeee valign=top>v
+	  <td bgcolor=#ffeeee valign=top>Vertical flip
+<tr><td bgcolor=#fbf2ee valign=top>Shift-V
+	  <td bgcolor=#fbf2ee valign=top>Toggle vertical zoom locking.
+<tr><td bgcolor=#ffeeee valign=top>Control+c
+	  <td bgcolor=#ffeeee valign=top>Copy contents of balloon text to clip board
+<tr><td bgcolor=#fbf2ee valign=top>Control+d
+	  <td bgcolor=#fbf2ee valign=top>Copy contents of the last measurement to the clipboard.
+<tr><td bgcolor=#ffeeee valign=top>Control+x
+	  <td bgcolor=#ffeeee valign=top>Copy XY coordinate to the to clip board
+<tr><td bgcolor=#fbf2ee valign=top>Esc
+	  <td bgcolor=#fbf2ee valign=top>Abort remote command pick points
+<tr><td bgcolor=#ffeeee valign=top>=<br>Ctrl-B1
+	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 2
+<tr><td bgcolor=#fbf2ee valign=top>-<br>Ctrl-B3
+	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 2
+<tr><td bgcolor=#ffeeee valign=top>Scroll wheel up
+	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 1.4
+<tr><td bgcolor=#fbf2ee valign=top>Scroll wheel down
+	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 1.4
+<tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel up
+	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 1.1
+<tr><td bgcolor=#fbf2ee valign=top>Shift+Scroll wheel down
+	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 1.1
+<tr><td bgcolor=#ffeeee valign=top>Control+Scroll wheel up
+	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 2
+<tr><td bgcolor=#fbf2ee valign=top>Control+Scroll wheel down
+	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 2
+<tr><td bgcolor=#ffeeee valign=top>Alt + Scroll wheel up
+	  <td bgcolor=#ffeeee valign=top>Zoom in of quiver vectors by a factor of 1.2
+<tr><td bgcolor=#fbf2ee valign=top>Alt + Scroll wheel down
+	  <td bgcolor=#fbf2ee valign=top>Zoom out of quiver vectors by a factor of 1.2
 <tr><td bgcolor=#ffeeee valign=top>B3
 	  <td bgcolor=#ffeeee valign=top>Popup options menu.
 <!--
 <tr><td bgcolor=#fbf2ee valign=top>c
 	  <td bgcolor=#fbf2ee valign=top>Toggle cross hair.
 -->
-<tr><td bgcolor=#ffeeee valign=top>m
-	  <td bgcolor=#ffeeee valign=top>Toggle overlay.
-<tr><td bgcolor=#fbf2ee valign=top>o
-	  <td bgcolor=#fbf2ee valign=top>Popup dataset browser.
-<tr><td bgcolor=#ffeeee valign=top>1
-	  <td bgcolor=#ffeeee valign=top>Sets one image pixel equal to one screen pixel.
-<tr><td bgcolor=#fbf2ee valign=top>s
-	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
-<tr><td bgcolor=#ffeeee valign=top>v
-	  <td bgcolor=#ffeeee valign=top>Vertical flip
-<tr><td bgcolor=#fbf2ee valign=top>h
-	  <td bgcolor=#fbf2ee valign=top>Horizontal flip
-<tr><td bgcolor=#ffeeee valign=top>i
-	  <td bgcolor=#ffeeee valign=top>Show information window
-<tr><td bgcolor=#fbf2ee valign=top>Left/Space
-	  <td bgcolor=#fbf2ee valign=top>Show next image in directory.
-<tr><td bgcolor=#ffeeee valign=top>Right/BackSpace
-	  <td bgcolor=#ffeeee valign=top>Show previous image in directory.
-<tr><td bgcolor=#fbf2ee valign=top>Shift-Down
-	  <td bgcolor=#fbf2ee valign=top>Choose next image when several $image references are given or next image for multi depth images.
-<tr><td bgcolor=#ffeeee valign=top>Shift-Up
-	  <td bgcolor=#ffeeee valign=top>Choose previous $image image
-<tr><td bgcolor=#fbf2ee valign=top>V
-	  <td bgcolor=#fbf2ee valign=top>Toggle vertical zoom locking.
+<tr><td bgcolor=#ffeeee valign=top>Left/Space
+	  <td bgcolor=#ffeeee valign=top>Show next image in directory.
+<tr><td bgcolor=#fbf2ee valign=top>Right/BackSpace
+	  <td bgcolor=#fbf2ee valign=top>Show previous image in directory.
+<tr><td bgcolor=#ffeeee valign=top>Shift-Down
+	  <td bgcolor=#ffeeee valign=top>Choose next image when several $image references are given or next image for multi depth images.
+<tr><td bgcolor=#fbf2ee valign=top>Shift-Up
+	  <td bgcolor=#fbf2ee valign=top>Choose previous $image image
 </table>
 </blockquote>
 
@@ -596,7 +615,22 @@ giv can be remote controlled through json-rpc commands. The parameters of the co
 
 Here is an example in python calling the <b>pick_coordinate</b> command:
 
-<table border><tr><th bgcolor=#E0E0FF><a href="pick-coordinate.py">pick-coordinate.py</a><tr><td bgcolor=#FFE0E0><pre</pre></table>
+<table border><tr><th bgcolor=#E0E0FF><a href="pick-coordinate.py">pick-coordinate.py</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>#!/usr/bin/python 
+<font size=-1 color=red>  2:  </font> 
+<font size=-1 color=red>  3:  </font>import httplib,json 
+<font size=-1 color=red>  4:  </font> 
+<font size=-1 color=red>  5:  </font>conn = httplib.HTTPConnection('localhost:8222') 
+<font size=-1 color=red>  6:  </font> 
+<font size=-1 color=red>  7:  </font>request = {'method':"pick_coordinate", 
+<font size=-1 color=red>  8:  </font>           'params':[]}  
+<font size=-1 color=red>  9:  </font> 
+<font size=-1 color=red> 10:  </font>conn.request("POST", url='', body= json.dumps(request)) 
+<font size=-1 color=red> 11:  </font>response = json.loads(conn.getresponse().read()) 
+<font size=-1 color=red> 12:  </font>if 'error' in response: 
+<font size=-1 color=red> 13:  </font>  print response['error']['message'] 
+<font size=-1 color=red> 14:  </font>else: 
+<font size=-1 color=red> 15:  </font>  print response['result'] 
+<font size=-1 color=red> 16:  </font>   </pre></table>
 
 <p>
 giv also contains an embedded JSONRPC client that come in two forms, the simplified and the full forms.
@@ -608,6 +642,11 @@ The simplified form splits the arguments on whitespace and takes the first argum
 The full forms allows specifying the parameters in json syntax. The following command is equivalent to the above code:
 <pre>
   ./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
+</pre>
+<p>
+For windows there is a command line tool called <tt>giv-remote-client.exe</tt> that provides a simple remote client:
+<pre>
+giv-remote-client.exe load_file "c:/Program Files/Giv/examples/lena.pgm"
 </pre>
 
 <h2><a name="SEC6">6. Future plans/Todo</a></h2>

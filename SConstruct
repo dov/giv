@@ -1,11 +1,13 @@
 import re, os, glob
 
 if ARGUMENTS.get('debug', 0):
-    cppflags = ['-g', '-Wall','-fPIC']
+    cppflags = ['-g', '-Wall']
     variant = 'Debug'
 else:
-    cppflags = ['-O2','-fPIC']
+    cppflags = ['-O2']
     variant = 'Release'
+
+commit_id = os.popen('git rev-parse HEAD').read().replace('\n','')
 
 env = Environment(LIBPATH=[],
                   CPPFLAGS = cppflags + ['-Wno-deprecated-declarations',
@@ -16,6 +18,7 @@ env = Environment(LIBPATH=[],
                   )
 
 env['SBOX'] = False
+env['COMMITIDSHORT'] = commit_id[0:6]
 
 # Get version from configure.in
 inp = open("configure.in")
@@ -29,6 +32,7 @@ for line in inp.readlines():
 def create_version(env, target, source):
     out = open(str(target[0]), "wb")
     out.write("#define VERSION \"" + env['VER'] + "\"\n")
+    out.write('#define GIT_COMMIT_ID \"' + commit_id + '"\n')
     out.close()
 
 def create_dist(env, target, source):
@@ -63,7 +67,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
                 ["src/giv.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} giv.nsi"])
+                ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
     env.Append(LINKFLAGS=['-mwindows'])
 
     env['PACKAGE_DOC_DIR'] = '../doc'

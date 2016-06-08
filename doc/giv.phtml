@@ -96,8 +96,10 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <font size=+2>Version 0.9.26</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
+    <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
+    <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2014-01-10    </font>
+    <font size=-1>Last modified: 2016-06-08 Wed    </font>
 </h2>
 
 <: section("Description") :>
@@ -112,9 +114,10 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <li>Includes plugins for reading the npy-format, FITS-format, and DICOM.
     <li>An interactive contrast tool  allows interactively changing
   contrast and brightness.
-
     <LI> It can display lines and marks on top of an image with sub
       pixel accuracy. </LI>
+    <li> Balloon popups can be tied to any overlay and is shown when the 
+    mouse hovers above that overlay.</li>
     <LI> Pseudo coloring of gray level images.</LI>
     <LI> It is especially suited for computational geometry and vision
       scientific and educational applications.</LI>
@@ -351,8 +354,42 @@ giv. The result is shown in the screenshow below.
     <: TR() :><th bgcolor=#eeeeff>Option
 	<th bgcolor=#eeeeff>Description
   
+<: TR() :><: td() :>1
+	  <: td() :>Sets one image pixel equal to one screen pixel.
+<: TR() :><: td() :>a
+	  <: td() :>Toggle anti aliasing
+<: TR() :><: td() :>b
+	  <: td() :>Toggle the balloon popup.
+<: TR() :><: td() :>c
+	  <: td() :>Reduce contrast. Useful for viewing overlay on binary images.
+<: TR() :><: td() :>i
+	  <: td() :>Show information window
+<: TR() :><: td() :>f
+	  <: td() :>Fill data to window
+<: TR() :><: td() :>g
+	  <: td() :>Toggle the pixel grid. (Only shown at high zoom ratios).
+<: TR() :><: td() :>h
+	  <: td() :>Horizontal flip
+<: TR() :><: td() :>m
+	  <: td() :>Toggle overlay.
+<: TR() :><: td() :>o
+	  <: td() :>Popup dataset browser.
 <: TR() :><: td() :>q
 	  <: td() :>Quit
+<: TR() :><: td() :>s
+	  <: td() :>Shrink wrap
+<: TR() :><: td() :>v
+	  <: td() :>Vertical flip
+<: TR() :><: td() :>Shift-V
+	  <: td() :>Toggle vertical zoom locking.
+<: TR() :><: td() :>Control+c
+	  <: td() :>Copy contents of balloon text to clip board
+<: TR() :><: td() :>Control+d
+	  <: td() :>Copy contents of the last measurement to the clipboard.
+<: TR() :><: td() :>Control+x
+	  <: td() :>Copy XY coordinate to the to clip board
+<: TR() :><: td() :>Esc
+	  <: td() :>Abort remote command pick points
 <: TR() :><: td() :>=<br>Ctrl-B1
 	  <: td() :>Zoom in by a factor of 2
 <: TR() :><: td() :>-<br>Ctrl-B3
@@ -373,28 +410,12 @@ giv. The result is shown in the screenshow below.
 	  <: td() :>Zoom in of quiver vectors by a factor of 1.2
 <: TR() :><: td() :>Alt + Scroll wheel down
 	  <: td() :>Zoom out of quiver vectors by a factor of 1.2
-<: TR() :><: td() :>f
-	  <: td() :>Fill data to window
 <: TR() :><: td() :>B3
 	  <: td() :>Popup options menu.
 <!--
 <: TR() :><: td() :>c
 	  <: td() :>Toggle cross hair.
 -->
-<: TR() :><: td() :>m
-	  <: td() :>Toggle overlay.
-<: TR() :><: td() :>o
-	  <: td() :>Popup dataset browser.
-<: TR() :><: td() :>1
-	  <: td() :>Sets one image pixel equal to one screen pixel.
-<: TR() :><: td() :>s
-	  <: td() :>Shrink wrap
-<: TR() :><: td() :>v
-	  <: td() :>Vertical flip
-<: TR() :><: td() :>h
-	  <: td() :>Horizontal flip
-<: TR() :><: td() :>i
-	  <: td() :>Show information window
 <: TR() :><: td() :>Left/Space
 	  <: td() :>Show next image in directory.
 <: TR() :><: td() :>Right/BackSpace
@@ -403,8 +424,6 @@ giv. The result is shown in the screenshow below.
 	  <: td() :>Choose next image when several $image references are given or next image for multi depth images.
 <: TR() :><: td() :>Shift-Up
 	  <: td() :>Choose previous $image image
-<: TR() :><: td() :>V
-	  <: td() :>Toggle vertical zoom locking.
 </table>
 </blockquote>
 
@@ -505,6 +524,11 @@ The simplified form splits the arguments on whitespace and takes the first argum
 The full forms allows specifying the parameters in json syntax. The following command is equivalent to the above code:
 <pre>
   ./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
+</pre>
+<p>
+For windows there is a command line tool called <tt>giv-remote-client.exe</tt> that provides a simple remote client:
+<pre>
+giv-remote-client.exe load_file "c:/Program Files/Giv/examples/lena.pgm"
 </pre>
 
 <: section("Future plans/Todo") :>

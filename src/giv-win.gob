@@ -584,6 +584,7 @@ class Giv:Win from Gtk:Window
     private gdouble margin = 10;
     private GtkActionGroup *toggle_actions = nullptr;
     private gboolean in_menu_measure = FALSE;
+    private gchar *last_measure_text = NULL;
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -738,8 +739,8 @@ class Giv:Win from Gtk:Window
         selfp->jsonrpc_server = glib_jsonrpc_server_new(giv_port);
 
         // Silently ignore failed server
-        if (selfp->jsonrpc_server)
-          create_remote_commands(self);
+        if (selfp->jsonrpc_server) 
+            create_remote_commands(self);
 
         gchar *settings_file = g_strdup_printf("%s/.config/Giv/giv.conf", g_get_home_dir());
         selfp->giv_settings = GIV_SETTINGS(giv_settings_new(settings_file));
@@ -1628,7 +1629,7 @@ class Giv:Win from Gtk:Window
 
         sprintf(format, " (%%.%df,%%.%df) dist=%%.3f%%s",
                 precision,precision);
-        
+
         g_string_printf(info_label, format,
                          selfp->measure_x2,
                          selfp->measure_y2,
@@ -1642,7 +1643,12 @@ class Giv:Win from Gtk:Window
                                  selfp->pixelsize_unit,
                                  (selfp->measure_y2 - selfp->measure_y1)*selfp->pixelsize,
                                  selfp->pixelsize_unit);
-                               
+
+        // Remember the last measure text
+        g_free(selfp->last_measure_text);
+        selfp->last_measure_text =
+            g_strdup_printf("%.5f",
+                            selfp->last_measure_distance_in_pixels*selfp->pixelsize);
     }
 
     private const gchar *get_filetype_for_index(self,
@@ -1842,10 +1848,23 @@ cb_key_press_event (GtkWidget * widget,
     gboolean handled = FALSE;
 
     // Control bindings go here
-    if (event->state & GDK_CONTROL_MASK) {
-        return false;
-    }
     gint k = event->keyval;
+    if (event->state & GDK_CONTROL_MASK) {
+        switch(k) {
+            case 'd':
+                {
+                    // Copy the last measurement text
+                    GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
+                    gtk_clipboard_set_text(clipboard,
+                                           selfp->last_measure_text,
+                                           -1);
+                }
+                        
+                return 1;
+            default:
+                return 0;
+        }
+    }
     if (k == 'a') {
         selfp->do_no_transparency = !selfp->do_no_transparency;
         giv_widget_set_do_no_transparency(GIV_WIDGET(selfp->w_imgv),
@@ -3133,11 +3152,13 @@ cb_menu_about(GtkAction *action,
                               "%s\n"
                               "Homepage: http://giv.sourceforge.net/giv"
                               "\n"
-                              "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt></span>\n",
+                              "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt>\n"
+                              "Commit-Id: %s</span>\n",
                               ("The G(reat|tk) Image Viewer"),
                               ("Copyright &#x00a9; Dov Grobgeld, 2016\n"),
                               ("Programming by: Dov Grobgeld\n"),
-                              ("dov.grobgeld@gmail.com"));
+                              ("dov.grobgeld@gmail.com"),
+                              GIT_COMMIT_ID);
     gtk_label_set_markup (GTK_LABEL (label), markup);
     g_free (markup);
     gtk_box_pack_start (GTK_BOX (vbox), label, TRUE, TRUE, 0);
@@ -4359,6 +4380,10 @@ static int cmd_load_file(GLibJsonRpcServer *server,
   // Assume array at the moment
   json_reader_read_element(reader, 0);
   const char *filename = json_reader_get_string_value(reader);
+  if (filename == NULL) {
+      json_node_set_string(*response, "No filename given");
+      return 0;
+  }
 
   // The following ugly code is the same as is used in the
   // open response callback. It should be joined!

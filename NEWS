@@ -1,3 +1,13 @@
+Version 0.9.26: Multiple updates.
+
+* Added horizontal and vertical measurement tools.
+* Added ability of copying contents of coordinates, balloon contents, and distance to the clipboard.
+* Lots of crashes.
+* New dedicated remote control client giv-remote-client.
+* Fixed several remote control protocol crashes.
+* Added ellipses datasets
+* Fixed several windows 64 bit-crashes.
+
 Version 0.9.16: This is a major upgrade of giv with the following new
 futures:
 

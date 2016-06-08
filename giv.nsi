@@ -1,5 +1,5 @@
 Name "Giv"
-OutFile "InstallGiv-${VER}-${HOST}.exe"
+OutFile "InstallGiv-${VER}-${HOST}-${COMMITIDSHORT}.exe"
 Icon "giv-logo.ico"
 UninstallIcon "giv-logo-install.ico"
 
@@ -11,7 +11,7 @@ LicenseData "COPYING.dos"
 
 InstallDir "$PROGRAMFILES${HOSTBITS}\Giv"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Giv" ""
-; DirShow ; (make this hide to not let the user change it)
+
 DirText "Select the directory to install Giv in:"
 
 ; optional section
@@ -26,15 +26,17 @@ Section "" ; (default section)
 ; List of files to install
 SetOutPath "$INSTDIR"
 File COPYING
-File README
+File README.md
 File AUTHORS
 File NEWS
 File /r doc
 File /r examples
+File /r python
 
 SetOutPath $INSTDIR\bin
 File src\Giv.exe
 File src\giv-image.dll
+File src\giv-remote-client.exe
 File ${SYSROOT}\mingw\bin\${LIBGCCDLL}
 File ${SYSROOT}\mingw\bin\libexpat-1.dll
 File ${SYSROOT}\mingw\bin\libstdc++-6.dll
@@ -67,25 +69,19 @@ File ${SYSROOT}\mingw\bin\libwinpthread*.dll
 File ${SYSROOT}\mingw\bin\gdk-pixbuf-query-loaders.exe
 
 SetOutPath $INSTDIR\etc
-File /r ${SYSROOT}\mingw\etc\gtk-2.0
-File /r ${SYSROOT}\mingw\etc\fonts
-SetOutPath $INSTDIR\etc\gtk-2.0
-File ${SYSROOT}\mingw\share\themes\MS-Windows\gtk-2.0\gtkrc
-
-# Plugins
-SetOutPath $INSTDIR\plugins
-File src\plugins\*.dll
-
-# pango
-SetOutPath $INSTDIR\lib
-
-# pixbuf etc
+File /r ${SYSROOT}\mingw\etc
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
-File /r ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders*
+File /r ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders
+SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
+File ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
 SetOutPath $INSTDIR\lib\gtk-2.0\2.10.0\engines
 File ${SYSROOT}\mingw\lib\gtk-2.0\2.10.0\engines\*
 SetOutPath $INSTDIR\share\themes 
 File /r ${SYSROOT}\mingw\share\themes\*
+
+# Plugins
+SetOutPath $INSTDIR\plugins
+File src\plugins\*.dll
 
 # Build the gdk-pixbuf.loaders file automatically
 #ExpandEnvStrings $0 %COMSPEC%

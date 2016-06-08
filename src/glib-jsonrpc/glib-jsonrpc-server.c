@@ -159,17 +159,20 @@ handler (GThreadedSocketService *service,
 
   if (!jsonrpc_server->allow_non_loopback_connections)
     {
-#if 0
-      // Why doesn't this work?
-      if (!g_inet_address_get_is_loopback(addr))
-        return TRUE; // just fail
-#endif
-      
       gchar *addr_string = g_inet_address_to_string(addr);
+#ifdef WINDOWS
+      // Why doesn't this work on Linux?
+      if (!g_inet_address_get_is_loopback(addr)) {
+        printf("is not loopback: %s!\n", addr_string);
+        g_free(addr_string);
+        return TRUE; // just fail
+      }
+#else      
       gboolean is_local = g_strstr_len(addr_string, -1, "127.0.0.1") != NULL;
       g_free(addr_string);
       if (!is_local) 
         return TRUE; // silently fail
+#endif
     }
 
   GOutputStream *out;
@@ -332,7 +335,7 @@ GLibJsonRpcServer *glib_jsonrpc_server_new(int port)
   GError *error = NULL;
   jsonrpc_server->service = g_threaded_socket_service_new (10);
   jsonrpc_server->async_busy = FALSE;
-  jsonrpc_server->allow_non_loopback_connections = FALSE;
+  jsonrpc_server->allow_non_loopback_connections = TRUE;
 
   if (!g_socket_listener_add_inet_port (G_SOCKET_LISTENER (jsonrpc_server->service),
 					port,

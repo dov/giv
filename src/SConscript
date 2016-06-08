@@ -2,6 +2,18 @@ import re
 
 Import('env')
 
+env_command_line = env.Clone()
+
+env_command_line.Program('giv-remote-client',
+                         ['giv-remote-client.cc'],
+                         CPPPATH=['glib-jsonrpc']+ env['CPPPATH'],
+                         LIBS = [
+                             'glib-jsonrpc_local',
+                             'json-glib_local',
+                             ] + env['LIBS'],
+                         LINKFLAGS=[]
+                         )
+
 libpath = ["#/src","#/src/plis",'#/src'] + env['LIBPATH']
 libs = env['LIBS'] 
 cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/"]
