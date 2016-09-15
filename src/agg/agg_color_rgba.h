@@ -24,6 +24,10 @@
 #ifndef AGG_COLOR_RGBA_INCLUDED
 #define AGG_COLOR_RGBA_INCLUDED
 
+#ifdef _MSC_VER
+#pragma warning( disable: 4244 ) // disable conversion  from unsigned int to
+#endif
+
 #include <math.h>
 #include "agg_basics.h"
 

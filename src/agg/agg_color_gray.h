@@ -28,6 +28,10 @@
 #ifndef AGG_COLOR_GRAY_INCLUDED
 #define AGG_COLOR_GRAY_INCLUDED
 
+#ifdef _MSC_VER
+#pragma warning( disable: 4244 ) // disable conversion  from unsigned int to
+#endif
+
 #include "agg_basics.h"
 #include "agg_color_rgba.h"
 
@@ -335,7 +339,7 @@ namespace agg
                 return *this;
             }
             calc_type v_ = (calc_type(v) * base_mask) / a;
-            v = value_type((v_ > base_mask) ? base_mask : v_);
+            v = value_type((int(v_) > int(base_mask)) ? int(base_mask) : int(v_));
             return *this;
         }
 

@@ -48,8 +48,7 @@ namespace agg
             cell_block_shift = 12,
             cell_block_size  = 1 << cell_block_shift,
             cell_block_mask  = cell_block_size - 1,
-            cell_block_pool  = 256,
-            cell_block_limit = 1024
+            cell_block_pool  = 256
         };
 
         struct sorted_y
@@ -182,10 +181,7 @@ namespace agg
         if(m_curr_cell.area | m_curr_cell.cover)
         {
             if((m_num_cells & cell_block_mask) == 0)
-            {
-                if(m_num_blocks >= cell_block_limit) return;
                 allocate_block();
-            }
             *m_curr_cell_ptr++ = m_curr_cell;
             ++m_num_cells;
         }

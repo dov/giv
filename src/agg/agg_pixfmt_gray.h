@@ -41,7 +41,7 @@ namespace agg
         enum base_scale_e { base_shift = color_type::base_shift };
 
         static AGG_INLINE void blend_pix(value_type* p, unsigned cv, 
-                                         unsigned alpha, unsigned cover=0)
+                                         unsigned alpha, unsigned /*cover*/=0)
         {
             *p = (value_type)((((cv - calc_type(*p)) * alpha) + (calc_type(*p) << base_shift)) >> base_shift);
         }

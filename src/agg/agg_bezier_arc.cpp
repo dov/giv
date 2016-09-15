@@ -68,12 +68,31 @@ namespace agg
 
 
     //------------------------------------------------------------------------
+    double _fmod(register const double n, register const double d)
+    {
+      /*	        
+      Use this implementation in WIN64 because fmod VS2003 SP1 math fmod bad implementation.
+      performs:
+      remainder = numerator - (floorf(numerator/denominator) * denominator)
+      */
+      if (d == 0.0)
+        throw "fmod - Division by zero is not allowed";
+
+      register double q = n/d;
+      return n - ((q < 0) ? ceil(q) : floor(q))*d;
+    }
+
+
     void bezier_arc::init(double x,  double y, 
                           double rx, double ry, 
                           double start_angle, 
                           double sweep_angle)
     {
-        start_angle = fmod(start_angle, 2.0 * pi);
+      #ifndef WIN64
+        start_angle = fmod(start_angle, 2.0 * pi); // There is a bug on Windows X64 fmod returns a bad number if start_angle is negative and near 0
+      #else
+		start_angle = _fmod(start_angle, 2.0 * pi);
+      #endif
         if(sweep_angle >=  2.0 * pi) sweep_angle =  2.0 * pi;
         if(sweep_angle <= -2.0 * pi) sweep_angle = -2.0 * pi;
 
