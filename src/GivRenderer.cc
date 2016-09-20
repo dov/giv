@@ -89,7 +89,7 @@ void GivRenderer::paint()
         bool has_ellipse = false;
         for (int i=0; i<3; i++) {
 
-            if ((i==0 && dataset->do_draw_polygon)
+            if ((i==0 && dataset->do_draw_polygon && dataset->color.alpha != COLOR_NONE)
                 || (i==1 && dataset->do_draw_lines)
                 || (i==2 && dataset->has_quiver)
                 ) {

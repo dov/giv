@@ -302,7 +302,7 @@ GivPainterAgg::add_text(const char *text,
 
 int GivPainterAgg::add_line_segment(double x0, double y0,
                                     double x1, double y1,
-                                    bool do_polygon)
+                                    bool /*do_polygon*/)
 {
     if (d->old_x != x0
         || d->old_y != y0)
