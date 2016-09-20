@@ -119,6 +119,7 @@ DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Unins
 RMDir /r "$INSTDIR"
 DeleteRegKey HKCR ".giv"
 DeleteRegKey HKCR "GivFile"
+DeleteRegKey HKCR "Applications\giv.exe"
 SectionEnd ; end of uninstall section
 
 ; eof
