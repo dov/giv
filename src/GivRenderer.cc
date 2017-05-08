@@ -139,6 +139,8 @@ void GivRenderer::paint()
                     }
                     else if (p.op == OP_TEXT) 
                         has_text = true;
+                    else if (p.op == OP_MOVE && i > 0 && dataset->do_draw_polygon_outline)
+                        painter.close_path();
                     old_x = m_x;
                     old_y = m_y;
                 }
@@ -166,8 +168,11 @@ void GivRenderer::paint()
 
                     painter.set_color(rr_s,gg_s,bb_s,alpha);
                 }
-                if (i>=1)
+                if (i>=1) {
+                    if (dataset->do_draw_polygon)
+                      painter.close_path();
                     painter.stroke();
+                }
             }
         }
         if (has_ellipse) {

@@ -310,6 +310,12 @@ GivPainterCairo::stroke()
 }
 
 void
+GivPainterCairo::close_path()
+{
+    cairo_close_path(d->cr);
+}
+
+void
 GivPainterCairo::set_do_paint_by_index(bool do_paint_by_index)
 {
     d->do_paint_by_index = do_paint_by_index;

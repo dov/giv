@@ -38,6 +38,7 @@ class GivPainterCairo : public GivPainter {
                                  bool do_polygon=false);
     virtual void fill();
     virtual void stroke();
+    virtual void close_path();
     virtual void draw_marks();
     void set_do_paint_by_index(bool do_paint_by_index);
     virtual int set_text_size(double text_size);

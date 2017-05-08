@@ -47,6 +47,7 @@ class GivPainter {
     virtual void draw_marks() = 0;
     virtual void fill() = 0;
     virtual void stroke() = 0;
+    virtual void close_path() = 0;
     virtual void set_dashes(int num_dashes,
                             double* dashes) = 0;
     virtual void set_arrow(bool do_start_arrow,

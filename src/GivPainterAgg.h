@@ -37,6 +37,7 @@ class GivPainterAgg : public GivPainter {
                                  );
     virtual void fill();
     virtual void stroke();
+    virtual void close_path();
     virtual void draw_marks();
     virtual int set_text_size(double text_size);
     virtual int set_font(const char* font);

@@ -361,6 +361,11 @@ void GivPainterAgg::fill()
     d->old_x = d->old_y = NAN;
 }
 
+void GivPainterAgg::close_path()
+{
+  d->path.close_polygon();
+}
+
 void GivPainterAgg::draw_marks()
 {
     fill();
