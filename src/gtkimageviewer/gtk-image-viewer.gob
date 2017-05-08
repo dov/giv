@@ -1862,7 +1862,6 @@ class Gtk:Image:Viewer from Gtk:Widget
   zoom_fit(self)
   {
     gdouble margin = 0;
-    printf("fit\n");
     if (!selfp->image)
         margin = selfp->fill_on_resize_margin;
     gtk_image_viewer_zoom_to_box(self,
