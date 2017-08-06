@@ -61,10 +61,10 @@ if not env['SBOX']:
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['png','z','giv-image']+env['LIBS'],
                       )
-    env.Depends(plugin_dicom,
-                ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
-                 '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])
-
     if not use_system_dcmtk:
+        env.Depends(plugin_dicom,
+                    ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
+                     '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])
+
         SConscript(['dcmtk/SConscript'],
                    exports='env')

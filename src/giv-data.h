@@ -19,8 +19,8 @@ enum
   OP_TEXT = 2,
   OP_QUIVER = 3,
   OP_ELLIPSE = 4,
-  OP_CONT = 5            // Misc continue operation for ops with more than two cordinates
-
+  OP_CONT = 5,           // Misc continue operation for ops with more than two cordinates
+  OP_CLOSE_PATH = 6
 };
 
 /* Mark types */

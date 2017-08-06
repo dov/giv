@@ -20,6 +20,7 @@ enum
   STRING_ELLIPSE,
   STRING_COMMENT,
   STRING_MOVE,
+  STRING_CLOSE_PATH,
   STRING_QUIVER,
   STRING_TEXT,
   STRING_FONT,
@@ -609,6 +610,10 @@ parse_string (const char *string, const char *fn, gint linenum)
     {
       type = STRING_MOVE;
     }
+  else if (first_char == 'Z' || first_char == 'z')
+    {
+      type = STRING_CLOSE_PATH;
+    }
   else if (first_char == 'E' || first_char == 'e')
     {
       type = STRING_ELLIPSE;
@@ -716,6 +721,10 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
             gp->global_mark_min_y = p.y - ms2;
         if (p.y > gp->global_mark_max_y)
             gp->global_mark_max_y = p.y + ms2;
+        g_array_append_val(marks->points, p);
+        break;
+    case STRING_CLOSE_PATH:
+        p.op = OP_CLOSE_PATH;
         g_array_append_val(marks->points, p);
         break;
     case STRING_TEXT:

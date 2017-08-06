@@ -141,6 +141,8 @@ void GivRenderer::paint()
                         has_text = true;
                     else if (p.op == OP_MOVE && i > 0 && dataset->do_draw_polygon_outline)
                         painter.close_path();
+                    else if (p.op == OP_CLOSE_PATH)
+                        painter.close_path();
                     old_x = m_x;
                     old_y = m_y;
                 }
