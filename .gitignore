@@ -48,3 +48,4 @@ config.h
 /giv.wine.nsi
 *.gz
 /doc/perl-toc.html
+*~

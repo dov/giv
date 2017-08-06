@@ -82,6 +82,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
     env['ROOT'] = ""
     env['SYSROOT'] = r"\\usr\\${ARCH}\\sys-root"
     env['LOCAL_DIR']='ming${HOST}'
+    env['PREFIX']='/usr/local/${LOCAL_DIR}'
     env['CC']='${ARCH}-gcc'
     env['CXX']='${ARCH}-g++'
     env['AR']='${ARCH}-ar'
