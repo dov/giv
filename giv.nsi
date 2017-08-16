@@ -49,7 +49,7 @@ File ${SYSROOT}\mingw\bin\libgdk_pixbuf*.dll
 File ${SYSROOT}\mingw\bin\libgtk-win32*.dll
 File ${SYSROOT}\mingw\bin\libgio*.dll
 File ${SYSROOT}\mingw\bin\libcairo*.dll
-File ${SYSROOT}\mingw\bin\libjasper-1.dll
+File ${SYSROOT}\mingw\bin\libjasper*.dll
 File ${SYSROOT}\mingw\bin\zlib*.dll
 File ${SYSROOT}\mingw\bin\libglib*.dll
 File ${SYSROOT}\mingw\bin\libatk*.dll

@@ -19,6 +19,8 @@ env = Environment(LIBPATH=[],
 
 env['SBOX'] = False
 env['COMMITIDSHORT'] = commit_id[0:6]
+commit_id = os.popen('git rev-parse HEAD').read().replace('\n','')
+commit_time = os.popen('git log --pretty=\'%ci\' -n1').read().replace('\n','')
 
 # Get version from configure.in
 inp = open("configure.in")
@@ -33,6 +35,8 @@ def create_version(env, target, source):
     out = open(str(target[0]), "wb")
     out.write("#define VERSION \"" + env['VER'] + "\"\n")
     out.write('#define GIT_COMMIT_ID \"' + commit_id + '"\n')
+    out.write('#define GIT_COMMIT_TIME \"' + commit_time + '"\n')
+    out.write('#define ARCH \"' + env['ARCH'] + '"\n')
     out.close()
 
 def create_dist(env, target, source):
@@ -65,6 +69,8 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
     
     env.Command("InstallGiv${VER}-${HOST}.exe",
                 ["src/giv.exe",
+                 "src/giv-image.dll",
+                 "src/giv-remote-client.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
                 ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
@@ -105,14 +111,15 @@ else:
     env['PACKAGE_DOC_DIR'] = '${PREFIX}/share/doc/giv'
     env['PACKAGE_PLUGIN_DIR'] = '${PREFIX}/lib/giv-1.0/plugins'
     env['ARCHDIR']='linux'
+    env['ARCH'] = 'x86_64 GNU/Linux'
 
 env['VARIANT'] = variant
 
 # Since we don't run configure when doing scons
-env.Command("config.h",
-            ["SConstruct",
-             "configure.in"],
-            create_version)
+config_target = env.Command("config.h",
+                            [],
+                            create_version)
+env.AlwaysBuild(config_target)
 env.Append(CPPPATH=[],
            # Needed for our internal PCRE
            CPPDEFINES=['PCRE_STATIC'],

@@ -3153,12 +3153,15 @@ cb_menu_about(GtkAction *action,
                               "Homepage: http://giv.sourceforge.net/giv"
                               "\n"
                               "<span>%s\n%sEmail: <tt>&lt;%s&gt;</tt>\n"
-                              "Commit-Id: %s</span>\n",
+                              "Commit-Id: %s\n"
+                              "Commit-Date: %s</span>\n"
+                              ,
                               ("The G(reat|tk) Image Viewer"),
-                              ("Copyright &#x00a9; Dov Grobgeld, 2016\n"),
-                              ("Programming by: Dov Grobgeld\n"),
+                              ARCH,
+                              ("Copyright &#x00a9; Dov Grobgeld, 2017\n"),
                               ("dov.grobgeld@gmail.com"),
-                              GIT_COMMIT_ID);
+                              GIT_COMMIT_ID,
+                              GIT_COMMIT_TIME);
     gtk_label_set_markup (GTK_LABEL (label), markup);
     g_free (markup);
     gtk_box_pack_start (GTK_BOX (vbox), label, TRUE, TRUE, 0);
