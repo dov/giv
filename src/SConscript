@@ -26,11 +26,11 @@ def file2c(env, target, source):
     inp = open(str(source[0]), "rb")
 
     for line in inp.readlines():
-        line = line.rstrip()
+        line = line.decode('utf8').rstrip()
         line = re.sub("\\\\", "\\\\", line)
         line = re.sub("\\\"", "\\\"", line)
         line = '"'+line+'\\n"\n'
-        out.write(line)
+        out.write(line.encode('utf8'))
         
     out.close()
     inp.close()

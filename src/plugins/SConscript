@@ -22,8 +22,8 @@ if not env['SBOX']:
     conf = Configure(env,
                      custom_tests = { 'CheckPKG' : CheckPKG } )
 
-    if conf.CheckPKG('cfitsio'):
-        print "Using system cfitsio library"
+    if False and conf.CheckPKG('cfitsio'):
+        print("Using system cfitsio library")
         env.ParseConfig('${PKGCONFIG} --cflags --libs cfitsio')
 
         env.SharedLibrary('fits',
@@ -33,7 +33,7 @@ if not env['SBOX']:
                       CPPPATH= env['CPPPATH']
                       )
 
-    use_system_dcmtk = conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
+    use_system_dcmtk = 1 # conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
     dcmtk_path = []
     dcmtk_libpath = []
 

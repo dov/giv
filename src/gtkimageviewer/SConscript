@@ -22,7 +22,7 @@ def patch_src(env, target, source):
             if re.search(r"object_signals\[SET_SCROLL_ADJUSTMENTS_SIGNAL\]",line):
                 in_area=1
 
-        out.write(line)
+        out.write(line.encode('utf8'))
         
     out.close()
     inp.close()

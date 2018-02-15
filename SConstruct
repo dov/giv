@@ -33,17 +33,17 @@ for line in inp.readlines():
 # All purpose template filling routine
 def create_version(env, target, source):
     out = open(str(target[0]), "wb")
-    out.write("#define VERSION \"" + env['VER'] + "\"\n")
-    out.write('#define GIT_COMMIT_ID \"' + commit_id + '"\n')
-    out.write('#define GIT_COMMIT_TIME \"' + commit_time + '"\n')
-    out.write('#define ARCH \"' + env['ARCH'] + '"\n')
+    out.write(("#define VERSION \"" + env['VER'] + "\"\n"
+               '#define GIT_COMMIT_ID \"' + commit_id + '"\n'
+               '#define GIT_COMMIT_TIME \"' + commit_time + '"\n'
+               '#define ARCH \"' + env['ARCH'] + '"\n').encode('utf8'))
     out.close()
 
 def create_dist(env, target, source):
     # Skip if this is not a git repo
     if os.path.exists(".git"):
         vdir = "giv-%s"%env['VER']
-        os.mkdir(vdir, 0755)
+        os.mkdir(vdir, 0o755)
         os.system("tar -cf - `git ls-files` | (cd %s; tar -xf -); "%vdir)
         os.system("tar -zcf %s.tar.gz %s"%(vdir,vdir))
         os.system("rm -rf %s"%vdir)
