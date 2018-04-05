@@ -150,6 +150,7 @@ class Giv:Widget from Gtk:Image:Viewer
             gdk_color_parse("yellow", &color);
             gtk_widget_modify_bg(selfp->w_balloon_window,
                                  GTK_STATE_NORMAL, &color);
+                                                                  
         }
 
         // Default grid color. This should be made configurable
@@ -227,8 +228,8 @@ class Giv:Widget from Gtk:Image:Viewer
             int balloon_x, balloon_y;
             
             if (mark_set->balloon_string)
-                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
-                              mark_set->balloon_string->str);
+                gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
+                                     mark_set->balloon_string->str);
             else if (mark_set->path_name)
                 gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               mark_set->path_name);
@@ -251,7 +252,14 @@ class Giv:Widget from Gtk:Image:Viewer
                              balloon_x, balloon_y);
             
             // Popup a balloon
-            gtk_widget_show(selfp->w_balloon_window);
+            GdkColor color = {0,0,0,0};
+            gdk_color_parse("yellow", &color);
+
+            gtk_widget_show_all(selfp->w_balloon_window);
+            gdk_window_set_background( gtk_widget_get_window(selfp->w_balloon_window),
+                                       &color);
+                                            
+
         }
         else
             gtk_widget_hide(selfp->w_balloon_window);
