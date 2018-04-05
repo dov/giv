@@ -192,7 +192,6 @@ class Giv:Histo from Gtk:Drawing:Area {
         cairo_restore(cr);
         g_object_unref(layout);
 
-        cairo_destroy(cr);
         return TRUE;
     }
 

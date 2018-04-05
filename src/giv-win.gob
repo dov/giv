@@ -936,6 +936,7 @@ class Giv:Win from Gtk:Window
         gtk_drag_dest_set_target_list (GTK_WIDGET (selfp->w_imgv), target_list);
         gtk_target_list_unref (target_list);
 
+        gtk_window_set_default_size (GTK_WINDOW(self), width, height);
         gtk_widget_set_size_request(selfp->w_imgv, width, height);
 
 #if 0
