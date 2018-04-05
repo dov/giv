@@ -2,7 +2,7 @@
 import re
 Import('env')
 
-#env.ParseConfig("env PKG_CONFIG_PATH=${PKG_CONFIG_PATH} pkg-config --cflags --libs gtk+-2.0")
+#env.ParseConfig("env PKG_CONFIG_PATH=${PKG_CONFIG_PATH} pkg-config --cflags --libs gtk+-3.0")
 
 # The following python subroutine and the subsequent scons command
 # shows how to do general template filling. This system should perhaps

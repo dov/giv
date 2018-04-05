@@ -1671,8 +1671,8 @@ dov_image_viewer_redraw (DovImageViewer * self, gboolean clear_cache)
     if (GTK_WIDGET(self)->window)
       dov_image_viewer_expose_area(self,
                                    0,0,
-                                   GTK_WIDGET(self)->allocation.width,
-                                   GTK_WIDGET(self)->allocation.height);
+                                   gtk_widget_get_allocated_width(GTK_WIDGET(self)),
+                                   gtk_widget_get_allocated_height(GTK_WIDGET(self)););
     return FALSE;
   }}
 #line 1679 "dov-image-viewer.cc"
@@ -2123,7 +2123,7 @@ dov_image_viewer_canv_coord_to_img_coord (DovImageViewer * self, double cx, doub
 
 #if 0
     if (selfp->do_flip_vertical)
-      *imgy = -(cy-selfp->current_y0-GTK_WIDGET(self)->allocation.height)/selfp->current_scale_y;
+      *imgy = -(cy-selfp->current_y0-gtk_widget_get_allocated_height(GTK_WIDGET(self));)/selfp->current_scale_y;
     else
       *imgy=(cy+selfp->current_y0)/selfp->current_scale_y;
 #endif
@@ -2525,17 +2525,17 @@ view_changed(DovImageViewer *self,
                          widget->window,
                          src_x, src_y,
                          dst_x, dst_y,
-                         GTK_WIDGET(self)->allocation.width - abs (dx),
-                         GTK_WIDGET(self)->allocation.height - abs (dy));
+                         gtk_widget_get_allocated_width(GTK_WIDGET(self)) - abs (dx),
+                         gtk_widget_get_allocated_height(GTK_WIDGET(self)); - abs (dy));
 
       DBG2(g_print("Filling in: dx dy = %d %d\n", dx, dy));
       /* And fill in the new areas */
       if (dx)
 	{
-	    expose_rect.x = (dx < 0) ? 0 : GTK_WIDGET(self)->allocation.width - dx;
+	    expose_rect.x = (dx < 0) ? 0 : gtk_widget_get_allocated_width(GTK_WIDGET(self)) - dx;
 	    expose_rect.y = 0;
 	    expose_rect.width = abs(dx);
-	    expose_rect.height = GTK_WIDGET(self)->allocation.height;
+	    expose_rect.height = gtk_widget_get_allocated_height(GTK_WIDGET(self));;
 
 	    gdk_window_invalidate_rect(widget->window,
 				       &expose_rect,
@@ -2547,8 +2547,8 @@ view_changed(DovImageViewer *self,
       if (dy)
 	{
 	    expose_rect.x = 0;
-	    expose_rect.y = (dy < 0) ? 0 : GTK_WIDGET(self)->allocation.height - dy;;
-	    expose_rect.width = GTK_WIDGET(self)->allocation.width;
+	    expose_rect.y = (dy < 0) ? 0 : gtk_widget_get_allocated_height(GTK_WIDGET(self)); - dy;;
+	    expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
 	    expose_rect.height = abs(dy);
 
 	    gdk_window_invalidate_rect(widget->window,
@@ -2575,8 +2575,8 @@ view_changed(DovImageViewer *self,
 
       expose_rect.x = 0;
       expose_rect.y = 0;
-      expose_rect.width = GTK_WIDGET(self)->allocation.width;
-      expose_rect.height = GTK_WIDGET(self)->allocation.height;
+      expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
+      expose_rect.height = gtk_widget_get_allocated_height(GTK_WIDGET(self));;
 
       /* gdk_window_ref (expose_event.window); */
       gdk_window_invalidate_rect(widget->window,

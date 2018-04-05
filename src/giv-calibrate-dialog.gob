@@ -60,7 +60,7 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
 
         
         int row_idx=0;
-        w_vbox = GTK_DIALOG(self)->vbox;
+        w_vbox = gtk_dialog_get_content_area(GTK_DIALOG(self));
         w_table = gtk_table_new(3,2, false);
         gtk_box_pack_start(GTK_BOX(w_vbox),
                            w_table, FALSE, FALSE, 0);
@@ -72,13 +72,13 @@ class Giv:Calibrate:Dialog from Gtk:Dialog {
                          GtkAttachOptions(GTK_FILL), GtkAttachOptions(0),
                          0,0);
 
-        GtkWidget *w_combo_measure = gtk_combo_box_new_text();
+        GtkWidget *w_combo_measure = gtk_combo_box_text_new();
         g_signal_connect(w_combo_measure,"changed", G_CALLBACK(cb_combo_changed), self);
         selfp->w_combo_measure = w_combo_measure;
-        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Pixel");
-        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Last measure");
-        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Image width");
-        gtk_combo_box_append_text(GTK_COMBO_BOX(w_combo_measure), "Image height");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w_combo_measure), "Pixel");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w_combo_measure), "Last measure");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w_combo_measure), "Image width");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w_combo_measure), "Image height");
         gtk_combo_box_set_active(GTK_COMBO_BOX(w_combo_measure), 0);
         gtk_table_attach(GTK_TABLE(w_table),
                          w_combo_measure,

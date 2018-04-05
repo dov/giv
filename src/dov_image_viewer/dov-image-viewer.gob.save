@@ -205,7 +205,7 @@ class Dov:Image:Viewer from Gtk:Widget
         
       }
   
-    old_cnv_w = GTK_WIDGET(self)->allocation.width;
+    old_cnv_w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
     old_cnv_h = selfp->canvas_height;
     selfp->canvas_width = widget->allocation.width;
     selfp->canvas_height = widget->allocation.height;
@@ -219,7 +219,7 @@ class Dov:Image:Viewer from Gtk:Widget
         double scale_y = selfp->current_scale_y;
         int img_w = (int)(gdk_pixbuf_get_width(selfp->image)*scale_x);
         int img_h = (int)(gdk_pixbuf_get_height(selfp->image)*scale_y);
-        int cnv_w = GTK_WIDGET(self)->allocation.width;
+        int cnv_w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         int cnv_h = GTK_WIDGET(self)->allocation.height;
   
         DBG(fprintf(stderr,"Resize: x0 y0 img_w img_h cnv_w cnv_h = %f %f %d %d %d %d\n",
@@ -461,7 +461,7 @@ class Dov:Image:Viewer from Gtk:Widget
     if (selfp->image)
       {
   				/* Canvas size */
-        int cnv_w = GTK_WIDGET(self)->allocation.width;
+        int cnv_w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         int cnv_h = GTK_WIDGET(self)->allocation.height;
         int img_w, img_h;		/* Image's size (pixels) */
         int img_x0 = 0;
@@ -776,7 +776,7 @@ class Dov:Image:Viewer from Gtk:Widget
         // Flip the scale and shift if we are flipped
         if (selfp->do_flip_horizontal)
           {
-            int w = GTK_WIDGET(self)->allocation.width;
+            int w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
             signal_shift_x = selfp->current_x0 + w - exp_x0;
             signal_scale_x = - signal_scale_x;
           }
@@ -849,7 +849,7 @@ class Dov:Image:Viewer from Gtk:Widget
     if (GTK_WIDGET(self)->window)
       dov_image_viewer_expose_area(self,
                                    0,0,
-                                   GTK_WIDGET(self)->allocation.width,
+                                   gtk_widget_get_allocated_width(GTK_WIDGET(self)),
                                    GTK_WIDGET(self)->allocation.height);
     return FALSE;
   }
@@ -872,7 +872,7 @@ class Dov:Image:Viewer from Gtk:Widget
                           double new_y)
   {
     double old_scale_x, old_scale_y, old_x0, old_y0, new_x0, new_y0;
-    int w = GTK_WIDGET(self)->allocation.width;
+    int w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
     int h = GTK_WIDGET(self)->allocation.height;
     printf("zoom_around_fixed_point: nsx nsy old_x old_y new_x new_y = %f %f  %f %f  %f %f\n",
            new_scale_x, new_scale_y,
@@ -1074,7 +1074,7 @@ class Dov:Image:Viewer from Gtk:Widget
   {
     if (selfp->do_flip_horizontal)
       {
-        int w = GTK_WIDGET(self)->allocation.width;
+        int w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         *imgx = (selfp->current_x0+w-cx)/selfp->current_scale_x;
       }
     else
@@ -1093,7 +1093,7 @@ class Dov:Image:Viewer from Gtk:Widget
   {
     if (selfp->do_flip_horizontal)
       {
-        int w = GTK_WIDGET(self)->allocation.width;
+        int w = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         *canvx = (selfp->current_x0+w-imgx*selfp->current_scale_x);
       }
     else
@@ -1253,7 +1253,7 @@ view_changed(DovImageViewer *self,
       || (selfp->scroll_width > 0 && selfp->scroll_height > 0)
       )
     {
-      int cwidth = GTK_WIDGET(self)->allocation.width;
+      int cwidth = gtk_widget_get_allocated_width(GTK_WIDGET(self));
       int cheight = GTK_WIDGET(self)->allocation.height;
       double height, width;
 
@@ -1328,14 +1328,14 @@ view_changed(DovImageViewer *self,
 		       widget->window,
 		       src_x, src_y,
 		       dst_x, dst_y,
-		       GTK_WIDGET(self)->allocation.width - abs (dx),
+		       gtk_widget_get_allocated_width(GTK_WIDGET(self)) - abs (dx),
 		       GTK_WIDGET(self)->allocation.height - abs (dy));
 
       DBG2(g_print("Filling in: dx dy = %d %d\n", dx, dy));
       /* And fill in the new areas */
       if (dx)
 	{
-	    expose_rect.x = (dx < 0) ? 0 : GTK_WIDGET(self)->allocation.width - dx;
+	    expose_rect.x = (dx < 0) ? 0 : gtk_widget_get_allocated_width(GTK_WIDGET(self)) - dx;
 	    expose_rect.y = 0;
 	    expose_rect.width = abs(dx);
 	    expose_rect.height = GTK_WIDGET(self)->allocation.height;
@@ -1350,8 +1350,8 @@ view_changed(DovImageViewer *self,
       if (dy)
 	{
 	    expose_rect.x = 0;
-	    expose_rect.y = (dy < 0) ? 0 : GTK_WIDGET(self)->allocation.height - dy;;
-	    expose_rect.width = GTK_WIDGET(self)->allocation.width;
+	    expose_rect.y = (dy < 0) ? 0 : GTK_WIDGET(self)->allocation.height - dy;
+	    expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
 	    expose_rect.height = abs(dy);
 
 	    gdk_window_invalidate_rect(widget->window,
@@ -1378,7 +1378,7 @@ view_changed(DovImageViewer *self,
 
       expose_rect.x = 0;
       expose_rect.y = 0;
-      expose_rect.width = GTK_WIDGET(self)->allocation.width;
+      expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
       expose_rect.height = GTK_WIDGET(self)->allocation.height;
 
       /* gdk_window_ref (expose_event.window); */
@@ -1430,7 +1430,7 @@ zoom_in(DovImageViewer *self, int x, int y)
 					   zoom_factor[0],
 					   zoom_factor[1],
 					   x, y,
-					   GTK_WIDGET(self)->allocation.width/2,
+					   gtk_widget_get_allocated_width(GTK_WIDGET(self))/2,
 					   GTK_WIDGET(self)->allocation.height/2);
 
   return 1;
@@ -1462,9 +1462,9 @@ zoom_out(DovImageViewer *self, int x, int y)
   dov_image_viewer_zoom_around_fixed_point(self,
 					   zoom_factor[0],
 					   zoom_factor[1],
-					   GTK_WIDGET(self)->allocation.width/2,
+					   gtk_widget_get_allocated_width(GTK_WIDGET(self))/2,
 					   GTK_WIDGET(self)->allocation.height/2,
-					   GTK_WIDGET(self)->allocation.width/2,
+					   gtk_widget_get_allocated_width(GTK_WIDGET(self))/2,
 					   GTK_WIDGET(self)->allocation.height/2);
   return 1;
 }
@@ -1566,7 +1566,7 @@ static void update_adjustments(DovImageViewer *self)
       selfp->hadjustment->lower = 0;
       selfp->hadjustment->upper = 1.0;
       selfp->hadjustment->step_increment = 0.01;
-      selfp->hadjustment->page_size = GTK_WIDGET(self)->allocation.width / (selfp->scroll_width * selfp->current_scale_x);
+      selfp->hadjustment->page_size = gtk_widget_get_allocated_width(GTK_WIDGET(self)) / (selfp->scroll_width * selfp->current_scale_x);
       double s = selfp->current_scale_x;
       //***      if (selfp->do_flip_horizontal)
           //***        s = -s;

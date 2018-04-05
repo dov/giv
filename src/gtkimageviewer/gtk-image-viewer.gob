@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 Dov Grobgeld <dov.grobgeld@gmail.com>
+ * Copyright (C) 2008-2018 Dov Grobgeld <dov.grobgeld@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ requires 2.0.0
 #include <stdlib.h>
 #include <gtk/gtk.h>
 #include <gtk/gtkadjustment.h>
+#include <math.h>
 %}
 
 %{
@@ -62,7 +63,7 @@ requires 2.0.0
  * Boston, MA 02111-1307, USA.
  */
 #define DBG(a) 
-#define DBG2(a) 
+#define DBG2(a)
 
 static gint view_changed(GtkImageViewer *image_widget,
 			 int do_force,
@@ -96,6 +97,7 @@ static gboolean turn_off_insensitive(GtkWidget *widget);
 
 
 class Gtk:Image:Viewer from Gtk:Widget
+    (interface Gtk:ScrollableInterface)
 {
   private GdkPixbuf *image=NULL
     destroy
@@ -123,7 +125,6 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gboolean do_linear_zoom_steps;
   private gdouble min_zoom;
   private gdouble max_zoom;
-  private GdkGC *gc;
   private gdouble scroll_min_x = -1;
   private gdouble scroll_max_x = -1;
   private gdouble scroll_min_y = -1;
@@ -132,13 +133,14 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gdouble scroll_height = -1;
   private GtkAdjustment *hadjustment = NULL;
   private GtkAdjustment *vadjustment = NULL;
+  private GtkPolicyType hscroll_policy = 0;
+  private GtkPolicyType vscroll_policy = 0;
   private gint last_x;
   private gint last_y;
   private gboolean is_mouse_button2_pressed = FALSE;
   private gdouble last_pan_anchor_x;
   private gdouble last_pan_anchor_y;
   private gint button;
-  private GdkDrawable *cache_area = NULL;
   private gdouble cache_scale_x = -1;
   private gdouble cache_scale_y = -1;
   private gdouble cache_current_x0 = -1;
@@ -151,7 +153,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   
   init(self)
   {
-    GTK_WIDGET_SET_FLAGS (self, GTK_CAN_FOCUS);
+    gtk_widget_set_can_focus (GTK_WIDGET(self), TRUE);
     selfp->interp_type = GDK_INTERP_NEAREST;
     selfp->do_linear_zoom_steps = FALSE;
     selfp->do_use_transfer_map = FALSE;
@@ -165,18 +167,18 @@ class Gtk:Image:Viewer from Gtk:Widget
     selfp->max_zoom = 128;
     selfp->scroll_width = -1;
     selfp->scroll_height = -1;
-    selfp->gc = NULL;
     selfp->hadjustment = 0;
     selfp->vadjustment = 0;
     selfp->frozen = FALSE;
   }
 
-  class_init(self) {
-    // The following statement does the magic of connecting the scrolled_window
-    // packing to the scrolling of the image viewer.
-    ((GtkWidgetClass*)self)->set_scroll_adjustments_signal = object_signals[SET_SCROLL_ADJUSTMENTS_SIGNAL];
-  }
-  
+// TBDov: What to do about this?
+//  class_init(self) {
+//    // The following statement does the magic of connecting the scrolled_window
+//    // packing to the scrolling of the image viewer.
+//    ((GtkWidgetClass*)self)->set_scroll_adjustments_signal = object_signals[SET_SCROLL_ADJUSTMENTS_SIGNAL];
+//  }
+
   /**
    * new:
    * @pixbuf: Can be NULL if no image is set.
@@ -220,14 +222,15 @@ class Gtk:Image:Viewer from Gtk:Widget
   {
     GtkWidget *widget = GTK_WIDGET(self);
     GdkWindowAttr attributes;
+    GtkAllocation allocation;
     gint attributes_mask;
     
-    GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
-      
-    attributes.x = widget->allocation.x;
-    attributes.y = widget->allocation.y;
-    attributes.width = widget->allocation.width;
-    attributes.height = widget->allocation.height;
+    gtk_widget_set_realized (widget, TRUE);
+    gtk_widget_get_allocation(widget, &allocation);
+    attributes.x = allocation.x;
+    attributes.y = allocation.y;
+    attributes.width = allocation.width;
+    attributes.height = allocation.height;
     attributes.wclass = GDK_INPUT_OUTPUT;
     attributes.window_type = GDK_WINDOW_CHILD;
     attributes.event_mask = gtk_widget_get_events (widget) | 
@@ -239,45 +242,82 @@ class Gtk:Image:Viewer from Gtk:Widget
       GDK_KEY_PRESS_MASK |
       GDK_FOCUS_CHANGE_MASK |
       GDK_LEAVE_NOTIFY_MASK |
-      GDK_ENTER_NOTIFY_MASK;
+      GDK_ENTER_NOTIFY_MASK |
+      GDK_SCROLL_MASK
+        ;
     attributes.visual = gtk_widget_get_visual (widget);
-    attributes.colormap = gtk_widget_get_colormap (widget);
       
-    attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL | GDK_WA_COLORMAP;
-    widget->window = gdk_window_new (widget->parent->window, &attributes, attributes_mask);
+    attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL;
+    gtk_widget_set_window(widget, gdk_window_new (
+      gtk_widget_get_window(
+        gtk_widget_get_parent(widget)), &attributes, attributes_mask));
       
-    widget->style = gtk_style_attach (widget->style, widget->window);
-      
-    gdk_window_set_user_data (widget->window, widget);
-      
-    // Force background to be white. This is uggly and should be fixed!
-    {
-      GdkColor color;
-      gdk_color_parse("white", &color);
-      gtk_widget_modify_bg(self, GTK_STATE_NORMAL, &color);
-      gtk_widget_modify_bg(self, GTK_STATE_ACTIVE, &color);
-    }
-
-    //    gtk_style_set_background (widget->style, widget->window, GTK_STATE_ACTIVE);
+    // TBDOV: styles? See doc for GtkStyleContext
+    gdk_window_set_user_data (gtk_widget_get_window(widget), widget);
   }
 
   override (Gtk:Widget)
   void
-  size_request (GtkWidget      *widget,
-                GtkRequisition *requisition)
+  map (Gtk:Widget *widget (check null type))
+  {
+    PARENT_HANDLER(widget);
+
+    GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
+
+    if (selfp->do_fill_on_resize)
+      gtk_image_viewer_zoom_fit(self);
+  }
+
+  override (Gtk:Widget)
+  void
+  get_preferred_width (GtkWidget      *widget,
+                       gint           *minimal_width,
+                       gint           *natural_width)
   {
     GtkImageViewer *self = GTK_IMAGE_VIEWER (widget);
 
     if (selfp->image) 
-      {
-        requisition->width = gdk_pixbuf_get_width(selfp->image);
-        requisition->height = gdk_pixbuf_get_height(selfp->image);
-      }
+      *natural_width = gdk_pixbuf_get_width(selfp->image);
     else
-      {
-        requisition->width = 256;
-        requisition->height = 256;
-      }
+      *natural_width = 256;
+    *minimal_width = 128;
+  }
+  
+  override (Gtk:Widget)
+  void
+  get_preferred_height (GtkWidget      *widget,
+                        gint           *minimal_height,
+                        gint           *natural_height)
+  {
+    GtkImageViewer *self = GTK_IMAGE_VIEWER (widget);
+
+    if (selfp->image) 
+      *natural_height = gdk_pixbuf_get_height(selfp->image);
+    else
+      *natural_height = 256;
+    *minimal_height = 128;
+  }
+
+  // From gtkdrawingarea
+  private void
+  send_configure (self)
+  {
+    GtkAllocation allocation;
+    GtkWidget *widget;
+    GdkEvent *event = gdk_event_new (GDK_CONFIGURE);
+  
+    widget = GTK_WIDGET (self);
+    gtk_widget_get_allocation (widget, &allocation);
+  
+    event->configure.window = g_object_ref (gtk_widget_get_window (widget));
+    event->configure.send_event = TRUE;
+    event->configure.x = allocation.x;
+    event->configure.y = allocation.y;
+    event->configure.width = allocation.width;
+    event->configure.height = allocation.height;
+  
+    gtk_widget_event (widget, event);
+    gdk_event_free (event);
   }
   
   override (Gtk:Widget)
@@ -288,25 +328,27 @@ class Gtk:Image:Viewer from Gtk:Widget
     GtkImageViewer *self;
     int old_cnv_w, old_cnv_h;
   
-    widget->allocation = *allocation;
+    gtk_widget_set_allocation(widget, allocation);
     self = GTK_IMAGE_VIEWER (widget);
   
-    if (GTK_WIDGET_REALIZED (widget)) {
-        gdk_window_move_resize (widget->window,
-                                allocation->x, allocation->y,
-                                allocation->width, allocation->height);
+    if (gtk_widget_get_realized (widget)
+        && gtk_widget_get_window(widget)) {
+      gdk_window_move_resize (gtk_widget_get_window(widget),
+                              allocation->x, allocation->y,
+                              allocation->width, allocation->height);
+      gtk_image_viewer_send_configure(GTK_IMAGE_VIEWER(widget));
     }
     
     old_cnv_w = selfp->canvas_width;
     old_cnv_h = selfp->canvas_height;
 
-    selfp->canvas_width = widget->allocation.width;
-    selfp->canvas_height = widget->allocation.height;
-    if (GTK_IS_SCROLLED_WINDOW(GTK_WIDGET(self)->parent)) {
-      GtkPolicyType hscrollbar_policy, vscrollbar_policy;
-      gtk_scrolled_window_get_policy(GTK_SCROLLED_WINDOW(GTK_WIDGET(self)->parent),
-                                     &hscrollbar_policy,
-                                     &vscrollbar_policy);
+    selfp->canvas_width = allocation->width;
+    selfp->canvas_height = allocation->height;
+    if (GTK_IS_SCROLLED_WINDOW(gtk_widget_get_parent(GTK_WIDGET(self))))
+      {
+        gtk_scrolled_window_get_policy(GTK_SCROLLED_WINDOW(gtk_widget_get_parent(GTK_WIDGET(self))),
+                                       &selfp->hscroll_policy,
+                                       &selfp->vscroll_policy);
 #if 0
         printf("Replacing with parent size (%d,%d)->(%d,%d)...\n",
                selfp->canvas_width,
@@ -315,11 +357,11 @@ class Gtk:Image:Viewer from Gtk:Widget
                GTK_WIDGET(self)->parent->allocation.height
                );
 #endif
-        if (hscrollbar_policy != GTK_POLICY_ALWAYS)
-          selfp->canvas_width = GTK_WIDGET(self)->parent->allocation.width;
-        
-        if (vscrollbar_policy != GTK_POLICY_ALWAYS)
-          selfp->canvas_height = GTK_WIDGET(self)->parent->allocation.height;
+        if (selfp->hscroll_policy != GTK_POLICY_ALWAYS)
+          selfp->canvas_width = gtk_widget_get_allocated_width(gtk_widget_get_parent(GTK_WIDGET(self)));
+      
+        if (selfp->vscroll_policy != GTK_POLICY_ALWAYS)
+          selfp->canvas_height = gtk_widget_get_allocated_height(gtk_widget_get_parent(GTK_WIDGET(self)));
     }
 
     // If we were called because the scrollbar automatically appeared
@@ -332,7 +374,8 @@ class Gtk:Image:Viewer from Gtk:Widget
     double scale_factor = 1.0;
 
     if (!selfp->one_shot_block_fill_on_resize
-        && selfp->do_fill_on_resize) {
+        && selfp->do_fill_on_resize)
+      {
         double sw = selfp->scroll_width;
         double sh = selfp->scroll_height; 
         double cw = selfp->canvas_width;
@@ -343,14 +386,6 @@ class Gtk:Image:Viewer from Gtk:Widget
         if (sh < 0)
             sh = ch;
         
-        // This should be made more sophisticated.
-#if 0
-        if (!selfp->image) {
-            cw-= 20;
-            ch-= 20;
-        }
-#endif
-
         if (old_cnv_w == 0)
           scale_factor = 1;
         else
@@ -365,7 +400,7 @@ class Gtk:Image:Viewer from Gtk:Widget
             scale_factor_y = ch/sh/selfp->current_scale_y;
         if (scale_factor_y < scale_factor)
             scale_factor = scale_factor_y;
-    }
+      }
     selfp->one_shot_block_fill_on_resize = FALSE;
 
     selfp->current_scale_x *= scale_factor;
@@ -377,47 +412,44 @@ class Gtk:Image:Viewer from Gtk:Widget
      * new size is wider than scale * image size.
      */
     {
-        double scale_x = selfp->current_scale_x;
-        double scale_y = selfp->current_scale_y;
-        double img_w = selfp->scroll_width*scale_x;
-        double img_h = selfp->scroll_height*scale_y;
-        int cnv_w = selfp->canvas_width;
-        int cnv_h = selfp->canvas_height;
+      double scale_x = selfp->current_scale_x;
+      double scale_y = selfp->current_scale_y;
+      double img_w = selfp->scroll_width*scale_x;
+      double img_h = selfp->scroll_height*scale_y;
+      int cnv_w = selfp->canvas_width;
+      int cnv_h = selfp->canvas_height;
   
-        DBG(fprintf(stderr,"Resize: x0 y0 img_w img_h cnv_w cnv_h = %d %d %f %f %d %d\n",
-                    selfp->current_x0,selfp->current_y0,img_w,img_h,cnv_w,cnv_h));
+      DBG(fprintf(stderr,"Resize: x0 y0 img_w img_h cnv_w cnv_h = %.0f %.0f %f %f %d %d\n",
+                  selfp->current_x0,selfp->current_y0,img_w,img_h,cnv_w,cnv_h));
   
-        if (cnv_w > img_w)
-          selfp->current_x0 = -(cnv_w-img_w)/2+selfp->scroll_min_x*scale_x;
-        else if (old_cnv_w > img_w)
-          selfp->current_x0 = selfp->scroll_min_x*scale_x;
-        else if (img_w - selfp->current_x0 < cnv_w)
-          {
-            DBG(fprintf(stderr, "Resize case 3X\n"));
-            selfp->current_x0 = img_w-cnv_w+selfp->scroll_min_x*scale_x;
-          }
-        if (cnv_h > img_h)
-          selfp->current_y0 = -(cnv_h-img_h)/2+selfp->scroll_min_y*scale_y;
-        else if (old_cnv_h > img_h)
-          selfp->current_y0 = selfp->scroll_min_y*scale_y;
-        else if (img_h - selfp->current_y0 < cnv_h)
-          {
-            DBG(fprintf(stderr, "Resize case 3Y\n"));
-            selfp->current_y0 = img_h-cnv_h+selfp->scroll_min_y*scale_y;
-          }
-      }
+      if (cnv_w > img_w)
+        selfp->current_x0 = -(cnv_w-img_w)/2+selfp->scroll_min_x*scale_x;
+      else if (old_cnv_w > img_w)
+        selfp->current_x0 = selfp->scroll_min_x*scale_x;
+      else if (img_w - selfp->current_x0 < cnv_w)
+        {
+          DBG(fprintf(stderr, "Resize case 3X\n"));
+          selfp->current_x0 = img_w-cnv_w+selfp->scroll_min_x*scale_x;
+        }
+      if (cnv_h > img_h)
+        selfp->current_y0 = -(cnv_h-img_h)/2+selfp->scroll_min_y*scale_y;
+      else if (old_cnv_h > img_h)
+        selfp->current_y0 = selfp->scroll_min_y*scale_y;
+      else if (img_h - selfp->current_y0 < cnv_h)
+        {
+          DBG(fprintf(stderr, "Resize case 3Y\n"));
+          selfp->current_y0 = img_h-cnv_h+selfp->scroll_min_y*scale_y;
+        }
+    }
   }
 
   override (Gtk:Widget)
-  gint
-  expose_event (GtkWidget      *widget,
-                GdkEventExpose *event)
+  gboolean draw(GtkWidget *widget,
+                cairo_t *cr)
   {
     gtk_image_viewer_expose_area(GTK_IMAGE_VIEWER(widget),
-                                 event->area.x, event->area.y,
-                                 event->area.width, event->area.height);
-    
-    return FALSE;
+                                 cr);
+    return TRUE;
   }
 
   override (Gtk:Widget)
@@ -430,7 +462,7 @@ class Gtk:Image:Viewer from Gtk:Widget
     if (selfp->timeout_id)
         g_source_remove(selfp->timeout_id);
     selfp->timeout_id = g_timeout_add(200, (GSourceFunc) turn_off_insensitive, self);
-    if (!GTK_WIDGET_HAS_FOCUS (widget))
+    if (!gtk_widget_has_focus (widget))
       gtk_widget_grab_focus (widget);
     
     return TRUE;
@@ -443,7 +475,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   {
     GtkImageViewer *self = GTK_IMAGE_VIEWER(widget);
     // printf("Leave notify\n");
-    if (!GTK_WIDGET_HAS_FOCUS (widget))
+    if (!gtk_widget_has_focus (widget))
       gtk_widget_grab_focus (widget);
     if (selfp->timeout_id) {
         g_source_remove(selfp->timeout_id);
@@ -464,7 +496,6 @@ class Gtk:Image:Viewer from Gtk:Widget
     gint k;
     double big_scale = 2.0;
     double small_scale = 1.1;
-    double basescale = 2.0;
     double vscale = 1.0;
 
     k = event->keyval;
@@ -472,49 +503,49 @@ class Gtk:Image:Viewer from Gtk:Widget
     switch (k) {
     case '=':
     case '+':
-        if (!selfp->do_vertical_lock)
-            vscale = small_scale;
-        gtk_image_viewer_zoom_in(self, -1, -1, small_scale, vscale);
-        break;
+      if (!selfp->do_vertical_lock)
+        vscale = small_scale;
+      gtk_image_viewer_zoom_in(self, -1, -1, small_scale, vscale);
+      break;
     case '>':
-        if (!selfp->do_vertical_lock)
-            vscale = big_scale;
-        gtk_image_viewer_zoom_in(self, -1, -1, big_scale, vscale);
-        break;
+      if (!selfp->do_vertical_lock)
+        vscale = big_scale;
+      gtk_image_viewer_zoom_in(self, -1, -1, big_scale, vscale);
+      break;
     case '<':
-        if (!selfp->do_vertical_lock)
-            vscale = big_scale;
-        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
-        break;
+      if (!selfp->do_vertical_lock)
+        vscale = big_scale;
+      gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
+      break;
     case '-':
-        if (!selfp->do_vertical_lock)
-            vscale = big_scale;
-        gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
-        break;
+      if (!selfp->do_vertical_lock)
+        vscale = big_scale;
+      gtk_image_viewer_zoom_out(self, selfp->canvas_width/2, selfp->canvas_height/2, big_scale, vscale);
+      break;
     case '1':
     case 'n':
-        zoom_reset(self);
-        break;
+      zoom_reset(self);
+      break;
     case 'f':
-        gtk_image_viewer_zoom_fit(self);
-        break;
+      gtk_image_viewer_zoom_fit(self);
+      break;
     case 'v':
-        gtk_image_viewer_set_flip(self,
-                                  selfp->do_flip_horizontal,
-                                  !selfp->do_flip_vertical);
-        break;
+      gtk_image_viewer_set_flip(self,
+                                selfp->do_flip_horizontal,
+                                !selfp->do_flip_vertical);
+      break;
     case 'V':
-        gtk_image_viewer_set_vertical_lock(self,
-                                           !selfp->do_vertical_lock);
-        break;
+      gtk_image_viewer_set_vertical_lock(self,
+                                         !selfp->do_vertical_lock);
+      break;
     case 'h':
-        gtk_image_viewer_set_flip(self,
-                                  !selfp->do_flip_horizontal,
-                                  selfp->do_flip_vertical);
-        break;
+      gtk_image_viewer_set_flip(self,
+                                !selfp->do_flip_horizontal,
+                                selfp->do_flip_vertical);
+      break;
     default:
-        ret = FALSE;
-        break;
+      ret = FALSE;
+      break;
     }
     return ret;
   }
@@ -531,28 +562,28 @@ class Gtk:Image:Viewer from Gtk:Widget
     double vscale = 1.0;
 
     if (selfp->is_insensitive)
-        return TRUE;
+      return TRUE;
 
     if (button == 1)
-    {
+      {
         if (!selfp->do_vertical_lock)
-            vscale = 2;
+          vscale = 2;
         gtk_image_viewer_zoom_in(self, (int)x, (int)y, 2, vscale);
-    }
+      }
     else if (button == 2)
-    {
+      {
         gtk_grab_add (GTK_WIDGET(self));
         selfp->is_mouse_button2_pressed = TRUE;
         selfp->last_pan_anchor_x = x;
         selfp->last_pan_anchor_y = y;
-    }
+      }
     else if (button == 3)
-    {
+      {
         if (!selfp->do_vertical_lock)
-            vscale = 2;
+          vscale = 2;
 
         gtk_image_viewer_zoom_out(self, (int)x, (int)y, 2, vscale);
-    }
+      }
     
     selfp->button = event->button;
     
@@ -579,18 +610,11 @@ class Gtk:Image:Viewer from Gtk:Widget
         if (selfp->is_mouse_button2_pressed) {
           selfp->is_mouse_button2_pressed = FALSE;
   	if (selfp->last_pan_anchor_x>0 && selfp->last_pan_anchor_y > 0)
-  	    zoom_translate(self,
-                           (int)(selfp->last_pan_anchor_x-x),
-  			   (int)(selfp->last_pan_anchor_y-y));
+          zoom_translate(self,
+                         (int)(selfp->last_pan_anchor_x-x),
+                         (int)(selfp->last_pan_anchor_y-y));
   	gtk_grab_remove (GTK_WIDGET(self));
   
-  	/* Emit an additional view changed signal at the end of the scrolling
-  	   in order to support redrawing only when the panning is done.
-  	*/
-#if 0
-  	gtk_signal_emit(GTK_OBJECT(image_viewer), gtk_image_viewer_signals[VIEW_CHANGED]);
-#endif
-
         }
       }
   
@@ -619,12 +643,15 @@ class Gtk:Image:Viewer from Gtk:Widget
   
     self = GTK_IMAGE_VIEWER (widget);
   
-    if (event->is_hint) {
-       gdk_window_get_pointer(event->window, &x, &y, &state);
-    } else {
-       x = (int) event->x;
-       y = (int) event->y;
-    }
+    if (event->is_hint)
+      {
+        gdk_window_get_device_position (event->window, event->device, &x, &y, &state);
+      }
+    else
+      {
+        x = (int) event->x;
+        y = (int) event->y;
+      }
     selfp->last_x = x;
     selfp->last_y = y;
   
@@ -667,18 +694,18 @@ class Gtk:Image:Viewer from Gtk:Widget
       double vscale = 1.0;
 
       if (event->state & GDK_SHIFT_MASK)
-          zoom_strength = 1.1;
+        zoom_strength = 1.1;
       if (event->state & GDK_CONTROL_MASK)
-          zoom_strength = 2.0;
+        zoom_strength = 2.0;
 
       if (!selfp->do_vertical_lock)
-          vscale = zoom_strength;
+        vscale = zoom_strength;
 
       if (event->direction)
-          //zoom_in(self, (int)x,(int)y);
-          gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength,vscale);
+        //zoom_in(self, (int)x,(int)y);
+        gtk_image_viewer_zoom_out(self, (int)x,(int)y,zoom_strength,vscale);
       else
-          gtk_image_viewer_zoom_in(self, x,y,zoom_strength, vscale);
+        gtk_image_viewer_zoom_in(self, x,y,zoom_strength, vscale);
       return 1;
     }
     return 0;
@@ -696,10 +723,20 @@ class Gtk:Image:Viewer from Gtk:Widget
    */  public
   void
   expose_area(self,
-              int exp_x0, int exp_y0,
-              int w, int h)
+              cairo_t *cr)
   {
-    GtkWidget *widget = GTK_WIDGET(self); /* In order to access window */
+    double cr_exp_x0, cr_exp_y0, cr_exp_x1, cr_exp_y1;
+    int w, h;
+    cairo_clip_extents(cr,
+                       &cr_exp_x0, &cr_exp_y0,
+                       &cr_exp_x1, &cr_exp_y1);
+    int exp_x0, exp_y0;
+    exp_x0 = (int)floor(cr_exp_x0);
+    exp_y0 = (int)floor(cr_exp_y0);
+    w = (int)ceil(cr_exp_x1-exp_x0);
+    h = (int)ceil(cr_exp_y1-exp_y0);
+
+    //    GtkWidget *widget = GTK_WIDGET(self); /* In order to access window */
     GdkPixbuf *img_scaled = NULL;
     double scale_x = selfp->current_scale_x;
     double scale_y = selfp->current_scale_y;
@@ -723,37 +760,13 @@ class Gtk:Image:Viewer from Gtk:Widget
 
     // Check if we have a cached version of the exposed area and
     // that the settings of the cache match the current settings.
-
-    // Currently turn off the caching mechanism as it works badly...
-    // Need to rethink the whole mechanism.
-    if (0 && selfp->cache_area) {
-        if (selfp->cache_scale_x == scale_x
-            && selfp->cache_scale_y == scale_y
-            && selfp->cache_current_x0 == selfp->current_x0
-            && selfp->cache_current_y0 == selfp->current_y0
-            && selfp->cache_width == selfp->canvas_width
-            && selfp->cache_height == selfp->canvas_height
-            ) {
-
-#if 0
-            printf("Restoring cache!\n");
-#endif
-            /* Scroll visible region */
-            gdk_draw_drawable (widget->window,
-                               selfp->gc,
-                               selfp->cache_area,
-                               exp_x0, exp_y0,
-                               exp_x0, exp_y0,
-                               w,h);
-            return;
-        }
-        else {
-            // invalidate cache
-            gdk_drawable_unref(selfp->cache_area);
-            selfp->cache_area = NULL;
-        }
-    }
-
+    
+    GdkRGBA background_color;
+    gdk_rgba_parse(&background_color,"white");
+    cairo_set_source_rgb(cr,
+                         background_color.red,
+                         background_color.green,
+                         background_color.blue);
     if (selfp->image)
       {
   				/* Canvas size */
@@ -764,7 +777,7 @@ class Gtk:Image:Viewer from Gtk:Widget
         int img_y1 = cnv_h;
         img_w = gdk_pixbuf_get_width(selfp->image);
         img_h = gdk_pixbuf_get_height(selfp->image);
-        DBG(fprintf(stderr, "current_x0 exp_x0 offs_x = %d %d %d\n",
+        DBG(fprintf(stderr, "current_x0 exp_x0 offs_x = %.0f %d %.0f\n",
                     selfp->current_x0,
                     exp_x0,
                     offs_x));
@@ -789,10 +802,9 @@ class Gtk:Image:Viewer from Gtk:Widget
             copy_w = 0;
             offs_x = 0;
             dst_x = img_x0;
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w, h);
+            cairo_rectangle (cr,
+                             exp_x0,exp_y0,w,h);
+            cairo_fill (cr);
           }
         else if (exp_x0 < img_x0 && exp_x1 > img_x1)
           {
@@ -808,14 +820,11 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               trans_offs_x = offs_x = 0;
             
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,(img_x0-exp_x0), h);
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               img_x1,exp_y0,(exp_x1-img_x1), h);
+            cairo_rectangle(cr,
+                            exp_x0,exp_y0,(img_x0-exp_x0), h);
+            cairo_rectangle(cr,
+                            img_x1,exp_y0,(exp_x1-img_x1), h);
+            cairo_fill(cr);
           }
         else if (exp_x0 < img_x0)
           {
@@ -831,19 +840,16 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               offs_x = trans_offs_x = 0;
             
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,(img_x0-exp_x0), h);
+            cairo_rectangle( cr,
+                             exp_x0,exp_y0,(img_x0-exp_x0), h);
+            cairo_fill (cr);
           }
         else if (exp_x0 > img_x1)
           {
             DBG(fprintf(stderr, "Case 4X\n"));
             copy_w = 0;
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w, h);
+            cairo_rectangle (cr,
+                             exp_x0,exp_y0,w, h);
             
           }
         else if (exp_x1 > img_x1)
@@ -860,10 +866,9 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               offs_x = trans_offs_x = -(exp_x0-img_x0);
             
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               img_x1,exp_y0,exp_x1-img_x1, h);
+            cairo_rectangle (cr,
+                             img_x1,exp_y0,exp_x1-img_x1, h);
+            cairo_fill (cr);
           }
         else
           {
@@ -887,10 +892,9 @@ class Gtk:Image:Viewer from Gtk:Widget
             copy_h = 0;
             offs_y = 0;
             dst_x = img_y0;
-            gdk_draw_rectangle(widget->window,
-  			     widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w, h);
+            cairo_rectangle(cr,
+                            exp_x0,exp_y0,w, h);
+            cairo_fill (cr);
           }
         else if (exp_y0 < img_y0 && exp_y1 > img_y1)
           {
@@ -906,14 +910,12 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               trans_offs_y = offs_y = 0;
             
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w, img_y0-exp_y0);
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0, img_y1,w, exp_y1-img_y1);
+            cairo_rectangle(cr,
+                            exp_x0,exp_y0,w, img_y0-exp_y0);
+            cairo_rectangle(cr,
+                            exp_x0, img_y1,w, exp_y1-img_y1);
+            cairo_fill (cr);
+
           }
         else if (exp_y0 < img_y0)
           {
@@ -929,20 +931,17 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               offs_y = trans_offs_y = 0;
 
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w,(img_y0-exp_y0));
+            cairo_rectangle(cr,
+                            exp_x0,exp_y0,w,(img_y0-exp_y0));
+            cairo_fill (cr);
           }
         else if (exp_y0 > img_y1)
           {
             DBG(fprintf(stderr, "Case 4Y\n"));
             copy_h = 0;
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,exp_y0,w, h);
-            
+            cairo_rectangle(cr,
+                            exp_x0,exp_y0,w, h);
+            cairo_fill(cr);
           }
         else if (exp_y1 > img_y1)
           {
@@ -958,10 +957,9 @@ class Gtk:Image:Viewer from Gtk:Widget
             else
               offs_y = trans_offs_y = -(exp_y0-img_y0);
             
-            gdk_draw_rectangle(widget->window,
-                               widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                               TRUE,
-                               exp_x0,img_y1,w,exp_y1-img_y1);
+            cairo_rectangle(cr,
+                            exp_x0,img_y1,w,exp_y1-img_y1);
+            cairo_fill(cr);
           }
         else
           {
@@ -979,7 +977,7 @@ class Gtk:Image:Viewer from Gtk:Widget
           }
         
   
-        DBG(fprintf(stderr, "dst_x dst_y copy_w copy_h offs_x offs_y = %d %d %d %d %d %d\n",
+        DBG(fprintf(stderr, "dst_x dst_y copy_w copy_h offs_x offs_y = %d %d %d %d %.0f %.0f\n",
   	      dst_x, dst_y, copy_w, copy_h,
   	      selfp->current_x0, selfp->current_y0));
         /* Scale and copy the image */
@@ -1013,28 +1011,28 @@ class Gtk:Image:Viewer from Gtk:Widget
 #endif
             
             /* Check legality */
-            DBG(fprintf(stderr, "offs_x copy_x scale_x w = %d %d %f %d\n",
+            DBG(fprintf(stderr, "offs_x copy_x scale_x w = %.0f %d %f %d\n",
                         offs_x, copy_w, scale_x, img_w));
             // Bug workaround for huge zooms
             if (scale_x >= 30)
-                fix_gdk_pixbuf_scale_nn(selfp->image,
-                                        img_scaled,
-                                        0,0,
-                                        copy_w,
-                                        copy_h,
-                                        offs_x,
-                                        offs_y,
-                                        scale_x, scale_y);
+              fix_gdk_pixbuf_scale_nn(selfp->image,
+                                      img_scaled,
+                                      0,0,
+                                      copy_w,
+                                      copy_h,
+                                      offs_x,
+                                      offs_y,
+                                      scale_x, scale_y);
             else
-                gdk_pixbuf_scale(selfp->image,
-                                 img_scaled,
-                                 0,0,
-                                 copy_w,
-                                 copy_h,
-                                 offs_x,
-                                 offs_y,
-                                 scale_x, scale_y,
-                                 selfp->interp_type);
+              gdk_pixbuf_scale(selfp->image,
+                               img_scaled,
+                               0,0,
+                               copy_w,
+                               copy_h,
+                               offs_x,
+                               offs_y,
+                               scale_x, scale_y,
+                               selfp->interp_type);
             
             if (selfp->do_use_transfer_map)
               {
@@ -1135,7 +1133,7 @@ class Gtk:Image:Viewer from Gtk:Widget
           offs_x = selfp->current_x0+w-exp_x1+cnv_w;
         else
           offs_x = -selfp->current_x0-exp_x0;
-        DBG(printf("No image: current_x0=%d offs_x = %d\n", selfp->current_x0, offs_x));
+        DBG(printf("No image: current_x0=%.0f offs_x = %.0f\n", selfp->current_x0, offs_x));
         if (selfp->do_flip_vertical)
           offs_y = selfp->current_y0+h-exp_y1+cnv_h;
         else
@@ -1178,7 +1176,8 @@ class Gtk:Image:Viewer from Gtk:Widget
     }
 
     // Add checkerboard below images that have alpha channel
-    if (gdk_pixbuf_get_has_alpha(img_scaled)) {
+    if (gdk_pixbuf_get_has_alpha(img_scaled))
+      {
         GdkPixbuf *img_comp = gdk_pixbuf_new(gdk_pixbuf_get_colorspace(img_scaled),
                                              TRUE,
                                              gdk_pixbuf_get_bits_per_sample(img_scaled),
@@ -1200,50 +1199,15 @@ class Gtk:Image:Viewer from Gtk:Widget
         g_object_unref(img_scaled);
         img_scaled = img_comp;
     }
-    if (!selfp->frozen)
-      gdk_draw_pixbuf (widget->window,
-                       widget->style->bg_gc[GTK_WIDGET_STATE (widget)],
-                       img_scaled,
-                       0, 0,
-                       dst_x, dst_y,
-                       copy_w, copy_h,
-                       GDK_RGB_DITHER_NORMAL,
-                       selfp->current_x0,
-                       selfp->current_y0);
+    if (!selfp->frozen) {
+        gdk_cairo_set_source_pixbuf(cr,
+                                    img_scaled,
+                                    dst_x,dst_y);
+        cairo_paint(cr);
+    }
     
     g_object_unref(img_scaled);
 
-    // If we have just drawn the whole buffer, then copy the result
-    // to the cache.
-    if (w == selfp->canvas_width
-        && h == selfp->canvas_height) {
-        selfp->cache_area = gdk_pixmap_new(widget->window,
-                                           w,h,
-                                           -1);
-        if (!selfp->gc) {
-            selfp->gc = gdk_gc_new(widget->window);
-            gdk_gc_copy(selfp->gc, widget->style->white_gc);
-            gdk_gc_set_exposures(selfp->gc, TRUE);
-	}
-
-        gdk_draw_drawable(selfp->cache_area,
-                          selfp->gc,
-                          widget->window,
-                          0,0,
-                          0,0,
-                          -1, -1);
-        selfp->cache_current_x0 = selfp->current_x0;
-        selfp->cache_current_y0 = selfp->current_y0;
-        selfp->cache_scale_x = selfp->current_scale_x;
-        selfp->cache_scale_y = selfp->current_scale_y;
-        selfp->cache_width = selfp->canvas_width;
-        selfp->cache_height = selfp->canvas_height;
-#if 0
-        printf("Storing cache! (x0,y0,sx,sy) = (%d %d %f %f)\n",
-               selfp->current_x0, selfp->current_y0,
-               selfp->current_scale_x, selfp->current_scale_y);
-#endif
-    }
   
 #if 0
     gtk_signal_emit(GTK_OBJECT(self), gtk_image_viewer_signals[VIEW_CHANGED]);
@@ -1271,16 +1235,11 @@ class Gtk:Image:Viewer from Gtk:Widget
   redraw(self,
          gboolean clear_cache)
   {
-    if (clear_cache) {
-      if (selfp->cache_area) 
-        gdk_drawable_unref(selfp->cache_area);
-      selfp->cache_area = NULL;
-    }
-    if (GTK_WIDGET(self)->window)
-      gtk_image_viewer_expose_area(self,
-                                   0,0,
-                                   GTK_WIDGET(self)->allocation.width,
-                                   GTK_WIDGET(self)->allocation.height);
+    if (gtk_widget_get_window(GTK_WIDGET(self)))
+      gtk_widget_queue_draw_area (GTK_WIDGET(self),
+                                  0,0,
+                                  gtk_widget_get_allocated_width(GTK_WIDGET(self)),
+                                  gtk_widget_get_allocated_height(GTK_WIDGET(self)));
     return FALSE;
   }
 
@@ -1301,40 +1260,41 @@ class Gtk:Image:Viewer from Gtk:Widget
                           double new_x,
                           double new_y)
   {
-      double w = selfp->canvas_width;
-      double h = selfp->canvas_height;
-      double old_scale_x, old_scale_y, old_x0, old_y0, new_x0, new_y0;
-      DBG(printf("zoom_around_fixed_point: nsx nsy old_x old_y new_x new_y = %f %f  %f %f  %f %f\n",
-                 new_scale_x, new_scale_y,
-                 old_x, old_y,
-                 new_x, new_y));
+    double w = selfp->canvas_width;
+    double h = selfp->canvas_height;
+    double old_scale_x, old_scale_y, old_x0, old_y0, new_x0, new_y0;
+    DBG(printf("zoom_around_fixed_point: nsx nsy old_x old_y new_x new_y = %f %f  %f %f  %f %f\n",
+               new_scale_x, new_scale_y,
+               old_x, old_y,
+               new_x, new_y));
       
-      g_return_val_if_fail (self != NULL, FALSE);
-      g_return_val_if_fail (GTK_IS_IMAGE_VIEWER (self), FALSE);
+    g_return_val_if_fail (self != NULL, FALSE);
+    g_return_val_if_fail (GTK_IS_IMAGE_VIEWER (self), FALSE);
       
-      /* Short cuts */
-      old_x0 = selfp->current_x0;
-      old_y0 = selfp->current_y0;
-      old_scale_x = selfp->current_scale_x;
-      old_scale_y = selfp->current_scale_y;
+    /* Short cuts */
+    old_x0 = selfp->current_x0;
+    old_y0 = selfp->current_y0;
+    old_scale_x = selfp->current_scale_x;
+    old_scale_y = selfp->current_scale_y;
       
-      
-      if (selfp->do_flip_horizontal) {
-          old_x = w - old_x;
-          new_x = w - new_x;
+    if (selfp->do_flip_horizontal)
+      {
+        old_x = w - old_x;
+        new_x = w - new_x;
       }
-      if (selfp->do_flip_vertical) {
-          old_y = h - old_y;
-          new_y = h - new_y;
+    if (selfp->do_flip_vertical)
+      {
+        old_y = h - old_y;
+        new_y = h - new_y;
       }
       
-      new_x0 = new_scale_x/old_scale_x * (old_x + old_x0) - new_x;
-      new_y0 = new_scale_y/old_scale_y * (old_y + old_y0) - new_y;
+    new_x0 = new_scale_x/old_scale_x * (old_x + old_x0) - new_x;
+    new_y0 = new_scale_y/old_scale_y * (old_y + old_y0) - new_y;
       
-      DBG(printf("old_x0 new_x0 = %f %f\n", old_x0, new_x0));
-      view_changed(self, FALSE, new_scale_x, new_scale_y, new_x0, new_y0);
+    DBG(printf("old_x0 new_x0 = %f %f\n", old_x0, new_x0));
+    view_changed(self, FALSE, new_scale_x, new_scale_y, new_x0, new_y0);
       
-      return 0;
+    return 0;
   }
 
   public gint
@@ -1436,45 +1396,45 @@ class Gtk:Image:Viewer from Gtk:Widget
                    double pixel_margin,
                    gboolean preserve_aspect)
   {
-      double w = selfp->canvas_width;
-      double h = selfp->canvas_height;
+    double w = selfp->canvas_width;
+    double h = selfp->canvas_height;
 
-      if (w==0 || h==0) {
-          GtkRequisition requisition;
-          gtk_widget_size_request(GTK_WIDGET(self),
-                                  &requisition);
-          w = requisition.width;
-          h = requisition.height;
-          if (w>1 && h>1) {
-              selfp->canvas_width = w;
-              selfp->canvas_height = h;
-          }
+    if (w==0 || h==0)
+      {
+        int w,min_w,h,min_h;
+        gtk_widget_get_preferred_width(GTK_WIDGET(self),&min_w,&w);
+        gtk_widget_get_preferred_height(GTK_WIDGET(self),&min_h,&h);
+        if (w>1 && h>1) {
+          selfp->canvas_width = w;
+          selfp->canvas_height = h;
+        }
       }
 
-      // Refuse to fit in an uninitiaded situation.
-      if (world_min_x >= world_max_x)
-          return 0;
+    // Refuse to fit in an uninitiaded situation.
+    if (world_min_x >= world_max_x)
+      return 0;
 
 #if 0
-      printf("alloc_width=%f alloc_height=%f\n",
-             w,h);
+    printf("alloc_width=%f alloc_height=%f\n",
+           w,h);
 #endif
-      double new_scale_x = (w-2*pixel_margin)/(world_max_x-world_min_x);
-      double new_scale_y = (h-2*pixel_margin)/(world_max_y-world_min_y);
+    double new_scale_x = (w-2*pixel_margin)/(world_max_x-world_min_x);
+    double new_scale_y = (h-2*pixel_margin)/(world_max_y-world_min_y);
       
-      if (preserve_aspect) {
-          if (new_scale_x > new_scale_y)
-              new_scale_x = new_scale_y;
-          else
-              new_scale_y = new_scale_x;
+    if (preserve_aspect)
+      {
+        if (new_scale_x > new_scale_y)
+          new_scale_x = new_scale_y;
+        else
+          new_scale_y = new_scale_x;
       }
-      // This works for both flip and not flip!
-      double new_x0 = new_scale_x*0.5*(world_max_x+world_min_x)-w/2;
-      double new_y0 = new_scale_y*0.5*(world_max_y+world_min_y)-h/2;
+    // This works for both flip and not flip!
+    double new_x0 = new_scale_x*0.5*(world_max_x+world_min_x)-w/2;
+    double new_y0 = new_scale_y*0.5*(world_max_y+world_min_y)-h/2;
 
-      view_changed(self, FALSE, new_scale_x, new_scale_y, new_x0, new_y0);
+    view_changed(self, FALSE, new_scale_x, new_scale_y, new_x0, new_y0);
       
-      return 0;
+    return 0;
   }
                    
   /**
@@ -1489,33 +1449,34 @@ class Gtk:Image:Viewer from Gtk:Widget
                    GtkAdjustment *adjustment)
   {
     g_return_if_fail (GTK_IS_IMAGE_VIEWER (self));
-    if (adjustment) {
-        g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
-    }
+    if (adjustment) 
+      g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
   
     if (selfp->hadjustment && selfp->hadjustment != adjustment)
       {
-        gtk_signal_disconnect_by_data (GTK_OBJECT (selfp->hadjustment), self);
-        gtk_object_unref (GTK_OBJECT (selfp->hadjustment));
+        g_signal_handlers_disconnect_by_func (selfp->hadjustment,
+                                              hadjustment_value_changed,
+                                              self);
+
+        g_object_unref (G_OBJECT (selfp->hadjustment));
         selfp->hadjustment = NULL;
       }
   
     if (!adjustment)
-      adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 0.0,
-  						     0.0, 0.0, 0.0));
+      adjustment = gtk_adjustment_new (0.0, 0.0, 0.0,
+                                       0.0, 0.0, 0.0);
   
     if (selfp->hadjustment != adjustment)
       {
-        selfp->hadjustment = adjustment;
-        gtk_object_ref (GTK_OBJECT (selfp->hadjustment));
-        gtk_object_sink (GTK_OBJECT (selfp->hadjustment));
+        selfp->hadjustment = g_object_ref_sink (adjustment);
         
-        gtk_signal_connect (GTK_OBJECT (adjustment), "value_changed",
+        g_signal_connect (G_OBJECT (adjustment), "value_changed",
   			  G_CALLBACK(hadjustment_value_changed),
   			  (gpointer) self);
       }
   
-    //    g_object_notify (G_OBJECT (self), "hadjustment");
+    g_object_notify (G_OBJECT (self), "hadjustment");
+    update_adjustments(self);
   }
   
   /**
@@ -1531,33 +1492,34 @@ class Gtk:Image:Viewer from Gtk:Widget
                    GtkAdjustment *adjustment)
   {
     g_return_if_fail (GTK_IS_IMAGE_VIEWER (self));
-    if (adjustment) {
+    if (adjustment) 
         g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
-    }
   
     if (selfp->vadjustment && selfp->vadjustment != adjustment)
       {
-        gtk_signal_disconnect_by_data (GTK_OBJECT (selfp->vadjustment), self);
-        gtk_object_unref (GTK_OBJECT (selfp->vadjustment));
+        g_signal_handlers_disconnect_by_func (selfp->vadjustment,
+                                              vadjustment_value_changed,
+                                              self);
+
+        g_object_unref (G_OBJECT (selfp->vadjustment));
         selfp->vadjustment = NULL;
-      }
+    }
   
     if (!adjustment)
-      adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 0.0,
-  						     0.0, 0.0, 0.0));
+      adjustment = gtk_adjustment_new (0.0, 0.0, 0.0,
+                                       0.0, 0.0, 0.0);
   
     if (selfp->vadjustment != adjustment)
       {
-        selfp->vadjustment = adjustment;
-        gtk_object_ref (GTK_OBJECT (selfp->vadjustment));
-        gtk_object_sink (GTK_OBJECT (selfp->vadjustment));
+        selfp->vadjustment = g_object_ref_sink (adjustment);
+        g_object_ref (G_OBJECT (selfp->vadjustment));
         
-        gtk_signal_connect (GTK_OBJECT (adjustment), "value_changed",
+        g_signal_connect (G_OBJECT (adjustment), "value_changed",
   			  G_CALLBACK(vadjustment_value_changed),
   			  (gpointer) self);
       }
   
-    // g_object_notify (G_OBJECT (self), "vadjustment");
+    g_object_notify (G_OBJECT (self), "vadjustment");
     update_adjustments(self);
   }
 
@@ -1599,7 +1561,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   get_image(self)
   {
     if (selfp->image)
-        g_object_ref(selfp->image);
+      g_object_ref(selfp->image);
     return selfp->image;
   }
 
@@ -1629,23 +1591,25 @@ class Gtk:Image:Viewer from Gtk:Widget
                           // output
                           double* imgx, double* imgy)
   {
-    if (selfp->do_flip_horizontal) {
+    if (selfp->do_flip_horizontal)
+      {
         int w = selfp->canvas_width;
         *imgx = (selfp->current_x0+w-cx)/selfp->current_scale_x;
-    }
+      }
     else
       *imgx=(selfp->current_x0+cx)/selfp->current_scale_x;
 
-    if (selfp->do_flip_vertical) {
+    if (selfp->do_flip_vertical)
+      {
         int h = selfp->canvas_height;
         *imgy = (selfp->current_y0+h-cy)/selfp->current_scale_y;
-    }
+      }
     else
       *imgy=(selfp->current_y0+cy)/selfp->current_scale_y;
 
 #if 0
     if (selfp->do_flip_vertical)
-      *imgy = -(cy-selfp->current_y0-GTK_WIDGET(self)->allocation.height)/selfp->current_scale_y;
+      *imgy = -(cy-selfp->current_y0-gtk_widget_get_allocated_width(GTK_WIDGET(self));)/selfp->current_scale_y;
     else
       *imgy=(cy+selfp->current_y0)/selfp->current_scale_y;
 #endif
@@ -1657,18 +1621,20 @@ class Gtk:Image:Viewer from Gtk:Widget
                           // output
                           double* canvx, double* canvy)
   {
-    if (selfp->do_flip_horizontal) {
+    if (selfp->do_flip_horizontal)
+      {
         int w = selfp->canvas_width;
         *canvx = (selfp->current_x0+w-imgx*selfp->current_scale_x);
-    }
+      }
     else
       *canvx = imgx*selfp->current_scale_x-selfp->current_x0;
     
     
-    if (selfp->do_flip_vertical) {
+    if (selfp->do_flip_vertical)
+      {
         int h = selfp->canvas_height;
         *canvy = (selfp->current_y0+h-imgy*selfp->current_scale_y);
-    }
+      }
     else
       *canvy = imgy*selfp->current_scale_y-selfp->current_y0;
   }
@@ -1678,8 +1644,8 @@ class Gtk:Image:Viewer from Gtk:Widget
                  double min_zoom,
                  double max_zoom)
   {
-      selfp->min_zoom = min_zoom;
-      selfp->max_zoom = max_zoom;
+    selfp->min_zoom = min_zoom;
+    selfp->max_zoom = max_zoom;
   }
 
   public gboolean
@@ -1699,18 +1665,20 @@ class Gtk:Image:Viewer from Gtk:Widget
     *scale_y = selfp->current_scale_y;
     *shift_x = selfp->current_x0;
     *shift_y = selfp->current_y0;
-    if (selfp->do_flip_horizontal) {
+    if (selfp->do_flip_horizontal)
+      {
         int cnv_w = selfp->canvas_width;
         *scale_x = -*scale_x;
         *shift_x += cnv_w;
         *shift_x = -*shift_x;
-    }
-    if (selfp->do_flip_vertical) {
+      }
+    if (selfp->do_flip_vertical)
+      {
         int cnv_h = selfp->canvas_height;
         *scale_y = -*scale_y;
         *shift_y += cnv_h;
         *shift_y = -*shift_y;
-    }
+      }
   }
 
   public void
@@ -1720,27 +1688,30 @@ class Gtk:Image:Viewer from Gtk:Widget
                       gint shift_x,
                       gint shift_y)
   {
-    if (selfp->do_flip_horizontal) {
+    if (selfp->do_flip_horizontal)
+      {
         int cnv_w = selfp->canvas_width;
         scale_x = -scale_x;
         shift_x = cnv_w-shift_x;
-    }
-    if (selfp->do_flip_vertical) {
+      }
+    if (selfp->do_flip_vertical)
+      {
         int cnv_h = selfp->canvas_height;
         scale_y = -scale_y;
         shift_y = cnv_h-shift_y;
-    }
+      }
     if (selfp->current_scale_x != scale_x
         || selfp->current_scale_y != scale_y
         || selfp->current_x0 != shift_x
-        || selfp->current_y0 != shift_y) {
+        || selfp->current_y0 != shift_y)
+      {
         selfp->current_scale_x = scale_x;
         selfp->current_scale_y = scale_y;
         selfp->current_x0 = shift_x;
         selfp->current_y0 = shift_y;
         
         gtk_image_viewer_redraw(self, TRUE);
-    }
+      }
   }
     
   public void
@@ -1755,26 +1726,26 @@ class Gtk:Image:Viewer from Gtk:Widget
   set_fill_on_resize(self,
                      gboolean whether)
   {
-      selfp->do_fill_on_resize = whether;
+    selfp->do_fill_on_resize = whether;
   }
 
   public void
   set_fill_on_resize_margin(self,
                             gboolean margin)
   {
-      selfp->fill_on_resize_margin = margin;
+    selfp->fill_on_resize_margin = margin;
   }
 
   public void
   one_shot_block_fill_on_resize(self)
   {
-      selfp->one_shot_block_fill_on_resize = TRUE;
+    selfp->one_shot_block_fill_on_resize = TRUE;
   }
 
   public gboolean
   get_fill_on_resize(self)
   {
-      return selfp->do_fill_on_resize;
+    return selfp->do_fill_on_resize;
   }
 
   public void
@@ -1797,8 +1768,8 @@ class Gtk:Image:Viewer from Gtk:Widget
            gboolean *do_flip_horizontal,
            gboolean *do_flip_vertical)
   {
-      *do_flip_horizontal = selfp->do_flip_horizontal;
-      *do_flip_vertical = selfp->do_flip_vertical;
+    *do_flip_horizontal = selfp->do_flip_horizontal;
+    *do_flip_vertical = selfp->do_flip_vertical;
   }
 
   public void
@@ -1819,15 +1790,15 @@ class Gtk:Image:Viewer from Gtk:Widget
 
     // Flip adjustments
     if (selfp->hadjustment && do_flip_horizontal != selfp->do_flip_horizontal) {
-      selfp->hadjustment->value = 1 - selfp->hadjustment->page_size - selfp->hadjustment->value;
+        gtk_adjustment_set_value(selfp->hadjustment,
+                                 1 - gtk_adjustment_get_page_size(selfp->hadjustment) - gtk_adjustment_get_value(selfp->hadjustment));
       selfp->do_flip_horizontal = do_flip_horizontal;
-      gtk_adjustment_value_changed(selfp->hadjustment);
       need_signal = TRUE;
     }
     if (selfp->vadjustment && do_flip_vertical != selfp->do_flip_vertical) {
-      selfp->vadjustment->value = 1 - selfp->vadjustment->page_size - selfp->vadjustment->value;
+        gtk_adjustment_set_value(selfp->vadjustment,
+                                 1 - gtk_adjustment_get_page_size(selfp->vadjustment) - gtk_adjustment_get_value(selfp->vadjustment));
       selfp->do_flip_vertical = do_flip_vertical;
-      gtk_adjustment_value_changed(selfp->vadjustment);
       need_signal =TRUE;
     }
 
@@ -1843,19 +1814,20 @@ class Gtk:Image:Viewer from Gtk:Widget
   set_vertical_lock(self,
                     gboolean do_vertical_lock)
   {
-      gboolean need_signal = selfp->do_vertical_lock != do_vertical_lock;
-      selfp->do_vertical_lock = do_vertical_lock;
-      if (need_signal) {
-          gtk_image_viewer_vertical_zoom_lock_changed(self,
-                                                 selfp->do_vertical_lock);
-          gtk_image_viewer_redraw(self, TRUE);
+    gboolean need_signal = selfp->do_vertical_lock != do_vertical_lock;
+    selfp->do_vertical_lock = do_vertical_lock;
+    if (need_signal)
+      {
+        gtk_image_viewer_vertical_zoom_lock_changed(self,
+                                                    selfp->do_vertical_lock);
+        gtk_image_viewer_redraw(self, TRUE);
       }
   }
 
   public void
   zoom_reset(self)
   {
-      zoom_reset(self);
+    zoom_reset(self);
   }
 
   public void
@@ -1863,7 +1835,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   {
     gdouble margin = 0;
     if (!selfp->image)
-        margin = selfp->fill_on_resize_margin;
+      margin = selfp->fill_on_resize_margin;
     gtk_image_viewer_zoom_to_box(self,
                                  selfp->scroll_min_x,
                                  selfp->scroll_min_y,
@@ -1879,6 +1851,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                                Gtk:Adjustment    *hadjustment,
                                Gtk:Adjustment    *vadjustment)
   {
+    printf("set_scroll_adjustments.\n");
     if (selfp->hadjustment != hadjustment)
       gtk_image_viewer_set_hadjustment (self, hadjustment);
     if (selfp->vadjustment != vadjustment)
@@ -1899,6 +1872,30 @@ class Gtk:Image:Viewer from Gtk:Widget
   signal last NONE (INT)
   void vertical_zoom_lock_changed(self,
                              gboolean vertical_zoom_lock);
+
+  property OBJECT vadjustment
+      (override)
+        set { gtk_image_viewer_set_vadjustment(self,GTK_ADJUSTMENT(g_value_dup_object (VAL))); }
+        get { g_value_set_object (VAL, selfp->vadjustment); }
+    ;
+
+  property OBJECT hadjustment
+      (override)
+        set { gtk_image_viewer_set_hadjustment(self, GTK_ADJUSTMENT(g_value_dup_object (VAL))); }
+        get { g_value_set_object (VAL, selfp->hadjustment); }
+    ;
+
+  property OBJECT vscroll_policy
+      (override)
+        set { selfp->vscroll_policy = g_value_get_enum (VAL); }
+        get { g_value_set_enum (VAL, selfp->vscroll_policy); }
+    ;
+
+  property OBJECT hscroll_policy
+      (override)
+        set { selfp->hscroll_policy = g_value_get_enum (VAL); }
+        get { g_value_set_enum (VAL, selfp->hscroll_policy); }
+    ;
 }
   
 %{
@@ -1916,7 +1913,7 @@ view_changed(GtkImageViewer *self,
   int render_width, render_height;
   GdkRectangle expose_rect;
   //printf("view_changed\n");
-  if (!widget || !widget->window)
+  if (!widget || !gtk_widget_get_window(widget))
     return 0;
 
   g_return_val_if_fail (self != NULL, FALSE);
@@ -1944,47 +1941,49 @@ view_changed(GtkImageViewer *self,
   /* Clip the request */
   if (im
       || (selfp->scroll_width > 0 && selfp->scroll_height > 0)
-      ) {
-        int cwidth = selfp->canvas_width;
-        int cheight = selfp->canvas_height;
-        double height, width;
+      )
+    {
+      int cwidth = selfp->canvas_width;
+      int cheight = selfp->canvas_height;
+      double height, width;
         
-        width = selfp->scroll_width;
-        height = selfp->scroll_height;
+      width = selfp->scroll_width;
+      height = selfp->scroll_height;
         
-        if (im && width*scale_x > cwidth)
-            render_width = cwidth;
-        else
-            render_width = (int)(width * scale_x);
+      if (im && width*scale_x > cwidth)
+        render_width = cwidth;
+      else
+        render_width = (int)(width * scale_x);
         
-        if (im && height*scale_y > cheight)
-            render_height = cheight;
-        else
-            render_height = (int)(height * scale_y);
+      if (im && height*scale_y > cheight)
+        render_height = cheight;
+      else
+        render_height = (int)(height * scale_y);
         
-        // Clip only for images
-        if (im) {
-            if (render_width < cwidth)
-                x0 = -(cwidth - render_width)/2;
-            else if (x0 + render_width > width*scale_x)
-                x0 = width*scale_x - render_width;
-            else if (x0<0)
-                x0 = 0;
+      // Clip only for images
+      if (im)
+        {
+          if (render_width < cwidth)
+            x0 = -(cwidth - render_width)/2;
+          else if (x0 + render_width > width*scale_x)
+            x0 = width*scale_x - render_width;
+          else if (x0<0)
+            x0 = 0;
             
-            if (im && render_height < cheight)
-                y0 = -(cheight - render_height)/2;
-            else if (y0 + render_height > height*scale_y)
-                y0 = height*scale_y - render_height;
-            else if (y0<0)
-                y0 = 0;
+          if (im && render_height < cheight)
+            y0 = -(cheight - render_height)/2;
+          else if (y0 + render_height > height*scale_y)
+            y0 = height*scale_y - render_height;
+          else if (y0<0)
+            y0 = 0;
         }
-  }
+    }
   
   /* If scale is the same, then the image has only been scrolled,
      and we only need to update the exposed areas.
    */
   if (!do_force
-      && widget->window
+      && gtk_widget_get_window(widget)
       && scale_x == selfp->current_scale_x
       && scale_y == selfp->current_scale_y
       )
@@ -1997,18 +1996,6 @@ view_changed(GtkImageViewer *self,
         dx = -dx;
       if (selfp->do_flip_vertical)
         dy = -dy;
-      int src_x = (dx < 0) ? 0 : dx;
-      int src_y = (dy < 0) ? 0 : dy;
-      int dst_x = (dx < 0) ? -dx : 0;
-      int dst_y = (dy < 0) ? -dy : 0;
-
-      /* Construct the gc the first time it is used */
-      if (!selfp->gc)
-        {
-	  selfp->gc = gdk_gc_new(widget->window);
-	  gdk_gc_copy(selfp->gc, widget->style->white_gc);
-	  gdk_gc_set_exposures(selfp->gc, TRUE);
-	}
 
       selfp->current_x0 = x0;
 #if 0
@@ -2019,48 +2006,36 @@ view_changed(GtkImageViewer *self,
 #endif
       selfp->current_y0 = y0;
 
-      /* Scroll visible region */
-      gdk_draw_drawable (widget->window,
-                         selfp->gc,
-                         widget->window,
-                         src_x, src_y,
-                         dst_x, dst_y,
-                         GTK_WIDGET(self)->allocation.width - abs (dx),
-                         GTK_WIDGET(self)->allocation.height - abs (dy));
+      gdk_window_scroll(gtk_widget_get_window(GTK_WIDGET(self)),
+                        dx,dy);
 
-      DBG2(g_print("Filling in: dx dy = %d %d\n", dx, dy));
+      DBG2(g_print("Filling in: dx dy = %.0f %.0f\n", dx, dy));
       /* And fill in the new areas */
       if (dx)
 	{
-	    expose_rect.x = (dx < 0) ? 0 : GTK_WIDGET(self)->allocation.width - dx;
-	    expose_rect.y = 0;
-	    expose_rect.width = abs(dx);
-	    expose_rect.height = GTK_WIDGET(self)->allocation.height;
+          expose_rect.x = (dx < 0) ? 0 : gtk_widget_get_allocated_width(GTK_WIDGET(self)) - dx;
+          expose_rect.y = 0;
+          expose_rect.width = abs(dx);
+          expose_rect.height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
 
-	    gdk_window_invalidate_rect(widget->window,
-				       &expose_rect,
-				       FALSE);
-	    gdk_window_process_updates(widget->window,
-				       FALSE);
-
+          gdk_window_invalidate_rect(gtk_widget_get_window(widget),
+                                     &expose_rect,
+                                     FALSE);
 	}
       if (dy)
 	{
-	    expose_rect.x = 0;
-	    expose_rect.y = (dy < 0) ? 0 : GTK_WIDGET(self)->allocation.height - dy;;
-	    expose_rect.width = GTK_WIDGET(self)->allocation.width;
-	    expose_rect.height = abs(dy);
+          expose_rect.x = 0;
+          expose_rect.y = (dy < 0) ? 0 : gtk_widget_get_allocated_height(GTK_WIDGET(self)) - dy;
+          expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
+          expose_rect.height = abs(dy);
 
-	    gdk_window_invalidate_rect(widget->window,
-				       &expose_rect,
-				       FALSE);
-	    gdk_window_process_updates(widget->window,
-				       FALSE);
-
+          gdk_window_invalidate_rect(gtk_widget_get_window(widget),
+                                     &expose_rect,
+                                     FALSE);
 	}
     }
   
-  else if (widget->window &&
+  else if (gtk_widget_get_window(widget) &&
 	   (do_force
       || scale_x != selfp->current_scale_x
       || scale_y != selfp->current_scale_y
@@ -2075,16 +2050,13 @@ view_changed(GtkImageViewer *self,
 
       expose_rect.x = 0;
       expose_rect.y = 0;
-      expose_rect.width = GTK_WIDGET(self)->allocation.width;
-      expose_rect.height = GTK_WIDGET(self)->allocation.height;
+      expose_rect.width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
+      expose_rect.height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
 
       /* gdk_window_ref (expose_event.window); */
-      gdk_window_invalidate_rect(widget->window,
+      gdk_window_invalidate_rect(gtk_widget_get_window(widget),
 				 &expose_rect,
 				 TRUE);
-      gdk_window_process_updates(widget->window,
-				 TRUE
-				 );
     }
 
   return 1;
@@ -2096,8 +2068,8 @@ view_changed(GtkImageViewer *self,
 static gint
 zoom_reset(GtkImageViewer *self)
 {
-    view_changed(self, TRUE, 1, 1, 0, 0);
-    return 1;
+  view_changed(self, TRUE, 1, 1, 0, 0);
+  return 1;
 }
 
 static gint
@@ -2131,17 +2103,15 @@ hadjustment_value_changed (GtkAdjustment *hadjustment,
   min = selfp->scroll_min_x;
 
   // if flip then flip back to calculate same x0 as before flip!
-  double v = hadjustment->value;
+  double v = gtk_adjustment_get_value(hadjustment);
   double s = selfp->current_scale_x;
   if (selfp->do_flip_horizontal)
-    v = 1.0 - hadjustment->page_size - v;
-  new_x0 = (v * (width-selfp->hadjustment->page_size) + min) * s;
+      v = 1.0 - gtk_adjustment_get_page_size(hadjustment) - v;
+  new_x0 = (v * (width-gtk_adjustment_get_page_size(selfp->hadjustment)) + min) * s;
   dx = new_x0 - selfp->current_x0;
 
-  if ((int)dx!=0) {
+  if ((int)dx!=0) 
     zoom_translate(self, (int)dx, 0);
-  }
-    
 }
 
 static void
@@ -2152,29 +2122,25 @@ vadjustment_value_changed (GtkAdjustment *vadjustment,
   double min = 0;
   double new_y0, dy;
   double height;
-
+  
   g_return_if_fail (GTK_IS_ADJUSTMENT (vadjustment));
   g_return_if_fail (GTK_IS_IMAGE_VIEWER (data));
-
+  
   self = GTK_IMAGE_VIEWER (data);
-
+  
   height = selfp->scroll_height;
   min = selfp->scroll_min_y;
-
+  
   // if flip then flip back to calculate same x0 as before flip!
-  double v = vadjustment->value;
+  double v = gtk_adjustment_get_value(vadjustment);
   double s = selfp->current_scale_y;
   if (selfp->do_flip_vertical)
-      v = 1.0 - vadjustment->page_size - v;
-  new_y0 = (v * (height-selfp->vadjustment->page_size) + min) * s;
+    v = 1.0 - gtk_adjustment_get_page_size(vadjustment) - v;
+  new_y0 = (v * (height-gtk_adjustment_get_page_size(selfp->vadjustment)) + min) * s;
   dy = new_y0 - selfp->current_y0;
-
-  if ((int)dy!=0) {
-#if 0
-    printf("vadjustment: value dy = %f %d\n", vadjustment->value, (int)dy);
-#endif
+  
+  if ((int)dy!=0)
     zoom_translate(self, 0, (int)dy);
-  }
 }
 
 // This function should update the adjustment so that they reflect
@@ -2182,15 +2148,16 @@ vadjustment_value_changed (GtkAdjustment *vadjustment,
 static gboolean update_adjustments(GtkImageViewer *self)
 {
   double scroll_min_x = 0, scroll_min_y = 0, scroll_max_x=0, scroll_max_y=0;
-  double scroll_width=0, scroll_height=0;
-  double width, height;
+  //  double scroll_width=0, scroll_height=0;
 
   if (!selfp->hadjustment
       || !selfp->vadjustment
       )
 
+#if 0
   width = selfp->scroll_width;
   height = selfp->scroll_height;
+#endif
 
   // Don't rely on scroll_min_x, etc for calculation of adjustments
   // as these may have been overridden because of aspect ratio
@@ -2203,84 +2170,60 @@ static gboolean update_adjustments(GtkImageViewer *self)
                                            selfp->canvas_width+1,selfp->canvas_height+1,
                                            // output
                                            &scroll_max_x, &scroll_max_y);
-  scroll_width = scroll_max_x - scroll_min_x;
-  scroll_height = scroll_max_y - scroll_min_y;
   if (selfp->hadjustment)
     {
-      selfp->hadjustment->lower = 0;
-      selfp->hadjustment->upper = 1.0;
-      selfp->hadjustment->step_increment = 0.01;
-      selfp->hadjustment->page_size = selfp->canvas_width / (selfp->scroll_width * selfp->current_scale_x);
+      gtk_adjustment_set_lower(selfp->hadjustment, 0);
+      gtk_adjustment_set_upper(selfp->hadjustment, 1.0);
+      gtk_adjustment_set_step_increment(selfp->hadjustment, 0.01);
+      gtk_adjustment_set_page_size(selfp->hadjustment, selfp->canvas_width / (selfp->scroll_width * selfp->current_scale_x));
       
       double v = (selfp->current_x0/selfp->current_scale_x - selfp->scroll_min_x)
-        /(selfp->scroll_width-selfp->hadjustment->page_size);
+          /(selfp->scroll_width-gtk_adjustment_get_page_size(selfp->hadjustment));
       if (selfp->do_flip_horizontal)
-          v = 1.0 - selfp->hadjustment->page_size -v;
+          v = 1.0 - gtk_adjustment_get_page_size(selfp->hadjustment) -v;
 
-      DBG(printf("current_x0 scale ps val = %d %f %f %f\n",
+      DBG(printf("current_x0 scale ps val = %.0f %f %f %f\n",
                  selfp->current_x0,
                  selfp->current_scale_x,
-                 selfp->hadjustment->page_size,
-                 selfp->hadjustment->value));
+                 gtk_adjustment_get_page_size(selfp->hadjustment),
+                 gtk_adjustment_get_value(selfp->hadjustment)));
 
-      if (v>=-1 && v<= 2) {
-          selfp->hadjustment->value = v;
-          gtk_adjustment_changed(selfp->hadjustment);
-          gtk_adjustment_value_changed(selfp->hadjustment);
-      }
+      if (v>=-1 && v<= 2) 
+          gtk_adjustment_set_value(selfp->hadjustment, v);
 
     }
   if (selfp->vadjustment)
     {
-      selfp->vadjustment->lower = 0;
-      selfp->vadjustment->upper = 1.0;
-      selfp->vadjustment->step_increment = 0.01;
+      gtk_adjustment_set_lower(selfp->vadjustment, 0);
+      gtk_adjustment_set_upper(selfp->vadjustment, 1.0);
+      gtk_adjustment_set_step_increment(selfp->vadjustment, 0.01);
       DBG(printf("canvas_height sh sy scroll_height*current_scale_y = %d %f %f %f\n",
                  selfp->canvas_height,
                  selfp->scroll_height,
                  selfp->current_scale_y,
                  selfp->scroll_height * selfp->current_scale_y));
-      selfp->vadjustment->page_size = selfp->canvas_height / (selfp->scroll_height * selfp->current_scale_y);
+      gtk_adjustment_set_page_size(selfp->vadjustment, selfp->canvas_height / (selfp->scroll_height * selfp->current_scale_y));
 
       double v = (selfp->current_y0/selfp->current_scale_y - selfp->scroll_min_y)
-        /(selfp->scroll_height-selfp->vadjustment->page_size);
+                  /(selfp->scroll_height-gtk_adjustment_get_page_size(selfp->vadjustment));
 
       if (selfp->do_flip_vertical)
-        v = 1.0 - selfp->vadjustment->page_size -v;
+          v = 1.0 - gtk_adjustment_get_page_size(selfp->vadjustment) -v;
 
-      if (v>=-1 && v<= 2) {
-          selfp->vadjustment->value = v;
-          gtk_adjustment_changed(selfp->hadjustment);
-          gtk_adjustment_value_changed(selfp->hadjustment);
-      }
+      if (v>=-1 && v<= 2) 
+          gtk_adjustment_set_value(selfp->vadjustment, v);
 
-      DBG(printf("vadjust: current_y0 scale ps val = %d %f %f %f\n",
+      DBG(printf("vadjust: current_y0 scale ps val = %.0f %f %f %f\n",
                  selfp->current_y0,
                  selfp->current_scale_y,
-                 selfp->vadjustment->page_size,
-                 selfp->vadjustment->value));
+                 gtk_adjustment_get_page_size(selfp->vadjustment),
+                 gtk_adjustment_get_value(selfp->vadjustment)));
 
-      gtk_adjustment_changed(selfp->vadjustment);
-      gtk_adjustment_value_changed(selfp->vadjustment);
     }
   return 0;
+
 }
 
-#if 0
-  property OBJECT vadjustment
-    (nick = "Vertical adjustment",
-     blurb = "Vertical adjustment")
-        set { selfp->vadjustment = GTK_ADJUSTMENT(g_value_dup_object (VAL)); }
-        get { g_value_set_object (VAL, selfp->vadjustment); }
-    ;
-  property OBJECT hadjustment
-    (nick = "Horizontal adjustment",
-     blurb = "Horizontal adjustment")
-        set { selfp->hadjustment = GTK_ADJUSTMENT(g_value_dup_object (VAL)); }
-        get { g_value_set_object (VAL, selfp->hadjustment); }
-    ;
-
-#endif
 
 static void
 fix_gdk_pixbuf_scale_nn(const GdkPixbuf *src,
@@ -2294,61 +2237,65 @@ fix_gdk_pixbuf_scale_nn(const GdkPixbuf *src,
                         double scale_x,
                         double scale_y)
 {
-    int nch_src = gdk_pixbuf_get_n_channels(src);
-    int nch_dest = gdk_pixbuf_get_n_channels(dest);
-    int nch = nch_src; // Minimum num channels
-    int row_idx, col_idx;
-    if (nch_dest < nch)
-        nch = nch_dest;
-    guchar *buf_dest = gdk_pixbuf_get_pixels(dest);
-    guchar *buf_src = gdk_pixbuf_get_pixels(src);
-    gint dest_row_stride = gdk_pixbuf_get_rowstride(dest);
-    gint src_row_stride = gdk_pixbuf_get_rowstride(src);
-    gint src_height = gdk_pixbuf_get_height(src);
-    gint src_width = gdk_pixbuf_get_width(src);
+  int nch_src = gdk_pixbuf_get_n_channels(src);
+  int nch_dest = gdk_pixbuf_get_n_channels(dest);
+  int nch = nch_src; // Minimum num channels
+  int row_idx, col_idx;
+  if (nch_dest < nch)
+    nch = nch_dest;
+  guchar *buf_dest = gdk_pixbuf_get_pixels(dest);
+  guchar *buf_src = gdk_pixbuf_get_pixels(src);
+  gint dest_row_stride = gdk_pixbuf_get_rowstride(dest);
+  gint src_row_stride = gdk_pixbuf_get_rowstride(src);
+  gint src_height = gdk_pixbuf_get_height(src);
+  gint src_width = gdk_pixbuf_get_width(src);
 
-    // Create a cache of column addresses so we don't have to
-    // do floating point calculations for each pixel.
-    gint *dest_addr = (gint*)g_new0(gint, dest_width);
-    for (col_idx= 0; col_idx<dest_width; col_idx++) {
-        gint col_src = (int)((1.0*col_idx - offset_x)/scale_x);
-        if (col_src >= 0 && col_src < src_width) 
-            dest_addr[col_idx] = col_src;
-        else
-            col_src = -1;
+  // Create a cache of column addresses so we don't have to
+  // do floating point calculations for each pixel.
+  gint *dest_addr = (gint*)g_new0(gint, dest_width);
+  for (col_idx= 0; col_idx<dest_width; col_idx++)
+    {
+      gint col_src = (int)((1.0*col_idx - offset_x)/scale_x);
+      if (col_src >= 0 && col_src < src_width) 
+        dest_addr[col_idx] = col_src;
+      else
+        col_src = -1;
     }
     
-    // Todo: clip dest_height and dest_width so that we don't
-    // copy outside of image.
-    for (row_idx=0; row_idx<dest_height; row_idx++) {
-        guchar *p = buf_dest + dest_row_stride * row_idx;
-        gint row_src = (int)((1.0*row_idx - offset_y)/scale_y);
-        guchar *psrc_row = buf_src + row_src * src_row_stride;
-        if (row_src < 0 || row_src >= src_height) {
-            memset(p, 0, dest_row_stride);
-            continue;
+  // Todo: clip dest_height and dest_width so that we don't
+  // copy outside of image.
+  for (row_idx=0; row_idx<dest_height; row_idx++)
+    {
+      guchar *p = buf_dest + dest_row_stride * row_idx;
+      gint row_src = (int)((1.0*row_idx - offset_y)/scale_y);
+      guchar *psrc_row = buf_src + row_src * src_row_stride;
+      if (row_src < 0 || row_src >= src_height)
+        {
+          memset(p, 0, dest_row_stride);
+          continue;
         }
-        for (col_idx= 0; col_idx<dest_width; col_idx++) {
-            gint col_src = dest_addr[col_idx];
-            guchar rr=0, gg=0, bb=0, alpha=255;
-            if (col_src >= 0) {
-                guchar *psrc = psrc_row + col_src * nch_src;
+      for (col_idx= 0; col_idx<dest_width; col_idx++)
+        {
+          gint col_src = dest_addr[col_idx];
+          guchar rr=0, gg=0, bb=0, alpha=255;
+          if (col_src >= 0) {
+            guchar *psrc = psrc_row + col_src * nch_src;
                 
-                rr = *psrc++;
-                gg = *psrc++;
-                bb = *psrc++;
-                if (nch_src==4)
-                    alpha = *psrc++;
-            }
+            rr = *psrc++;
+            gg = *psrc++;
+            bb = *psrc++;
+            if (nch_src==4)
+              alpha = *psrc++;
+          }
 
-            *p++ = rr;
-            *p++ = gg;
-            *p++ = bb;
-            if (nch_dest == 4)
-                *p++ = alpha;
+          *p++ = rr;
+          *p++ = gg;
+          *p++ = bb;
+          if (nch_dest == 4)
+            *p++ = alpha;
         }
     }
-    g_free(dest_addr);
+  g_free(dest_addr);
 }
 
 static gboolean turn_off_insensitive(GtkWidget *data)

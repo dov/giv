@@ -124,20 +124,15 @@ class Giv:Histo from Gtk:Drawing:Area {
     }
     
     override (Gtk:Widget) gboolean
-    expose_event (Gtk:Widget *_self,
-                  Gdk:Event:Expose *event)
+    draw (Gtk:Widget *_self,
+          cairo_t *cr)
     {
         GivHisto *self = GIV_HISTO(_self);
-        cairo_t *cr = gdk_cairo_create(GTK_WIDGET(self)->window);
-        int width = GTK_WIDGET(self)->allocation.width;
-        int height = GTK_WIDGET(self)->allocation.height;
+        int width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
+        int height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
         double histo_width = width - 2*selfp->margin;
         double histo_height = height - 2*selfp->margin;
         
-        cairo_rectangle(cr, event->area.x, event->area.y,
-                        event->area.width, event->area.height);
-        cairo_clip(cr);
-
         cairo_set_source_rgb(cr, 0.4,0.4,0.5);
 
         // short cuts
@@ -213,7 +208,7 @@ class Giv:Histo from Gtk:Drawing:Area {
         double x1 = selfp->cursor_x1;
         double x2 = selfp->cursor_x2;
         double xc = 0.5*(x1+x2);
-        int height = GTK_WIDGET(self)->allocation.height;
+        int height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
         double h1 = 5;
         double w1 = 5;
         double r = 5;
@@ -321,7 +316,7 @@ class Giv:Histo from Gtk:Drawing:Area {
     {
         double x1 = selfp->cursor_x1;
         double x2 = selfp->cursor_x2;
-        int height = GTK_WIDGET(self)->allocation.height;
+        int height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
         double h1 = 5;
         double w1 = 5;
         double xc = 0.5*(x1+x2);
@@ -370,7 +365,7 @@ class Giv:Histo from Gtk:Drawing:Area {
     private double canvas_x_to_gl(self,
                                   double x)
     {
-        int width = GTK_WIDGET(self)->allocation.width;
+        int width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         double histo_width = width - 2*selfp->margin;
         // short cuts
         double min = selfp->img_gl_min;
@@ -382,7 +377,7 @@ class Giv:Histo from Gtk:Drawing:Area {
     private double gl_to_canvas_x(self,
                                   double gl)
     {
-        int width = GTK_WIDGET(self)->allocation.width;
+        int width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
         double histo_width = width - 2*selfp->margin;
         // short cuts
         double min = selfp->img_gl_min;

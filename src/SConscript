@@ -71,7 +71,6 @@ src_giv_widget =     ["giv-widget.cc",
                       "GivRenderer.cc",
                       "GivStringArray.c",
                       "giv-data.cc",
-                      "giv-backstore.cc",
                       "giv-markup.cc",
                       "giv_agg_arrowhead.cc",
                       "giv-settings.cc",
@@ -149,7 +148,7 @@ if not env['SBOX']:
     env.Command(["giv-color-map.h",
                  "giv-color-map.c"],
                 "giv-color-map.vala",
-                ["valac -C --pkg=gtk+-2.0  -H giv-color-map.h --vapi=giv-color-map.vapi giv-color-map.vala"],
+                ["valac -C --pkg=gtk+-3.0  -H giv-color-map.h --vapi=giv-color-map.vapi giv-color-map.vala"],
                 chdir=True)
 
 env.SConscript(['agg/SConscript',

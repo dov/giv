@@ -47,8 +47,6 @@ GivImage *giv_plugin_load_file(const char *filename,
                                GError **error)
 {
     GivImage *img=NULL;
-    gchar *npy_string;
-    guint length;
         
     TIFF* tif = TIFFOpen(filename, "r");
 
@@ -56,7 +54,6 @@ GivImage *giv_plugin_load_file(const char *filename,
 
     if (tif) {
         uint32 w, h, config=9999, bps=1, spp=1, sample_format=9999;
-	size_t npixels;
 	uint8* raster;
         gboolean has_colormap = FALSE;
         uint16 *rmap, *gmap, *bmap;
@@ -95,8 +92,7 @@ GivImage *giv_plugin_load_file(const char *filename,
             printf("Unknown planar config==%d\n", config);
             
 	if (raster != NULL) {
-            int row_idx, col_idx, clr_idx, config;
-            int clr[3];
+            int row_idx, col_idx, clr_idx;
             int dst_spp = 1;
 
             // TBD - Support more types.
@@ -137,7 +133,6 @@ GivImage *giv_plugin_load_file(const char *filename,
             giv_image_set_one_bit(img, one_bit);
 
             guchar *dst = img->buf.buf;
-            int dst_bpp = giv_image_type_get_size(image_type);
             int dst_row_stride = giv_image_get_row_stride(img);
 
             // Copy the tiff data to the img structure. This can

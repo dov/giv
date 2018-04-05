@@ -17,16 +17,16 @@ typedef struct {
 
 typedef struct {
     DovtkLasso parent;
-    gulong expose_handler_id;
+    gulong draw_handler_id;
     GtkWidget *widget;
     DovtkLassoDrawing drawing_cb;
     DovtkLassoRectangleList *old_rect_list;
     gpointer user_data;
 } DovtkLassoPrivate ;
 
-static int lasso_cb_expose(GtkWidget      *widget,
-                           GdkEventExpose *event,
-                           gpointer        user_data);
+static int lasso_cb_draw(GtkWidget      *widget,
+                         cairo_t        *cr,
+                         gpointer        user_data);
 static DovtkLassoRectangleList *dovtk_lasso_rectangle_list_new(int num_rectangles);
 static void dovtk_lasso_rectangle_list_destroy(DovtkLassoRectangleList *rectangcle_list);
 
@@ -38,10 +38,10 @@ DovtkLasso *dovtk_lasso_create(GtkWidget *widget,
     
     // This binding doesn't work if the default expose handler
     // returns TRUE!
-    selfp->expose_handler_id
+    selfp->draw_handler_id
         = g_signal_connect_after(widget,
-                                 "expose-event",
-                                 G_CALLBACK(lasso_cb_expose),
+                                 "draw",
+                                 G_CALLBACK(lasso_cb_draw),
                                  selfp);
     selfp->widget = widget;
     selfp->drawing_cb = drawing_cb;
@@ -54,7 +54,7 @@ void dovtk_lasso_destroy(DovtkLasso *lasso)
 {
     DovtkLassoPrivate *selfp = (DovtkLassoPrivate*)lasso;
     g_signal_handler_disconnect(selfp->widget,
-                                selfp->expose_handler_id);
+                                selfp->draw_handler_id);
     // This gets rid of the overlay. Is this always needed?
     dovtk_lasso_update(lasso);
     
@@ -70,9 +70,9 @@ void dovtk_lasso_clear_exprects(DovtkLasso *lasso)
     selfp->old_rect_list = dovtk_lasso_rectangle_list_new(0);
 }
 
-static int lasso_cb_expose(GtkWidget      *widget,
-                           GdkEventExpose *event,
-                           gpointer        user_data)
+static int lasso_cb_draw(GtkWidget      *widget,
+                         cairo_t *cr,
+                         gpointer        user_data)
 {
     DovtkLassoPrivate *selfp = (DovtkLassoPrivate*)user_data;
     //    printf("dovtk-lasso.c: expose\n");
@@ -84,15 +84,7 @@ static int lasso_cb_expose(GtkWidget      *widget,
     g_signal_handler_unblock(widget, selfp->expose_handler_id);
 #endif
 
-    cairo_t *cr;
-    cr = gdk_cairo_create(widget->window);
-    cairo_rectangle(cr, event->area.x, event->area.y,
-                    event->area.width, event->area.height);
-    cairo_clip(cr);
-
     selfp->drawing_cb(cr, DOVTK_LASSO_CONTEXT_PAINT, selfp->user_data);
-
-    cairo_destroy(cr);
 
     return TRUE;
 }
@@ -104,8 +96,8 @@ static DovtkLassoRectangleList *get_exprects_from_drawing(DovtkLassoPrivate *sel
     // Call drawing_cb to and use it to generate the rectangle list
     DovtkLassoRectangleList *rect_list = NULL;
     int scale_factor = 32;
-    int low_res_width = (selfp->widget->allocation.width+scale_factor-1) / scale_factor;
-    int low_res_height = (selfp->widget->allocation.height+scale_factor-1) / scale_factor;
+    int low_res_width = (gtk_widget_get_allocated_width(selfp->widget)+scale_factor-1) / scale_factor;
+    int low_res_height = (gtk_widget_get_allocated_height(selfp->widget)+scale_factor-1) / scale_factor;
     
     // This should be created in the creation of DovtkLasso
     cairo_t *cr = NULL;
@@ -195,7 +187,7 @@ void dovtk_lasso_update(DovtkLasso *lasso)
         printf("Invalidate region (%d,%d,%d,%d).\n",
                rect.x,rect.y,rect.width,rect.height);
 #endif
-        gdk_window_invalidate_rect(selfp->widget->window,
+        gdk_window_invalidate_rect(gtk_widget_get_window(selfp->widget),
                                    &rect,
                                    TRUE);
     }

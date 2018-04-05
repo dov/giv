@@ -46,7 +46,8 @@ public class GivColorMap : DrawingArea {
 	public void redraw()
 	{
 		queue_draw_area(0,0,
-						allocation.width, allocation.height);
+						get_allocated_width(),
+						get_allocated_height());
 	}
 
 	public void show_text(Cairo.Context cr,
@@ -145,16 +146,10 @@ public class GivColorMap : DrawingArea {
 		return "";
 	}
 	
-	public override bool expose_event(Gdk.EventExpose event)
+	public override bool draw(Context cr)
 	{
-		var cr = Gdk.cairo_create (this.window);
-		var w = allocation.width;
-		var h = allocation.height;
-
-		// Set clipping area to minimize redrawing
-		cr.rectangle (event.area.x, event.area.y,
-                      event.area.width, event.area.height);
-        cr.clip ();
+		var w = get_allocated_width();
+		var h = get_allocated_height();
 
 		if (!is_horizontal) {
 			// Draw 256 with colors from start to end

@@ -761,7 +761,7 @@ class Giv:Win from Gtk:Window
 
         num_top_levels++;
         g_signal_connect (G_OBJECT(self), "destroy",
-                          GTK_SIGNAL_FUNC (giv_win_destroy), self);
+                          G_CALLBACK (giv_win_destroy), self);
     
     
         w_vbox = gtk_vbox_new(0,0);
@@ -1417,12 +1417,12 @@ class Giv:Win from Gtk:Window
             new_title = g_strdup_printf("giv: %s", basename);
 
         if (selfp->img_org &&selfp->img_org->depth>1)
-            gtk_label_set(GTK_LABEL(selfp->w_info_label),
-                          slipprintf("Loaded: %s, Slice %d",
-                                     basename, selfp->current_slice+1));
+            gtk_label_set_text(GTK_LABEL(selfp->w_info_label),
+                               slipprintf("Loaded: %s, Slice %d",
+                                          basename, selfp->current_slice+1));
         else
-            gtk_label_set(GTK_LABEL(selfp->w_info_label),
-                          slipprintf("Loaded: %s", basename));
+            gtk_label_set_text(GTK_LABEL(selfp->w_info_label),
+                               slipprintf("Loaded: %s", basename));
 
         gtk_window_set_title(GTK_WINDOW(self), new_title);
 
@@ -1537,8 +1537,8 @@ class Giv:Win from Gtk:Window
         new_height = (int)(0.75*s_height);
 
       // Get current scrolled win
-      int old_width = selfp->w_scrolled_win->allocation.width;
-      int old_height = selfp->w_scrolled_win->allocation.height;
+      int old_width = gtk_widget_get_allocated_width(selfp->w_scrolled_win);
+      int old_height = gtk_widget_get_allocated_height(selfp->w_scrolled_win);
 #if 0
       gtk_widget_set_size_request(GTK_WIDGET(selfp->w_scrolled_win),
                                   new_width, new_height);
@@ -1547,14 +1547,14 @@ class Giv:Win from Gtk:Window
 #if 0
       // TBD - add everything that is not part of the window
       if (GTK_WIDGET_VISIBLE(selfp->w_menubox)) 
-          new_height+= selfp->w_menubox->allocation.height;
-      new_height+= selfp->w_info_label->allocation.height;
+          new_height+= selfp->w_menubox->get_allocated_height();
+      new_height+= selfp->w_info_label->get_allocated_height();
 #endif
 
       gtk_image_viewer_one_shot_block_fill_on_resize(GTK_IMAGE_VIEWER(selfp->w_imgv));
       
-      int old_window_width = GTK_WIDGET(self)->allocation.width;
-      int old_window_height = GTK_WIDGET(self)->allocation.height;
+      int old_window_width = gtk_widget_get_allocated_width(GTK_WIDGET(self));
+      int old_window_height = gtk_widget_get_allocated_height(GTK_WIDGET(self));
       gtk_window_resize(GTK_WINDOW(self),
                         old_window_width + (new_width-old_width),
                         old_window_height + (new_height-old_height) );
@@ -1831,7 +1831,7 @@ cb_button_release_event (GtkWidget * widget,
                                               selfp->measure_y2);
       char label[64];
       sprintf(label, "%d marks in rectangle", num_marks);
-      gtk_label_set(GTK_LABEL(selfp->w_info_label), label);
+      gtk_label_set_text(GTK_LABEL(selfp->w_info_label), label);
     }
     selfp->picking_mode = 0;
     selfp->measure_point_index = 0;
@@ -1888,32 +1888,32 @@ cb_key_press_event (GtkWidget * widget,
         giv_win_shrink_wrap(self);
         return 1;
     }
-    if (k==GDK_Escape)
+    if (k==GDK_KEY_Escape)
       {
         if (selfp->do_pick_coordinate)
           giv_win_json_pick_reply(self, "Aborted", -1,-1);
       }
     if (// reload
-        k == GDK_KP_Enter
-        || k == GDK_Return
+        k == GDK_KEY_KP_Enter
+        || k == GDK_KEY_Return
         // forward
         || k == ' '
-        || k == GDK_Right
-        || k == GDK_KP_Right
+        || k == GDK_KEY_Right
+        || k == GDK_KEY_KP_Right
         // backward
-        || k == GDK_BackSpace
-        || k == GDK_Left
-        || k == GDK_KP_Left
+        || k == GDK_KEY_BackSpace
+        || k == GDK_KEY_Left
+        || k == GDK_KEY_KP_Left
         ) {
         int index_delta = 0;
 
         if (k == ' '
-            || k == GDK_Right
-            || k == GDK_KP_Right)
+            || k == GDK_KEY_Right
+            || k == GDK_KEY_KP_Right)
             index_delta = 1;
-        else if (k == GDK_BackSpace
-                 || k == GDK_Left
-                 || k == GDK_KP_Left )
+        else if (k == GDK_KEY_BackSpace
+                 || k == GDK_KEY_Left
+                 || k == GDK_KEY_KP_Left )
             index_delta = -1;
 #if 0
         app_error(self,
@@ -1949,15 +1949,15 @@ cb_key_press_event (GtkWidget * widget,
         //        giv_window_set_current_file(self, new_index);
         return 1;
     }
-    if (k == GDK_Up
-        || k == GDK_KP_Up
-        || k == GDK_Down
-        || k == GDK_KP_Down
+    if (k == GDK_KEY_Up
+        || k == GDK_KEY_KP_Up
+        || k == GDK_KEY_Down
+        || k == GDK_KEY_KP_Down
         ) {
         int s = selfp->cb_names->len;
         int dir = 1;
-        if (k == GDK_Down
-            || k == GDK_KP_Down)
+        if (k == GDK_KEY_Down
+            || k == GDK_KEY_KP_Down)
             dir = -1;
 
         // Check if multislice
@@ -2159,7 +2159,7 @@ cb_motion_event(GtkWidget *widget,
 #endif
     
     if (do_update_label)
-        gtk_label_set(GTK_LABEL(selfp->w_info_label), info_label->str);
+        gtk_label_set_text(GTK_LABEL(selfp->w_info_label), info_label->str);
     g_string_free(info_label, TRUE);
     
     selfp->last_move_x = x;
@@ -2173,7 +2173,7 @@ cb_motion_event(GtkWidget *widget,
 static void cb_view_menu_bar (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-    if (GTK_WIDGET_VISIBLE(selfp->w_menubox))
+    if (gtk_widget_is_visible(selfp->w_menubox))
         gtk_widget_hide(selfp->w_menubox);
     else
         gtk_widget_show(selfp->w_menubox);
@@ -2499,7 +2499,7 @@ cb_menu_count_marks (GtkAction *action, gpointer data)
         //selfp->back_store = NULL;
         dovtk_lasso_destroy(selfp->lasso);
         selfp->lasso = NULL;
-        gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+        gdk_window_set_cursor(gtk_widget_get_window(selfp->w_imgv), NULL);
         selfp->current_cursor = NULL;
     }
   
@@ -2558,14 +2558,15 @@ menu_measure_distance (GivWin *self, GtkAction *action, int measure_type)
         else
             dovtk_lasso_update(selfp->lasso);
     }
-    else {
+    else
+      {
         // TBD - reset the menus.
         //free_giv_backstore (selfp->back_store);
         //selfp->back_store = NULL;
-        gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+        gdk_window_set_cursor(gtk_widget_get_window(selfp->w_imgv), NULL);
         dovtk_lasso_destroy(selfp->lasso);
         selfp->lasso = NULL;
-    }
+      }
   
     return;
 }
@@ -2619,7 +2620,7 @@ cb_calib_changed(GtkWidget *calib_dialog,
 
     GString *info_label = g_string_new("");
     giv_win_update_pixelsize_info(self, info_label);
-    gtk_label_set(GTK_LABEL(selfp->w_info_label), info_label->str);
+    gtk_label_set_text(GTK_LABEL(selfp->w_info_label), info_label->str);
     g_string_free(info_label, TRUE);
 }
 
@@ -2779,7 +2780,7 @@ cb_menu_open (GtkAction *action, gpointer data)
         gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (selfp->w_filechooser),
                                        last_image_path);
 
-    g_signal_connect (GTK_OBJECT (selfp->w_filechooser), 
+    g_signal_connect (G_OBJECT (selfp->w_filechooser), 
                       "response", 
                       G_CALLBACK (cb_menu_open_response),
                       self);
@@ -2849,9 +2850,10 @@ cb_menu_export_response(GtkWidget *dialog,
 {
     GivWin *self = GIV_WIN(user_data);
 
-    if (response == GTK_RESPONSE_ACCEPT) {
-        int width = selfp->w_imgv->allocation.width;
-        int height = selfp->w_imgv->allocation.height;
+    if (response == GTK_RESPONSE_ACCEPT)
+      {
+        int width = gtk_widget_get_allocated_width(GTK_WIDGET(selfp->w_imgv));
+        int height = gtk_widget_get_allocated_height(GTK_WIDGET(selfp->w_imgv));
         gchar *selected_filename = 
             gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(selfp->w_filechooser));
 
@@ -2884,7 +2886,7 @@ cb_menu_export (GtkAction *action, gpointer data)
         gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (selfp->w_filechooser),
                                        last_image_path);
 
-    g_signal_connect (GTK_OBJECT (selfp->w_filechooser), 
+    g_signal_connect (G_OBJECT (selfp->w_filechooser), 
                       "response", 
                       G_CALLBACK (cb_menu_export_response),
                       self);
@@ -2928,12 +2930,13 @@ void draw_to_cairo(cairo_t *cr,
                                          &shift_x, &shift_y);
     // TBD: * turn on cairo clip area
     //      * draw image
-    int cnv_width = selfp->w_imgv->allocation.width;
-    int cnv_height = selfp->w_imgv->allocation.height;
-    if (cnv_width <= 1) {
+    int cnv_width = gtk_widget_get_allocated_width(selfp->w_imgv);
+    int cnv_height = gtk_widget_get_allocated_height(selfp->w_imgv);
+    if (cnv_width <= 1)
+      {
         cnv_width = width;
         cnv_height = height;
-    }
+      }
 
     cairo_set_line_width (cr, 2);
     cairo_rectangle(cr, 0,0,cnv_width, cnv_height);
@@ -3061,7 +3064,7 @@ void draw_page (GtkPrintOperation *operation,
     height = gtk_print_context_get_height (context);
 
     //      * draw image
-    int cnv_width = selfp->w_imgv->allocation.width;
+    int cnv_width = gtk_widget_get_allocated_width(selfp->w_imgv);
 
     // shift adjust for printing
     double draw_width = 150; // mm
@@ -3134,7 +3137,7 @@ cb_menu_about(GtkAction *action,
   
     vbox = gtk_vbox_new (FALSE, 0);
     gtk_container_set_border_width (GTK_CONTAINER (vbox), 6);
-    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (about_window)->vbox), vbox, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area(GTK_DIALOG (about_window))), vbox, FALSE, FALSE, 0);
 
     icon = gdk_pixbuf_new_from_inline(sizeof(logo_150_inline),
                                       logo_150_inline,
@@ -3214,7 +3217,7 @@ cb_menu_copyright(GtkAction *action,
   
     // Insert copyright here
     scroll_window = gtk_scrolled_window_new(NULL, NULL);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(copyright_window)->vbox),
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(copyright_window))),
                        scroll_window, TRUE, TRUE, 0);
 
     w_text = gtk_text_view_new ();
@@ -3673,7 +3676,7 @@ cb_file_list_drag_data_received (GtkWidget          *widget,
         // uris and then use common loading code...
         if (uris == NULL) {
             uris = g_new0(gchar*, 2);
-            char *sdata = g_strdup((gchar*)selection_data->data);
+            char *sdata = g_strdup((gchar*)gtk_selection_data_get_data(selection_data));
             char *nl_pos;
             if ((nl_pos = g_strstr_len(sdata, strlen(sdata), "\r")))
                 *nl_pos = 0;
@@ -3770,8 +3773,8 @@ fit_marks_in_window(GivWin *self)
     }
     else {
         margin= 10;
-        int cnv_width = selfp->w_imgv->allocation.width;
-        int cnv_height = selfp->w_imgv->allocation.height;
+        int cnv_width = gtk_widget_get_allocated_width(selfp->w_imgv);
+        int cnv_height = gtk_widget_get_allocated_height(selfp->w_imgv);
         double aspect_ratio = 1.0*cnv_height/cnv_width;
 
         // The following is a hack around the problem of too thin
@@ -4108,7 +4111,7 @@ draw_caliper(GivWin *self,
       }
 
     if (measure_type == MEASURE_TYPE_VERTICAL) {
-      int w = selfp->w_scrolled_win->allocation.width;
+      int w = gtk_widget_get_allocated_width(selfp->w_scrolled_win);
       if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         {
           cairo_matrix_init_translate(&matrix, 0, y0);
@@ -4134,7 +4137,7 @@ draw_caliper(GivWin *self,
       cairo_fill(cr);
     }
     else if (measure_type == MEASURE_TYPE_HORIZONTAL) {
-      int h = selfp->w_scrolled_win->allocation.height;
+      int h = gtk_widget_get_allocated_width(selfp->w_scrolled_win);
       if (lasso_context == DOVTK_LASSO_CONTEXT_PAINT)
         {
           cairo_matrix_init_rotate(&matrix, MY_PI/2);
@@ -4489,7 +4492,8 @@ static int cmd_giv_string(GLibJsonRpcServer *server,
 static gboolean cb_idle_set_cursor(gpointer user_data)
 {
   GivWin *self = (GivWin*)user_data;
-  gdk_window_set_cursor(selfp->w_imgv->window, selfp->current_cursor);
+  gdk_window_set_cursor(gtk_widget_get_window(selfp->w_imgv),
+                        selfp->current_cursor);
   return false;
 }
 
@@ -4535,7 +4539,7 @@ static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, 
                                               error_response);
     }
   
-  gdk_window_set_cursor(selfp->w_imgv->window, NULL);
+  gdk_window_set_cursor(gtk_widget_get_window(selfp->w_imgv), NULL);
   selfp->current_cursor = NULL;
 }
 

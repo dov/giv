@@ -3,9 +3,7 @@ Import('env')
 
 import re
 
-# The following python subroutine and the subsequent scons command
-# shows how to do general template filling. This system should perhaps
-# be put in a separate directory, or even be made part of scons.
+# Patch problems with the gob output.
 def patch_src(env, target, source):
     out = open(str(target[0]), "wb")
     inp = open(str(source[0]), "r")
@@ -22,6 +20,15 @@ def patch_src(env, target, source):
             if re.search(r"object_signals\[SET_SCROLL_ADJUSTMENTS_SIGNAL\]",line):
                 in_area=1
 
+        line = re.sub('GtkScrollableInterfaceIface',
+                      'GtkScrollableInterface',
+                      line)
+        line = re.sub('GTK_TYPE_SCROLLABLEINTERFACE',
+                      'GTK_TYPE_SCROLLABLE',
+                      line)
+        line = re.sub('scroll_policy"',
+                      'scroll-policy"',
+                      line)
         out.write(line.encode('utf8'))
         
     out.close()

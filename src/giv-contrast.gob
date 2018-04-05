@@ -66,7 +66,7 @@ class Giv:Contrast from Gtk:Dialog {
         
         gtk_window_set_default_size (GTK_WINDOW (self), 400, 350);
         
-        w_vbox = GTK_DIALOG(self)->vbox;
+        w_vbox = gtk_dialog_get_content_area(GTK_DIALOG(self));
         w_frame = gtk_frame_new("Contrast");
         gtk_box_pack_start(GTK_BOX(w_vbox),
                            w_frame, FALSE, FALSE, 0);
@@ -302,10 +302,10 @@ static gint cb_histo_scroll_event(GtkWidget *widget,
         delta_value = -delta_value;
     double old_value = gtk_adjustment_get_value(adjustment);
     double new_value = old_value + delta_value;
-    if (new_value < adjustment->lower)
-        new_value = adjustment->lower;
-    if (new_value > adjustment->upper-adjustment->page_size)
-        new_value = adjustment->upper-adjustment->page_size;
+    if (new_value < gtk_adjustment_get_lower(adjustment))
+      new_value = gtk_adjustment_get_lower(adjustment);
+    if (new_value > gtk_adjustment_get_upper(adjustment)-gtk_adjustment_get_page_size(adjustment))
+      new_value = gtk_adjustment_get_upper(adjustment)-gtk_adjustment_get_page_size(adjustment);
     
     if (new_value != old_value) {
         gtk_adjustment_set_value(adjustment, new_value);

@@ -61,7 +61,7 @@ class Giv:Mark:Tree:Dialog from Gtk:Dialog {
 
         gtk_window_set_default_size (GTK_WINDOW (self), 400, 350);
         
-        vbox = GTK_DIALOG(self)->vbox;
+        vbox = gtk_dialog_get_content_area(GTK_DIALOG(self));
         scrolled_window = gtk_scrolled_window_new (NULL, NULL);
         gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
                                         GTK_POLICY_AUTOMATIC,

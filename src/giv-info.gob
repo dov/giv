@@ -44,7 +44,7 @@ class Giv:Info from Gtk:Dialog
                                GTK_RESPONSE_ACCEPT,
                                NULL);
 
-        vbox = GTK_DIALOG(self)->vbox;
+        vbox = gtk_dialog_get_content_area(GTK_DIALOG(self));
         selfp->w_scrolled_window = gtk_scrolled_window_new (NULL, NULL);
         selfp->vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(selfp->w_scrolled_window));
         g_signal_connect(selfp->vadj, "changed",
@@ -150,7 +150,7 @@ static void on_value_changed(GtkAdjustment *adjustment,
                              gpointer       user_data)
 {
     GivInfo *self = GIV_INFO(user_data);
-    selfp->need_readjust_vadj = fabs(selfp->vadj->value - selfp->preserve_vadj_value) >= selfp->vadj->step_increment/2;
+    selfp->need_readjust_vadj = fabs(gtk_adjustment_get_value((selfp->vadj)) - selfp->preserve_vadj_value) >= gtk_adjustment_get_step_increment(selfp->vadj)/2;
 }
 
 %}

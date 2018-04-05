@@ -72,7 +72,6 @@ static void cb_set_vlock(gboolean vlock,
 %}
 
 %privateheader{
-#include "giv-backstore.h"
 %}
 
 class Giv:Widget from Gtk:Image:Viewer
@@ -228,15 +227,15 @@ class Giv:Widget from Gtk:Image:Viewer
             int balloon_x, balloon_y;
             
             if (mark_set->balloon_string)
-                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               mark_set->balloon_string->str);
             else if (mark_set->path_name)
-                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               mark_set->path_name);
             else {
                 GString *balloon_string = g_string_new("");
                 g_string_sprintfa(balloon_string, "label = %d", label);
-                gtk_label_set(GTK_LABEL(selfp->w_balloon_label),
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               balloon_string->str);
                 g_string_free(balloon_string, TRUE);
             }
@@ -691,10 +690,9 @@ cb_image_annotate(GivWidget *self,
     if (!selfp->is_dragging && selfp->do_show_marks)
         renderer.paint();
 
-    gint li_width, li_height;
-    gdk_window_get_size(GTK_WIDGET(self)->window, 
-                        &li_width, &li_height
-                        );
+    gint li_width = gdk_window_get_width(gtk_widget_get_window(GTK_WIDGET(self)));
+    gint li_height = gdk_window_get_height(gtk_widget_get_window(GTK_WIDGET(self)));
+
     if (selfp->do_show_cross_hair && selfp->img_org) {
         int w = gdk_pixbuf_get_width(selfp->img_org);
         int h = gdk_pixbuf_get_height(selfp->img_org);
