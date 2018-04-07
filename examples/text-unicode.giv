@@ -1,4 +1,6 @@
+$pango_markup 
 $color green
+$balloon <u><span color="red">R</span><span color="green">G</span><span color="blue">B</span></u>
 0 0
 200 0
 200 200
