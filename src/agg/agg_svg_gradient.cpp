@@ -158,8 +158,6 @@ namespace agg {
             double cx = 0.0;
             double cy = 0.0;
             double r = 100.0;
-            double fx = 0.0;
-            double fy = 0.0;
 
             std::string value;
             if (find_string("cx", &value) )

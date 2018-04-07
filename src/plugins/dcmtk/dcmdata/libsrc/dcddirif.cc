@@ -4398,7 +4398,7 @@ OFBool DicomDirInterface::warnAboutInconsistentAttributes(DcmDirectoryRecord *re
             first = OFFalse;
         }
     }
-    if (!result & abortCheck)
+    if (!result && abortCheck)
         printErrorMessage("aborting on first inconsistent file: ", sourceFilename.c_str());
     /* return OFTrue in case of any inconsistency */
     return !result;

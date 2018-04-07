@@ -33,7 +33,7 @@ if not env['SBOX']:
                       CPPPATH= env['CPPPATH']
                       )
 
-    use_system_dcmtk = 1 # conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
+    use_system_dcmtk = 0 # conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
     dcmtk_path = []
     dcmtk_libpath = []
 
@@ -43,13 +43,16 @@ if not env['SBOX']:
                        'dcmtk/config/include']
          dcmtk_libpath = ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}']
 
-    plugin_dicom = env.SharedLibrary('dicom',
-                      ['dicom.cc'],
-                      CPPPATH=dcmtk_path + [
-                               '..'
-                               ] + env['CPPPATH'],
-                      LIBPATH=['..'] + dcmtk_libpath + env['LIBPATH']+env['LIBPATH'],
-                      LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
+    if not ARGUMENTS.get('nodicom', 0):
+        plugin_dicom = env.SharedLibrary('dicom',
+                          ['dicom.cc'],
+                          CPPPATH=dcmtk_path + [
+                                   '..'
+                                   ] + env['CPPPATH'],
+                          LIBPATH=['..'] + dcmtk_libpath + env['LIBPATH']+env['LIBPATH'],
+                          LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
+    else:
+         plugin_dicom = None
 
     env.SharedLibrary('tiff',
                       ['tiff.c'],
@@ -61,7 +64,7 @@ if not env['SBOX']:
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['png','z','giv-image']+env['LIBS'],
                       )
-    if not use_system_dcmtk:
+    if plugin_dicom is not None and not use_system_dcmtk:
         env.Depends(plugin_dicom,
                     ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libdcmdata.a',
                      '#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}/libofstd.a'])

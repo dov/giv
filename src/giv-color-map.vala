@@ -113,15 +113,6 @@ public class GivColorMap : DrawingArea {
 
 			var s = format.printf(v);
 
-            string s1;
-
-            // states: 0 before string
-            //         1 in number
-            int state = 0;
-
-			// Sorry Ron. You'll have to comment out this section
-			// to support old CentOs compilation
-
             // Cleanup string and turn it into 10^ notation.
 			MatchInfo match_info;
 			var regex = new Regex ("(.*?)e([\\+\\-])0+(\\d+)");
