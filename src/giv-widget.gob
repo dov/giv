@@ -112,8 +112,17 @@ class Giv:Widget from Gtk:Image:Viewer
     private GdkPixbuf *w_label_image = NULL
       destroy {
         if (w_label_image)
-            g_object_unref(w_label_image);
+          g_object_unref(w_label_image);
+        w_label_image = NULL;
       };
+    private GdkPixbuf *cache_pixbuf = NULL
+      destroy {
+        if (cache_pixbuf)
+            g_object_unref(cache_pixbuf);
+        cache_pixbuf = NULL;
+      };
+    private gint cache_shift_x = 0;
+    private gint cache_shift_y = 0;
     private GivPseudoColor colormap = GIV_PSEUDO_COLOR_OFF;
     private giv_widget_file_reference_callback_t file_reference_cb;
     private gpointer file_reference_user_data;
@@ -228,8 +237,14 @@ class Giv:Widget from Gtk:Image:Viewer
             int balloon_x, balloon_y;
             
             if (mark_set->balloon_string)
-                gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
+              {
+                if (mark_set->do_pango_markup)
+                  gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
+                                       mark_set->balloon_string->str);
+                else
+                  gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                                      mark_set->balloon_string->str);
+              }
             else if (mark_set->path_name)
                 gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               mark_set->path_name);
@@ -485,27 +500,27 @@ class Giv:Widget from Gtk:Image:Viewer
     motion_notify_event (GtkWidget      *widget,
                          GdkEventMotion *event)
     {
-        GivWidget *self = GIV_WIDGET(widget);
-        GtkImageViewer *image_viewer = GTK_IMAGE_VIEWER(widget);
-        int cx = (int)event->x;
-        int cy = (int)event->y;
-        double x,y;
+      GivWidget *self = GIV_WIDGET(widget);
+      GtkImageViewer *image_viewer = GTK_IMAGE_VIEWER(widget);
+      int cx = (int)event->x;
+      int cy = (int)event->y;
+      double x,y;
     
-        gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
-                                                 cx, cy, &x, &y);
+      gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(image_viewer),
+                                               cx, cy, &x, &y);
     
-        if (!selfp->is_dragging
-            && selfp->do_show_balloon)
-            giv_widget_show_balloon(self,cx,cy);
+      if (!selfp->is_dragging
+          && selfp->do_show_balloon)
+        giv_widget_show_balloon(self,cx,cy);
         
-        selfp->last_move_x = (int)x;
-        selfp->last_move_y = (int)y;
-        selfp->last_cx = cx;
-        selfp->last_cy = cy;
+      selfp->last_move_x = (int)x;
+      selfp->last_move_y = (int)y;
+      selfp->last_cx = cx;
+      selfp->last_cy = cy;
 
-        PARENT_HANDLER(widget, event);
+      PARENT_HANDLER(widget, event);
         
-        return FALSE;
+      return FALSE;
     }
 
     override (Gtk:Widget)
@@ -531,14 +546,15 @@ class Giv:Widget from Gtk:Image:Viewer
     button_release_event (GtkWidget      *widget,
                           GdkEventButton *event)
     {
-        GivWidget *self = GIV_WIDGET(widget);
+      GivWidget *self = GIV_WIDGET(widget);
 
-        if (selfp->is_dragging) {
-            selfp->is_dragging = FALSE;
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
+      if (selfp->is_dragging)
+        {
+          selfp->is_dragging = FALSE;
+          gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
         }
-        PARENT_HANDLER(widget, event);
-        return 0;
+      PARENT_HANDLER(widget, event);
+      return 0;
     }
 
     override (Gtk:Widget)
@@ -546,24 +562,24 @@ class Giv:Widget from Gtk:Image:Viewer
     scroll_event (GtkWidget      *widget,
                   GdkEventScroll *event)
     {
-        GivWidget *self = GIV_WIDGET(widget);
+      GivWidget *self = GIV_WIDGET(widget);
 
-        // Zoom the quiver arrows. 
-        if (event->state & GDK_MOD1_MASK) {
-            if (event->direction)
-              selfp->quiver_scale *= 0.8;
-            else
-              selfp->quiver_scale *= 1.2;
-            gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
+      // Zoom the quiver arrows. 
+      if (event->state & GDK_MOD1_MASK) {
+        if (event->direction)
+          selfp->quiver_scale *= 0.8;
+        else
+          selfp->quiver_scale *= 1.2;
+        gtk_image_viewer_redraw(GTK_IMAGE_VIEWER(widget), TRUE);
             
-            return 1;
-        }
-
-        PARENT_HANDLER(widget,event);
-
-        // Prevent propagation of the scroll event signals to the scroll bars.
-        g_signal_stop_emission_by_name(widget, "scroll-event");
         return 1;
+      }
+
+      PARENT_HANDLER(widget,event);
+
+      // Prevent propagation of the scroll event signals to the scroll bars.
+      //      g_signal_stop_emission_by_name(widget, "scroll-event");
+      return 1;
     }
 
     public void set_show_balloon(self,
@@ -675,14 +691,6 @@ cb_image_annotate(GivWidget *self,
     int height = gdk_pixbuf_get_height(pixbuf);
     GPtrArray *datasets = giv_parser_get_giv_datasets(selfp->giv_parser);
 
-#if 0
-    printf("annotate: tx ty sx sy n_dsets = %d %d %.2f %.2f %d\n",
-           shift_x, shift_y,
-           scale_x, scale_y,
-           datasets.size()
-           );
-#endif
-
 #ifndef GIV_USE_CAIRO
     GivPainterAgg painter(pixbuf, true);
 #else
@@ -696,10 +704,40 @@ cb_image_annotate(GivWidget *self,
                          );
     renderer.set_do_no_transparency(selfp->do_no_transparency);
     if (!selfp->is_dragging && selfp->do_show_marks)
-        renderer.paint();
+      renderer.paint();
+    else
+      {
+        int offs_x = selfp->cache_shift_x - shift_x;
+        int offs_y = selfp->cache_shift_y - shift_y;
+        int dst_w = width - abs(offs_x);
+        int dst_h = height - abs(offs_y);
+        int dst_x = 0;
+        int dst_y = 0;
+        if (offs_x > 0)
+            dst_x = offs_x;
+        if (offs_y > 0)
+            dst_y = offs_y;
+        
+        gdk_pixbuf_scale(selfp->cache_pixbuf,
+                         pixbuf,
+                         dst_x,dst_y,
+                         dst_w,dst_h,
+                         offs_x, offs_y,
+                         1.0, 1.0,
+                         GDK_INTERP_NEAREST);
+      }
 
     gint li_width = gdk_window_get_width(gtk_widget_get_window(GTK_WIDGET(self)));
     gint li_height = gdk_window_get_height(gtk_widget_get_window(GTK_WIDGET(self)));
+    // Create a cached copy of the image to be used when panning.
+    if (selfp->cache_pixbuf)
+      {
+        g_object_unref(selfp->cache_pixbuf);
+        selfp->cache_pixbuf = NULL;
+      }
+    selfp->cache_pixbuf = gdk_pixbuf_copy(pixbuf);
+    selfp->cache_shift_x = shift_x;
+    selfp->cache_shift_y = shift_y;
 
     if (selfp->do_show_cross_hair && selfp->img_org) {
         int w = gdk_pixbuf_get_width(selfp->img_org);

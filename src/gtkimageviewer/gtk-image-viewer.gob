@@ -154,6 +154,8 @@ class Gtk:Image:Viewer from Gtk:Widget
   init(self)
   {
     gtk_widget_set_can_focus (GTK_WIDGET(self), TRUE);
+    // This makes scrolled window not working!
+    //    gtk_widget_set_double_buffered (GTK_WIDGET(self), FALSE);
     selfp->interp_type = GDK_INTERP_NEAREST;
     selfp->do_linear_zoom_steps = FALSE;
     selfp->do_use_transfer_map = FALSE;
@@ -167,8 +169,8 @@ class Gtk:Image:Viewer from Gtk:Widget
     selfp->max_zoom = 128;
     selfp->scroll_width = -1;
     selfp->scroll_height = -1;
-    selfp->hadjustment = 0;
-    selfp->vadjustment = 0;
+    selfp->hadjustment = NULL;
+    selfp->vadjustment = NULL;
     selfp->frozen = FALSE;
   }
 
@@ -449,7 +451,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   {
     gtk_image_viewer_expose_area(GTK_IMAGE_VIEWER(widget),
                                  cr);
-    return TRUE;
+    return FALSE;
   }
 
   override (Gtk:Widget)
@@ -1493,7 +1495,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   {
     g_return_if_fail (GTK_IS_IMAGE_VIEWER (self));
     if (adjustment) 
-        g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
+      g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
   
     if (selfp->vadjustment && selfp->vadjustment != adjustment)
       {

@@ -75,7 +75,7 @@ static int lasso_cb_draw(GtkWidget      *widget,
                          gpointer        user_data)
 {
     DovtkLassoPrivate *selfp = (DovtkLassoPrivate*)user_data;
-    //    printf("dovtk-lasso.c: expose\n");
+    //    printf("dovtk-lasso.c: draw\n");
 
 #if 0
     g_signal_handler_block(widget, selfp->expose_handler_id);
