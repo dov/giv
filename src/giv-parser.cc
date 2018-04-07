@@ -10,8 +10,11 @@
 #include "giv-data.h"
 #include "GivStringArray.h"
 #include "plis/plis.h"
+#include "WordBoundaries.h"
+#include <iostream>
 
 using namespace plis;
+using namespace std;
 
 enum
 {
@@ -68,7 +71,6 @@ enum
 
 #define COLOR_NONE 0xfffe
 
-#define NCASE(s) if (!g_ascii_strcasecmp(s, S_))
 #define CASE(s) if (!strcmp(s, S_))
 
 static int color_parse(const char *giv_color_name,
@@ -235,347 +237,169 @@ giv_parser_parse_string(GivParser *gp,
     return ret;
 }
 
-
-/*======================================================================
-//
-// General string handling in C. These functions should be replaced
-// by something in glib.
-//
-//----------------------------------------------------------------------*/
-static int
-string_count_words (const char *string)
-{
-  int nwords = 0;
-  const char *p = string;
-  int in_word = 0;
-  while (*p) {
-      if (!in_word) {
-	  if ((*p != ' ') && (*p != '\n') && (*p != '\t'))
-              in_word = 1;
-      }
-      else if (in_word) {
-	  if ((*p == ' ') || (*p == '\n') || (*p == '\t')) {
-	      in_word = 0;
-	      nwords++;
-          }
-      }
-      p++;
-  }
-  if (in_word)
-      nwords++;
-  return nwords;
-}
-
-char *
-string_strdup_word (const char *string, int idx)
-{
-  const char *p = string;
-  int in_word = 0;
-  int word_count = -1;
-  int nchr = 1;
-  char *word = NULL;
-  const char *word_start = string;
-
-  /* printf("p = 0x%x\n", p); */
-  while (*p)
-    {
-      /* printf("%c\n", *p); fflush(stdout); */
-      if (!in_word)
-	{
-	  if (*p != ' ' && *p != '\n' && *p != '\t')
-	    {
-	      in_word = 1;
-	      word_count++;
-	      nchr = 1;
-	      word_start = p;
-	    }
-	}
-      else if (in_word)
-	{
-	  if (*p == ' ' || *p == '\n' || *p == '\t')
-	    {
-	      if (idx == word_count)
-		break;
-	      in_word = 0;
-	    }
-	}
-      nchr++;
-      p++;
-    }
-  if (in_word)
-    {
-      word = g_new (char, nchr);
-      strncpy (word, word_start, nchr - 1);
-      word[nchr - 1] = 0;
-    }
-  return word;
-}
-
-static char *
-string_strdup_rest (const char *string, int idx, bool parse_escape)
-{
-  const char *p = string;
-  int in_word = 0;
-  int word_count = -1;
-  int nchr = 1;
-  char *word = NULL;
-  const char *word_start = string;
-
-  /* printf("p = 0x%x\n", p); */
-  while (*p)
-    {
-      char ch = *p;
-
-      /* printf("%c\n", *p); fflush(stdout); */
-      if (!in_word)
-	{
-	  if (ch != ' ' && ch != '\n' && ch != '\t')
-	    {
-	      in_word = 1;
-	      word_count++;
-	      nchr = 1;
-	      word_start = p;
-	    }
-	}
-      else if (in_word)
-	{
-	  if (ch == ' ' || ch == '\n' || ch == '\t')
-	    {
-	      if (idx == word_count)
-		break;
-	      in_word = 0;
-	    }
-	}
-      nchr++;
-      p++;
-    }
-
-  if (in_word)
-    {
-      nchr = strlen (word_start);
-      word = g_new (char, nchr + 1);
-      strncpy (word, word_start, nchr);
-      word[nchr] = 0;
-      if (parse_escape)
-        {
-          gchar *word_copy = g_strdup(word);
-          char *p = word_copy;
-          char *pd = word;
-          while(*p)
-            {
-              char ch = *p;
-              if (ch == '\\')
-                {
-                  p++;
-                  if (!*p)
-                    break;
-                  if (*p=='n')
-                    ch = '\n';
-                  else if (*p == '\\')
-                    ch = '\\';
-                  else
-                    {
-                      // ignore the escape character
-                      ch = '\\';
-                      p--;
-                    }
-                }
-              *pd++ = ch;
-              p++;
-            }
-          *pd=0;
-          g_free(word_copy);
-        }
-    }
-  return word;
-}
-
-int
-string_to_atoi (const char *string, int idx)
-{
-  char *word = string_strdup_word (string, idx);
-  int value = atoi (word);
-  g_free (word);
-
-  return value;
-}
-
-gdouble
-string_to_atof (const char *string, int idx)
-{
-  char *word = string_strdup_word (string, idx);
-  gdouble value = atof (word);
-  g_free (word);
-
-  return value;
-}
-
-
 /*======================================================================
 //  Classify a string.
 //----------------------------------------------------------------------
 */
 static gint
-parse_string (const char *string, const char *fn, gint linenum)
+parse_string (const WordBoundaries& wb,
+              const char *str, const char *fn, gint linenum)
 {
   gint type = -1;
-  gchar first_char = string[0];
-  gchar *first_word;
+  gchar first_char = str[0];
 
   /* Shortcut for speeding up drawing */
   if (first_char >= '0' && first_char <= '9')
     return STRING_DRAW;
 
-  first_word = string_strdup_word (string, 0);
-
   if (first_char == '#')
     type = STRING_COMMENT;
   else if (first_char == '$')
     {
-      char *S_ = first_word;
-      NCASE ("$lw")
-      {
-	type = STRING_CHANGE_LINE_WIDTH;
-      }
-      NCASE("$balloon")
-      {
+      if (wb.CheckMatch(0, "$lw"))
+        {
+          type = STRING_CHANGE_LINE_WIDTH;
+        }
+      if (wb.CheckMatch(0, "$balloon"))
+        {
           type = STRING_BALLOON;
-      }
-      NCASE ("$color")
-      {
-	type = STRING_CHANGE_COLOR;
-      }
-      NCASE ("$outline_color")
-      {
-	type = STRING_CHANGE_OUTLINE_COLOR;
-      }
-      NCASE ("$quiver_color")
-      {
-	type = STRING_CHANGE_QUIVER_COLOR;
-      }
-      NCASE ("$shadow_color")
-      {
-	type = STRING_CHANGE_SHADOW_COLOR;
-      }
-      NCASE ("$shadow_offset")
-      {
-	type = STRING_CHANGE_SHADOW_OFFSET;
-      }
-      NCASE ("$quiver_scale")
-      {
-	type = STRING_CHANGE_QUIVER_SCALE;
-      }
-      NCASE ("$marks")
-      {
-	type = STRING_CHANGE_MARKS;
-      }
-      NCASE ("$noline")
-      {
-	type = STRING_CHANGE_NO_LINE;
-      }
-      NCASE ("$scale_marks")
-      {
-	type = STRING_CHANGE_SCALE_MARKS;
-      }
-      NCASE ("$scale_font")
-      {
+        }
+      if (wb.CheckMatch(0, "$color"))
+          {
+            type = STRING_CHANGE_COLOR;
+          }
+      if (wb.CheckMatch(0, "$outline_color"))
+        {
+          type = STRING_CHANGE_OUTLINE_COLOR;
+        }
+      if (wb.CheckMatch(0, "$quiver_color"))
+        {
+          type = STRING_CHANGE_QUIVER_COLOR;
+        }
+      if (wb.CheckMatch(0, "$shadow_color"))
+        {
+          type = STRING_CHANGE_SHADOW_COLOR;
+        }
+      if (wb.CheckMatch(0, "$shadow_offset"))
+        {
+          type = STRING_CHANGE_SHADOW_OFFSET;
+        }
+      if (wb.CheckMatch(0, "$quiver_scale"))
+        {
+          type = STRING_CHANGE_QUIVER_SCALE;
+        }
+      if (wb.CheckMatch(0, "$marks"))
+        {
+          type = STRING_CHANGE_MARKS;
+        }
+      if (wb.CheckMatch(0, "$noline"))
+        {
+          type = STRING_CHANGE_NO_LINE;
+        }
+      if (wb.CheckMatch(0, "$scale_marks"))
+        {
+          type = STRING_CHANGE_SCALE_MARKS;
+        }
+      if (wb.CheckMatch(0, "$scale_font"))
+        {
           type = STRING_CHANGE_SCALE_FONTS;
-      }
-      NCASE ("$pango_markup")
-      {
-	type = STRING_CHANGE_PANGO_MARKUP;
-      }
-      NCASE ("$path")
-      {
-	type = STRING_PATH_NAME;
-      }
-      NCASE ("$mark_size")
-      {
-	type = STRING_CHANGE_MARK_SIZE;
-      }
-      NCASE ("$text_size")
-      {
-	type = STRING_CHANGE_TEXT_SIZE;
-      }
-      NCASE ("$font")
-      {
+        }
+      if (wb.CheckMatch(0, "$pango_markup"))
+        {
+          type = STRING_CHANGE_PANGO_MARKUP;
+        }
+      if (wb.CheckMatch(0, "$path"))
+        {
+          type = STRING_PATH_NAME;
+        }
+      if (wb.CheckMatch(0, "$mark_size"))
+        {
+          type = STRING_CHANGE_MARK_SIZE;
+        }
+      if (wb.CheckMatch(0, "$text_size"))
+        {
+          type = STRING_CHANGE_TEXT_SIZE;
+        }
+      if (wb.CheckMatch(0, "$font"))
+        {
           type = STRING_FONT;
-      }
-      NCASE ("$text_style")
-      {
+        }
+      if (wb.CheckMatch(0, "$text_style"))
+        {
           type = STRING_TEXT_STYLE;
-      }
-      NCASE ("$nomark")
-      {
-	type = STRING_CHANGE_NO_MARK;
-      }
-      NCASE ("$line")
-      {
-	type = STRING_CHANGE_LINE;
-      }
-      NCASE ("$image")
-      {
-	type = STRING_IMAGE_REFERENCE;
-      }
-      NCASE ("$polygon")
-      {
-	type = STRING_CHANGE_POLYGON;
-      }
-      NCASE ("$marks_file")
-      {
-	type = STRING_MARKS_REFERENCE;
-      }
-      NCASE ("$low_contrast")
-      {
-	type = STRING_LOW_CONTRAST;
-      }
-      NCASE("$vflip")
+        }
+      if (wb.CheckMatch(0, "$nomark"))
+        {
+          type = STRING_CHANGE_NO_MARK;
+        }
+      if (wb.CheckMatch(0, "$line"))
+        {
+          type = STRING_CHANGE_LINE;
+        }
+      if (wb.CheckMatch(0, "$image"))
+        {
+          type = STRING_IMAGE_REFERENCE;
+        }
+      if (wb.CheckMatch(0, "$polygon"))
+        {
+          type = STRING_CHANGE_POLYGON;
+        }
+      if (wb.CheckMatch(0, "$marks_file"))
+        {
+          type = STRING_MARKS_REFERENCE;
+        }
+      if (wb.CheckMatch(0, "$low_contrast"))
+        {
+          type = STRING_LOW_CONTRAST;
+        }
+      if (wb.CheckMatch(0, "$vflip"))
         {
           type = STRING_VFLIP;
         }
-      NCASE("$vlock")
+      if (wb.CheckMatch(0, "$vlock"))
         {
           type = STRING_VLOCK;
         }
-      NCASE("$novflip")
+      if (wb.CheckMatch(0, "$novflip"))
         {
           type = STRING_NO_VFLIP;
         }
-      NCASE("$hflip")
+      if (wb.CheckMatch(0, "$hflip"))
         {
           type = STRING_HFLIP;
         }
-      NCASE("$nohflip")
+      if (wb.CheckMatch(0, "$nohflip"))
         {
           type = STRING_NO_HFLIP;
         }
-      NCASE("$linedash")
+      if (wb.CheckMatch(0, "$linedash"))
         {
           type = STRING_DASH;
         }
-      NCASE("$arrow") {
+      if (wb.CheckMatch(0, "$arrow"))
+        {
           type = STRING_ARROW;
-      }
-      NCASE("$def_style")
+        }
+      if (wb.CheckMatch(0, "$def_style"))
 	{
 	  type = STRING_DEF_STYLE;
 	}
-      NCASE("$style")
-	{
-	  type = STRING_STYLE;
-	}
-      NCASE ("$title")
-      {
-	type = STRING_SET_TITLE;
-      }
-      NCASE ("$name")
-      {
-	type = STRING_SET_NAME;
-      }
-      NCASE ("$hide")
-      {
-	type = STRING_HIDE;
-      }
+      if (wb.CheckMatch(0, "$style"))
+        {
+          type = STRING_STYLE;
+        }
+      if (wb.CheckMatch(0, "$title"))
+        {
+          type = STRING_SET_TITLE;
+        }
+      if (wb.CheckMatch(0, "$name"))
+        {
+          type = STRING_SET_NAME;
+        }
+      if (wb.CheckMatch(0, "$hide"))
+        {
+          type = STRING_HIDE;
+        }
 #if 0
       if (type == -1)
 	{
@@ -583,28 +407,6 @@ parse_string (const char *string, const char *fn, gint linenum)
 		   fn, linenum);
 	}
 #endif
-    }
-  else if (((first_char >= 'a' && first_char <= 'z')
-	    || (first_char >= 'A' && first_char <= 'Z'))
-	   && first_word[strlen (first_word) - 1] == ':')
-    {
-      char *S_ = first_word;
-
-      while(1) /* So that we may break */
-	{
-	  NCASE("Title:") { type = STRING_SET_TITLE; break;}
-	  NCASE("TitleText:") { type = STRING_SET_TITLE; break;}
-	  NCASE("XUnitText:") { type = STRING_SET_XUNIT_TEXT; break; }
-	  NCASE("YUnitText:") { type = STRING_SET_YUNIT_TEXT; break; }
-	  NCASE("LargePixels:") { type = STRING_SET_LARGE_PIXELS; break; }
-
-	  printf("Unsupported keyword=%s\n", S_);
-	  // TBD - Recognize more xgraph keywords...
-	  type = STRING_NOP;
-
-	  break;
-	}
-
     }
   else if (first_char == 'M' || first_char == 'm')
     {
@@ -633,20 +435,18 @@ parse_string (const char *string, const char *fn, gint linenum)
       type = STRING_DRAW;
     }
 
-  g_free (first_word);
-
   return type;
 }
 
-gint
-giv_parse_mark_type (const char *S_, const gchar * fn, gint linenum)
+static gint
+giv_parse_mark_type (const WordBoundaries& wb, int idx, const gchar * fn, gint linenum)
 {
-  NCASE ("circle") return MARK_TYPE_CIRCLE;
-  NCASE ("fcircle") return MARK_TYPE_FCIRCLE;
-  NCASE ("square") return MARK_TYPE_SQUARE;
-  NCASE ("fsquare") return MARK_TYPE_FSQUARE;
-  NCASE ("pixel") return MARK_TYPE_PIXEL;
-  fprintf (stderr, "Unknown mark %s in file %s line %d\n", S_, fn, linenum);
+  if(wb.CheckMatch(idx, "circle")) return MARK_TYPE_CIRCLE;
+  if(wb.CheckMatch(idx, "fcircle")) return MARK_TYPE_FCIRCLE;
+  if(wb.CheckMatch(idx, "square")) return MARK_TYPE_SQUARE;
+  if(wb.CheckMatch(idx, "fsquare")) return MARK_TYPE_FSQUARE;
+  if(wb.CheckMatch(idx, "pixel")) return MARK_TYPE_PIXEL;
+  fprintf (stderr, "Unknown mark %s in file %s line %d\n", wb.GetWordAsString(idx).c_str(), fn, linenum);
   return MARK_TYPE_CIRCLE;
 }
 
@@ -658,366 +458,380 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
                                    const char *filename,
                                    int linenum)
 {
-    int type;
-    const char *S_ = line; 
-    char dummy[256];
-    point_t p;
-    // Only take marks size into account if we are scaling the marks!
-    double ms2 = 0.5*marks->mark_size * marks->do_scale_marks; 
+  int type;
+  const char *S_ = line; 
+  char dummy[256];
+  point_t p;
+  // Only take marks size into account if we are scaling the marks!
+  double ms2 = 0.5*marks->mark_size * marks->do_scale_marks;
+  static WordBoundaries wb;
+  wb.ParseBoundaries(line);
 
-    /* Parse the line */
-    type = parse_string(line, filename, linenum);
-    switch (type) {
-    case STRING_COMMENT:
-        break;
-    case STRING_DRAW:
-    case STRING_MOVE:
-    case STRING_ELLIPSE:
-    case STRING_QUIVER:
-        if (type == STRING_DRAW) {
-            if (sscanf(S_, "%lf %lf", &p.x, &p.y)==2) {
-                if (marks->points->len == 0)
-                    p.op = OP_MOVE;
-                else
-                    p.op = OP_DRAW;
-            }
-        }
-        else if (type == STRING_ELLIPSE) {
-            double x,y,xsize, ysize, angle;
-            sscanf(S_, "%s %lf %lf %lf %lf %lf", dummy, &x, &y, &xsize,&ysize,&angle);
-            p.op = OP_ELLIPSE;
-            p.x = x;
-            p.y = y;
-            g_array_append_val(marks->points, p);
-            p.op = OP_CONT;
-            p.x = xsize;
-            p.y = ysize;
-            g_array_append_val(marks->points, p);
-            p.op = OP_CONT;
-            p.x = angle;
-            g_array_append_val(marks->points, p);
-
-            // Assign p to x and y for min and max calculations.
-            p.x = x;
-            p.y = y;
-        }
-        else {
-            if (sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y)==3) {
-                if (type == STRING_QUIVER) {
-                    p.op = OP_QUIVER;
-                    marks->has_quiver = TRUE;
-                }
-                else
-                    p.op = OP_MOVE;
-            }
-        }
-
-        /* Find marks bounding box */
-        if (p.x < gp->global_mark_min_x)
-            gp->global_mark_min_x = p.x - ms2;
-        if (p.x > gp->global_mark_max_x)
-            gp->global_mark_max_x = p.x + ms2;
-        if (p.y < gp->global_mark_min_y)
-            gp->global_mark_min_y = p.y - ms2;
-        if (p.y > gp->global_mark_max_y)
-            gp->global_mark_max_y = p.y + ms2;
-        g_array_append_val(marks->points, p);
-        break;
-    case STRING_CLOSE_PATH:
-        p.op = OP_CLOSE_PATH;
-        g_array_append_val(marks->points, p);
-        break;
-    case STRING_TEXT:
-        {
-            text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
-            sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
-            tm->text_align = 1;
-            if (S_[1] >= '0' && S_[1] <= '9') 
-                tm->text_align = atoi(&S_[1]);
-            tm->string = string_strdup_rest(S_, 3, TRUE);
-            p.op = OP_TEXT;
-            p.text_object = tm;
-            g_array_append_val(marks->points, p);
-        }
-        break;
-    case STRING_CHANGE_LINE_WIDTH:
-        marks->line_width = string_to_atof(S_, 1);
-        break;
-    case STRING_BALLOON:
-        {
-            char *s = string_strdup_rest(S_,1,TRUE);
-            if (!marks->balloon_string) {                
-                if (s && strlen(s))
-                    marks->balloon_string = g_string_new(s);
-            }
-            else {
-                g_string_append(marks->balloon_string, "\n");
-                if (s && strlen(s))
-                    g_string_append(marks->balloon_string, s);
-            }
-            g_free(s);
-            
-            break;
-        }
-    case STRING_IMAGE_REFERENCE:
-        {
-            char *image_filename = string_strdup_word(S_, 1);
-
-            if (gp->cb_file_reference)
-                (*(gp->cb_file_reference))(image_filename, gp->cb_file_reference_data);
-            // In contrast to other references image commands are carried out immediately!
-            // salfw_viewer_load_file(image_filename, 0);
-                  
-            g_free(image_filename);
-
-            break;
-        }
-    case STRING_VFLIP:
-        if (gp->cb_set_orientation)
-            (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNDEF, GIV_PARSER_ORIENTATION_FLIP, gp->cb_set_orientation_data);
-        break;
-    case STRING_VLOCK:
-        if (gp->cb_set_vlock)
-            (*(gp->cb_set_vlock))(1,gp->cb_set_vlock_data);
-        break;
-    case STRING_NO_VFLIP:
-        if (gp->cb_set_orientation)
-            (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNDEF, GIV_PARSER_ORIENTATION_UNFLIP, gp->cb_set_orientation_data);
-        break;
-    case STRING_HFLIP:
-        if (gp->cb_set_orientation)
-            (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_FLIP, GIV_PARSER_ORIENTATION_UNDEF, gp->cb_set_orientation_data);
-        break;
-    case STRING_NO_HFLIP:
-        if (gp->cb_set_orientation)
-            (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNFLIP, GIV_PARSER_ORIENTATION_UNDEF, gp->cb_set_orientation_data);
-        break;
-    case STRING_MARKS_REFERENCE:
-        {
-#if 0
-            char *marks_filename = string_strdup_word(S_, 1);
-                
-            // Todo: Make image relative to the marks list
-            g_ptr_array_add(mark_file_name_list, marks_filename);
-                
-#endif
-            break;
-        }
-    case STRING_LOW_CONTRAST:
-        {
-#if 0
-            giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
-#endif
-            break;
-        }
-    case STRING_DASH:
-        {
-            // Get string and split it on commas
-            char *p;
-            char *dash_string = string_strdup_word(S_,1);
-            int i, num_dashes;
-            
-            // Replace comma with spaces for easier parsing
-            p = dash_string;
-            while((p=g_strstr_len(p, strlen(dash_string), ","))) 
-                *p = ' ';
-            
-            num_dashes = string_count_words(dash_string);
-            marks->num_dashes = num_dashes;
-            marks->dashes = g_new0(double, num_dashes);
-            for (i=0; i<num_dashes; i++)
-                marks->dashes[i] = string_to_atof(dash_string, i);
-            g_free(dash_string);
-            
-            break;
-        }
-    case STRING_ARROW:
-        {
-            char *arrow_string = string_strdup_word(S_,1);
-            if (arrow_string == NULL)
-                marks->arrow_type = ARROW_TYPE_END;
-            if (strcmp(arrow_string, "start")==0)
-                marks->arrow_type = ARROW_TYPE_START;
-            else if (strcmp(arrow_string, "both")==0)
-                marks->arrow_type = ARROW_TYPE_BOTH;
-            else 
-                marks->arrow_type = ARROW_TYPE_END;
-            if (arrow_string)
-                free(arrow_string);
-            break;
-        }
-    case STRING_CHANGE_NO_LINE:
-        marks->do_draw_lines = FALSE;
-        break;
-    case STRING_CHANGE_POLYGON:
-        marks->do_draw_polygon = TRUE;
-        break;
-    case STRING_CHANGE_LINE:
-        marks->do_draw_lines = TRUE;
-        break;
-    case STRING_CHANGE_NO_MARK:
-        marks->do_draw_marks = FALSE;
-        break;
-    case STRING_CHANGE_MARK_SIZE:
-        marks->mark_size = string_to_atof(S_, 1);
-        break;
-    case STRING_CHANGE_TEXT_SIZE:
-        marks->text_size = string_to_atof(S_, 1);
-        break;
-    case STRING_FONT:
-        if (marks->font_name)
-            g_free(marks->font_name);
-        marks->font_name = string_strdup_rest(S_, 1, TRUE);
-        break;
-    case STRING_CHANGE_COLOR:
-        {
-            char *color_name = string_strdup_word(S_, 1);
-            GivColor color = {0,0,0,0};
-            if ((slip)color_name == "none")
-                marks->color.alpha = COLOR_NONE;
-            else {
-                if (color_parse(color_name,&color))
-                    marks->color = color;
-            }
-            g_free(color_name);
-            break;
-        }
-    case STRING_CHANGE_OUTLINE_COLOR:
-        {
-            char *color_name = string_strdup_word(S_, 1);
-            GivColor color = {0,0,0,0};
-            if ((slip)color_name == "none")
-                marks->outline_color.alpha = COLOR_NONE;
-            else {
-                if (color_parse(color_name,&color))
-                    marks->outline_color = color;
-            }
-            marks->do_draw_polygon_outline = TRUE;
-            g_free(color_name);
-            break;
-        }
-    case STRING_CHANGE_QUIVER_COLOR:
-        {
-            char *color_name = string_strdup_word(S_, 1);
-            GivColor color = {0,0,0,0};
-            if ((slip)color_name == "none")
-                marks->quiver_color.alpha = COLOR_NONE;
-            else {
-                if (color_parse(color_name,&color))
-                    marks->quiver_color = color;
-            }
-            g_free(color_name);
-            break;
-        }
-    case STRING_CHANGE_SHADOW_COLOR:
-        {
-            char *color_name = string_strdup_word(S_, 1);
-            GivColor color = {0,0,0,0};
-            if ((slip)color_name == "none")
-                marks->shadow_color.alpha = COLOR_NONE;
-            else {
-                if (color_parse(color_name,&color))
-                    marks->shadow_color = color;
-            }
-            g_free(color_name);
-            break;
-        }
-    case STRING_CHANGE_SHADOW_OFFSET:
-        {
-            char *arg1 = string_strdup_word(S_, 1);
-            char *arg2 = string_strdup_word(S_, 2);
-            marks->shadow_offset_x = atof(arg1);
-            marks->shadow_offset_y = atof(arg2);
-            g_free(arg1);
-            g_free(arg2);
-        }
-    case STRING_CHANGE_QUIVER_HEAD:
-        {
-            char *arg = string_strdup_word(S_, 1);
-            if ((slip)arg == "none")
-                marks->quiver_head = false;
-            else {
-                marks->quiver_head = true;
-            }
-            g_free(arg);
-            break;
-        }
-    case STRING_CHANGE_QUIVER_SCALE:
-        marks->quiver_scale = string_to_atof(S_, 1);
-
-        // remember last value
-        gp->quiver_scale = marks->quiver_scale;
-        break;
-    case STRING_CHANGE_MARKS:
-        {
-            char *mark_name = string_strdup_word(S_, 1);
-            marks->do_draw_marks = TRUE;
-	      
-            marks->mark_type = giv_parse_mark_type(mark_name, filename, linenum);
-		
-            g_free(mark_name);
-            break;
-        }
-    case STRING_CHANGE_SCALE_MARKS:
-        if (string_count_words(S_) == 1)
-            marks->do_scale_marks = 1;
+  /* Parse the line */
+  type = parse_string(wb, line, filename, linenum);
+  switch (type) {
+  case STRING_COMMENT:
+    break;
+  case STRING_DRAW:
+  case STRING_MOVE:
+  case STRING_ELLIPSE:
+  case STRING_QUIVER:
+    if (type == STRING_DRAW) {
+      if (wb.size()==2) {
+        p.x = wb.GetFloat(0);
+        p.y = wb.GetFloat(1);
+        if (marks->points->len == 0)
+          p.op = OP_MOVE;
         else
-            marks->do_scale_marks = string_to_atoi(S_, 1);
-        break;
-    case STRING_CHANGE_SCALE_FONTS:
-        if (string_count_words(S_) == 1)
-            marks->do_scale_fonts = 1;
-        else
-            marks->do_scale_fonts = string_to_atoi(S_, 1);
-        break;
-    case STRING_CHANGE_PANGO_MARKUP:
-        if (string_count_words(S_) == 1)
-            marks->do_pango_markup = 1;
-        else
-            marks->do_pango_markup = string_to_atoi(S_, 1);
-        break;
-    case STRING_PATH_NAME:
-        if (marks->path_name)
-            g_free(marks->path_name);
-        marks->path_name = string_strdup_rest(S_, 1,FALSE);
-        break;
-    case STRING_DEF_STYLE:
-        {
-            char *style_name = string_strdup_word(S_, 1);
-            char *style_string = string_strdup_rest(S_, 2,FALSE);
-            giv_parser_giv_style_add_string(gp, style_name, style_string);
-            g_free(style_name);
-            g_free(style_string);
-        }
-        break;
-    case STRING_STYLE:
-        {
-            char *style_name = string_strdup_word(S_, 1);
-            giv_parser_giv_set_props_from_style(gp, marks, style_name);
-            g_free(style_name);
-            break;
-        }
-    case STRING_HIDE:
-        {
-            marks->is_visible = false;
-            break;
-        }
-    case STRING_TEXT_STYLE:
-        {
-          char *text_style = string_strdup_word(S_,1);
-          if (strcmp(text_style, "shadow") == 0)
-            marks->text_style = TEXT_STYLE_DROP_SHADOW;
-          g_free(text_style);
-          break;
-        }
-    default:
-        ;
-#if 0
-    default:
-        printf("Unknown string: %s\n", S_);
-#endif
+          p.op = OP_DRAW;
+      }
     }
-    return 0;
+    else if (type == STRING_ELLIPSE) {
+      double x,y,xsize, ysize, angle;
+      sscanf(S_, "%s %lf %lf %lf %lf %lf", dummy, &x, &y, &xsize,&ysize,&angle);
+      p.op = OP_ELLIPSE;
+      p.x = x;
+      p.y = y;
+      g_array_append_val(marks->points, p);
+      p.op = OP_CONT;
+      p.x = xsize;
+      p.y = ysize;
+      g_array_append_val(marks->points, p);
+      p.op = OP_CONT;
+      p.x = angle;
+      g_array_append_val(marks->points, p);
+
+      // Assign p to x and y for min and max calculations.
+      p.x = x;
+      p.y = y;
+    }
+    else {
+      if (wb.size() == 3) {
+        p.x = wb.GetFloat(1);
+        p.y = wb.GetFloat(2);
+        if (type == STRING_QUIVER) {
+          p.op = OP_QUIVER;
+          marks->has_quiver = TRUE;
+        }
+        else
+          p.op = OP_MOVE;
+      }
+    }
+
+    /* Find marks bounding box */
+    if (p.x < gp->global_mark_min_x)
+      gp->global_mark_min_x = p.x - ms2;
+    if (p.x > gp->global_mark_max_x)
+      gp->global_mark_max_x = p.x + ms2;
+    if (p.y < gp->global_mark_min_y)
+      gp->global_mark_min_y = p.y - ms2;
+    if (p.y > gp->global_mark_max_y)
+      gp->global_mark_max_y = p.y + ms2;
+    g_array_append_val(marks->points, p);
+    break;
+  case STRING_CLOSE_PATH:
+    p.op = OP_CLOSE_PATH;
+    g_array_append_val(marks->points, p);
+    break;
+  case STRING_TEXT:
+    {
+      text_mark_t *tm = (text_mark_t*)g_new(text_mark_t, 1);
+      sscanf(S_, "%s %lf %lf", dummy, &p.x, &p.y);
+      tm->text_align = 1;
+      if (S_[1] >= '0' && S_[1] <= '9') 
+        tm->text_align = atoi(&S_[1]);
+      const char *s = wb.GetRestAsString(3);
+      if (strstr(s, "\\n") != NULL)
+        {
+          slip str(s);
+          str.s("\\\\n","\n","g");
+          tm->string = strdup(str.c_str());
+        }
+      else
+          tm->string = strdup(s);
+      p.op = OP_TEXT;
+      p.text_object = tm;
+      g_array_append_val(marks->points, p);
+    }
+    break;
+  case STRING_CHANGE_LINE_WIDTH:
+    marks->line_width = wb.GetFloat(1);
+    break;
+  case STRING_BALLOON:
+    {
+      char *s = strdup(wb.GetRestAsString(1));
+      if (!marks->balloon_string) {                
+        if (s && strlen(s))
+          marks->balloon_string = g_string_new(s);
+      }
+      else {
+        g_string_append(marks->balloon_string, "\n");
+        if (s && strlen(s))
+          g_string_append(marks->balloon_string, s);
+      }
+      g_free(s);
+        
+      break;
+    }
+  case STRING_IMAGE_REFERENCE:
+    {
+      char *image_filename = strdup(wb.GetRestAsString(1));
+          
+      if (gp->cb_file_reference)
+        (*(gp->cb_file_reference))(image_filename, gp->cb_file_reference_data);
+      // In contrast to other references image commands are carried out immediately!
+      // salfw_viewer_load_file(image_filename, 0);
+                  
+      g_free(image_filename);
+
+      break;
+    }
+  case STRING_VFLIP:
+    if (gp->cb_set_orientation)
+      (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNDEF, GIV_PARSER_ORIENTATION_FLIP, gp->cb_set_orientation_data);
+    break;
+  case STRING_VLOCK:
+    if (gp->cb_set_vlock)
+      (*(gp->cb_set_vlock))(1,gp->cb_set_vlock_data);
+    break;
+  case STRING_NO_VFLIP:
+    if (gp->cb_set_orientation)
+      (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNDEF, GIV_PARSER_ORIENTATION_UNFLIP, gp->cb_set_orientation_data);
+    break;
+  case STRING_HFLIP:
+    if (gp->cb_set_orientation)
+      (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_FLIP, GIV_PARSER_ORIENTATION_UNDEF, gp->cb_set_orientation_data);
+    break;
+  case STRING_NO_HFLIP:
+    if (gp->cb_set_orientation)
+      (*(gp->cb_set_orientation))(GIV_PARSER_ORIENTATION_UNFLIP, GIV_PARSER_ORIENTATION_UNDEF, gp->cb_set_orientation_data);
+    break;
+  case STRING_MARKS_REFERENCE:
+    {
+#if 0
+      char *marks_filename = string_strdup_word(S_, 1);
+                
+      // Todo: Make image relative to the marks list
+      g_ptr_array_add(mark_file_name_list, marks_filename);
+                
+#endif
+      break;
+    }
+  case STRING_LOW_CONTRAST:
+    {
+#if 0
+      giv_current_transfer_function = TRANS_FUNC_LOW_CONTRAST;
+#endif
+      break;
+    }
+  case STRING_DASH:
+    {
+      // Get string and split it on commas
+      char *p;
+      char *dash_string = strdup(wb.GetRestAsString(1));
+      int i, num_dashes;
+            
+      // Replace comma with spaces for easier parsing
+      p = dash_string;
+      while((p=g_strstr_len(p, strlen(dash_string), ","))) 
+        *p = ' ';
+            
+      WordBoundaries dwb;
+      dwb.ParseBoundaries(dash_string);
+      num_dashes = (int)dwb.size();
+      marks->num_dashes = num_dashes;
+      marks->dashes = g_new0(double, num_dashes);
+      for (i=0; i<num_dashes; i++)
+        marks->dashes[i] = dwb.GetInt(i);
+      g_free(dash_string);
+            
+      break;
+    }
+  case STRING_ARROW:
+    {
+      char *arrow_string = strdup(wb.GetRestAsString(1));
+      if (arrow_string == NULL)
+        marks->arrow_type = ARROW_TYPE_END;
+      if (strcmp(arrow_string, "start")==0)
+        marks->arrow_type = ARROW_TYPE_START;
+      else if (strcmp(arrow_string, "both")==0)
+        marks->arrow_type = ARROW_TYPE_BOTH;
+      else 
+        marks->arrow_type = ARROW_TYPE_END;
+      if (arrow_string)
+        free(arrow_string);
+      break;
+    }
+  case STRING_CHANGE_NO_LINE:
+    marks->do_draw_lines = FALSE;
+    break;
+  case STRING_CHANGE_POLYGON:
+    marks->do_draw_polygon = TRUE;
+    break;
+  case STRING_CHANGE_LINE:
+    marks->do_draw_lines = TRUE;
+    break;
+  case STRING_CHANGE_NO_MARK:
+    marks->do_draw_marks = FALSE;
+    break;
+  case STRING_CHANGE_MARK_SIZE:
+    marks->mark_size = wb.GetFloat(1);
+    break;
+  case STRING_CHANGE_TEXT_SIZE:
+    marks->text_size = wb.GetFloat(1);
+    break;
+  case STRING_FONT:
+    if (marks->font_name)
+      g_free(marks->font_name);
+    marks->font_name = strdup(wb.GetRestAsString(1));
+    break;
+  case STRING_CHANGE_COLOR:
+    {
+      char *color_name = strdup(wb.GetRestAsString( 1));
+      GivColor color = {0,0,0,0};
+      if ((slip)color_name == "none")
+        marks->color.alpha = COLOR_NONE;
+      else {
+        if (color_parse(color_name,&color))
+          marks->color = color;
+      }
+      g_free(color_name);
+      break;
+    }
+  case STRING_CHANGE_OUTLINE_COLOR:
+    {
+      char *color_name = strdup(wb.GetRestAsString( 1));
+      GivColor color = {0,0,0,0};
+      if ((slip)color_name == "none")
+        marks->outline_color.alpha = COLOR_NONE;
+      else {
+        if (color_parse(color_name,&color))
+          marks->outline_color = color;
+      }
+      marks->do_draw_polygon_outline = TRUE;
+      g_free(color_name);
+      break;
+    }
+  case STRING_CHANGE_QUIVER_COLOR:
+    {
+      char *color_name = strdup(wb.GetRestAsString( 1));
+      GivColor color = {0,0,0,0};
+      if ((slip)color_name == "none")
+        marks->quiver_color.alpha = COLOR_NONE;
+      else {
+        if (color_parse(color_name,&color))
+          marks->quiver_color = color;
+      }
+      g_free(color_name);
+      break;
+    }
+  case STRING_CHANGE_SHADOW_COLOR:
+    {
+      char *color_name = strdup(wb.GetRestAsString( 1));
+      GivColor color = {0,0,0,0};
+      if ((slip)color_name == "none")
+        marks->shadow_color.alpha = COLOR_NONE;
+      else {
+        if (color_parse(color_name,&color))
+          marks->shadow_color = color;
+      }
+      g_free(color_name);
+      break;
+    }
+  case STRING_CHANGE_SHADOW_OFFSET:
+    {
+      char *arg1 = strdup(wb.GetRestAsString(1));
+      char *arg2 = strdup(wb.GetRestAsString(2));
+      marks->shadow_offset_x = atof(arg1);
+      marks->shadow_offset_y = atof(arg2);
+      g_free(arg1);
+      g_free(arg2);
+    }
+  case STRING_CHANGE_QUIVER_HEAD:
+    {
+      char *arg = strdup(wb.GetRestAsString( 1));
+      if ((slip)arg == "none")
+        marks->quiver_head = false;
+      else {
+        marks->quiver_head = true;
+      }
+      g_free(arg);
+      break;
+    }
+  case STRING_CHANGE_QUIVER_SCALE:
+    marks->quiver_scale = wb.GetFloat(1);
+
+    // remember last value
+    gp->quiver_scale = marks->quiver_scale;
+    break;
+  case STRING_CHANGE_MARKS:
+    {
+      marks->do_draw_marks = TRUE;
+	
+      marks->mark_type = giv_parse_mark_type(wb, 1, filename, linenum);
+	
+      break;
+    }
+  case STRING_CHANGE_SCALE_MARKS:
+    if (wb.size() == 1)
+      marks->do_scale_marks = 1;
+    else
+      marks->do_scale_marks = wb.GetInt(1);
+    break;
+  case STRING_CHANGE_SCALE_FONTS:
+    if (wb.size() == 1)
+      marks->do_scale_fonts = 1;
+    else
+      marks->do_scale_fonts = wb.GetInt(1);
+    break;
+  case STRING_CHANGE_PANGO_MARKUP:
+    if (wb.size() ==  1)
+      marks->do_pango_markup = 1;
+    else
+      marks->do_pango_markup = wb.GetInt(1);
+    break;
+  case STRING_PATH_NAME:
+    if (marks->path_name)
+      g_free(marks->path_name);
+    marks->path_name = strdup(wb.GetRestAsString(1));
+    break;
+  case STRING_DEF_STYLE:
+    {
+      char *style_name = strdup(wb.GetRestAsString(1));
+      char *style_string = strdup(wb.GetRestAsString(2)); // TBDov - what was the false arg??
+      giv_parser_giv_style_add_string(gp, style_name, style_string);
+      g_free(style_name);
+      g_free(style_string);
+    }
+    break;
+  case STRING_STYLE:
+    {
+      char *style_name = strdup(wb.GetRestAsString( 1));
+      giv_parser_giv_set_props_from_style(gp, marks, style_name);
+      g_free(style_name);
+      break;
+    }
+  case STRING_HIDE:
+    {
+      marks->is_visible = false;
+      break;
+    }
+  case STRING_TEXT_STYLE:
+    {
+      char *text_style = strdup(wb.GetRestAsString(1));
+      if (strcmp(text_style, "shadow") == 0)
+        marks->text_style = TEXT_STYLE_DROP_SHADOW;
+      g_free(text_style);
+      break;
+    }
+  default:
+    ;
+#if 0
+  default:
+    printf("Unknown string: %s\n", S_);
+#endif
+  }
+  return 0;
 }
 
 void
@@ -1102,11 +916,14 @@ giv_parser_giv_set_props_from_style(GivParser *gp,
             marks->do_draw_polygon_outline = TRUE;
             continue;
         }
-        CASE("marks") {
+        CASE("marks")
+          {
+            static WordBoundaries wb;
             slip mark_name = args.shift();
+            wb.ParseBoundaries(mark_name.c_str());
             marks->do_draw_marks = TRUE;
 	  
-            marks->mark_type = giv_parse_mark_type(mark_name, style_name, prop_idx);
+            marks->mark_type = giv_parse_mark_type(wb, 0, style_name, prop_idx);
 	  
             continue;
         }

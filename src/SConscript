@@ -64,6 +64,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64',0):
 
 src_giv_widget =     ["giv-widget.cc",
                       "colormaps.cc",
+                      "WordBoundaries.cc",
                       "giv-parser.cc",
                       "GivPainterAgg.cc",
                       "GivPainterCairo.cc",
