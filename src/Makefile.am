@@ -70,7 +70,7 @@ giv_SOURCES = \
     giv-info.cc \
     giv-mark-tree-dialog.cc 
 
-giv_LDADD  =  libgivwidget-1.0.la $(GTK_LIBS) -Lplis -lplis -Lagg -lagg -Lgtkimageviewer -lgtkimageviewer_local -lpcre -Lglib-jsonrpc -lglib-jsonrpc_local -Lglib-jsonrpc/json-glib -ljsonglib_local
+giv_LDADD  =  libgivwidget-1.0.la $(GTK_LIBS) -Lplis -lplis -Lagg -lagg -Lgtkimageviewer -lgtkimageviewer_local -lpcre -Lglib-jsonrpc -lglibjsonrpc_local -Lglib-jsonrpc/json-glib -ljsonglib_local
 giv_LDFLAGS = @MY_DEP_LIBS@
 giv_CPPFLAGS = -DPACKAGE_DOC_DIR='"$(prefix)/share/doc/giv"' -DPACKAGE_PLUGIN_DIR='"$(prefix)/lib/giv-1.0/plugins"' \
   $(all_includes) \
