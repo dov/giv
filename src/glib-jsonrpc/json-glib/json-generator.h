@@ -21,12 +21,12 @@
  *   Emmanuele Bassi  <ebassi@linux.intel.com>
  */
 
+#ifndef __JSON_GENERATOR_H__
+#define __JSON_GENERATOR_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
-
-#ifndef __JSON_GENERATOR_H__
-#define __JSON_GENERATOR_H__
 
 #include <json-glib/json-types.h>
 #include <gio/gio.h>
@@ -75,32 +75,53 @@ struct _JsonGeneratorClass
   void (* _json_reserved4) (void);
 };
 
+JSON_AVAILABLE_IN_1_0
 GType json_generator_get_type (void) G_GNUC_CONST;
 
+JSON_AVAILABLE_IN_1_0
 JsonGenerator * json_generator_new              (void);
 
+JSON_AVAILABLE_IN_1_0
 void            json_generator_set_pretty       (JsonGenerator  *generator,
                                                  gboolean        is_pretty);
+JSON_AVAILABLE_IN_1_0
 gboolean        json_generator_get_pretty       (JsonGenerator  *generator);
+JSON_AVAILABLE_IN_1_0
 void            json_generator_set_indent       (JsonGenerator  *generator,
                                                  guint           indent_level);
+JSON_AVAILABLE_IN_1_0
 guint           json_generator_get_indent       (JsonGenerator  *generator);
+JSON_AVAILABLE_IN_1_0
 void            json_generator_set_indent_char  (JsonGenerator  *generator,
                                                  gunichar        indent_char);
+JSON_AVAILABLE_IN_1_0
 gunichar        json_generator_get_indent_char  (JsonGenerator  *generator);
+JSON_AVAILABLE_IN_1_0
 void            json_generator_set_root         (JsonGenerator  *generator,
                                                  JsonNode       *node);
+JSON_AVAILABLE_IN_1_0
 JsonNode *      json_generator_get_root         (JsonGenerator  *generator);
 
+JSON_AVAILABLE_IN_1_4
+GString        *json_generator_to_gstring       (JsonGenerator  *generator,
+                                                 GString        *string);
+
+JSON_AVAILABLE_IN_1_0
 gchar *         json_generator_to_data          (JsonGenerator  *generator,
                                                  gsize          *length);
+JSON_AVAILABLE_IN_1_0
 gboolean        json_generator_to_file          (JsonGenerator  *generator,
                                                  const gchar    *filename,
                                                  GError        **error);
+JSON_AVAILABLE_IN_1_0
 gboolean        json_generator_to_stream        (JsonGenerator  *generator,
                                                  GOutputStream  *stream,
                                                  GCancellable   *cancellable,
                                                  GError        **error);
+
+#ifdef G_DEFINE_AUTOPTR_CLEANUP_FUNC
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonGenerator, g_object_unref)
+#endif
 
 G_END_DECLS
 

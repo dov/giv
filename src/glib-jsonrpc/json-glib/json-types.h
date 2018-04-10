@@ -21,14 +21,15 @@
  *   Emmanuele Bassi  <ebassi@linux.intel.com>
  */
 
+#ifndef __JSON_TYPES_H__
+#define __JSON_TYPES_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
 
-#ifndef __JSON_TYPES_H__
-#define __JSON_TYPES_H__
-
 #include <glib-object.h>
+#include <json-glib/json-version-macros.h>
 
 G_BEGIN_DECLS
 
@@ -175,159 +176,365 @@ typedef void (* JsonArrayForeach) (JsonArray  *array,
 /*
  * JsonNode
  */
+
+JSON_AVAILABLE_IN_1_0
 GType                 json_node_get_type        (void) G_GNUC_CONST;
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_node_new             (JsonNodeType  type);
+
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_alloc           (void);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init            (JsonNode     *node,
+                                                 JsonNodeType  type);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_object     (JsonNode     *node,
+                                                 JsonObject   *object);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_array      (JsonNode     *node,
+                                                 JsonArray    *array);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_int        (JsonNode     *node,
+                                                 gint64        value);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_double     (JsonNode     *node,
+                                                 gdouble       value);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_boolean    (JsonNode     *node,
+                                                 gboolean      value);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_string     (JsonNode     *node,
+                                                 const char   *value);
+JSON_AVAILABLE_IN_1_0
+JsonNode *            json_node_init_null       (JsonNode     *node);
+
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_node_copy            (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_free            (JsonNode     *node);
+
+JSON_AVAILABLE_IN_1_2
+JsonNode *            json_node_ref             (JsonNode     *node);
+JSON_AVAILABLE_IN_1_2
+void                  json_node_unref           (JsonNode     *node);
+
+JSON_AVAILABLE_IN_1_0
 JsonNodeType          json_node_get_node_type   (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 GType                 json_node_get_value_type  (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_parent      (JsonNode     *node,
                                                  JsonNode     *parent);
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_node_get_parent      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 const gchar *         json_node_type_name       (JsonNode     *node);
 
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_object      (JsonNode     *node,
                                                  JsonObject   *object);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_take_object     (JsonNode     *node,
                                                  JsonObject   *object);
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_node_get_object      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_node_dup_object      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_array       (JsonNode     *node,
                                                  JsonArray    *array);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_take_array      (JsonNode     *node,
                                                  JsonArray    *array);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_node_get_array       (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_node_dup_array       (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_value       (JsonNode     *node,
                                                  const GValue *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_get_value       (JsonNode     *node,
                                                  GValue       *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_string      (JsonNode     *node,
                                                  const gchar  *value);
+JSON_AVAILABLE_IN_1_0
 const gchar *         json_node_get_string      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 gchar *               json_node_dup_string      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_int         (JsonNode     *node,
                                                  gint64        value);
+JSON_AVAILABLE_IN_1_0
 gint64                json_node_get_int         (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_double      (JsonNode     *node,
                                                  gdouble       value);
+JSON_AVAILABLE_IN_1_0
 gdouble               json_node_get_double      (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_node_set_boolean     (JsonNode     *node,
                                                  gboolean      value);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_node_get_boolean     (JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_node_is_null         (JsonNode     *node);
+
+JSON_AVAILABLE_IN_1_2
+void                  json_node_seal            (JsonNode     *node);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_node_is_immutable    (JsonNode     *node);
+
+JSON_AVAILABLE_IN_1_2
+guint                 json_string_hash            (gconstpointer  key);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_string_equal           (gconstpointer  a,
+                                                   gconstpointer  b);
+JSON_AVAILABLE_IN_1_2
+gint                  json_string_compare         (gconstpointer  a,
+                                                   gconstpointer  b);
+
+JSON_AVAILABLE_IN_1_2
+guint                 json_node_hash              (gconstpointer  key);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_node_equal             (gconstpointer  a,
+                                                   gconstpointer  b);
 
 /*
  * JsonObject
  */
+JSON_AVAILABLE_IN_1_0
 GType                 json_object_get_type           (void) G_GNUC_CONST;
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_object_new                (void);
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_object_ref                (JsonObject  *object);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_unref              (JsonObject  *object);
 
-#ifndef JSON_DISABLE_DEPRECATED
+JSON_DEPRECATED_IN_1_0_FOR(json_object_set_member)
 void                  json_object_add_member         (JsonObject  *object,
                                                       const gchar *member_name,
-                                                      JsonNode    *node) G_GNUC_DEPRECATED;
-#endif /* JSON_DISABLE_DEPRECATED */
+                                                      JsonNode    *node);
 
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_member         (JsonObject  *object,
                                                       const gchar *member_name,
                                                       JsonNode    *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_int_member     (JsonObject  *object,
                                                       const gchar *member_name,
                                                       gint64       value);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_double_member  (JsonObject  *object,
                                                       const gchar *member_name,
                                                       gdouble      value);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_boolean_member (JsonObject  *object,
                                                       const gchar *member_name,
                                                       gboolean     value);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_string_member  (JsonObject  *object,
                                                       const gchar *member_name,
                                                       const gchar *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_null_member    (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_array_member   (JsonObject  *object,
                                                       const gchar *member_name,
                                                       JsonArray   *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_set_object_member  (JsonObject  *object,
                                                       const gchar *member_name,
                                                       JsonObject  *value);
+JSON_AVAILABLE_IN_1_0
 GList *               json_object_get_members        (JsonObject  *object);
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_object_get_member         (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_object_dup_member         (JsonObject  *object,
                                                       const gchar *member_name);
-gint64                json_object_get_int_member     (JsonObject  *object,
-                                                      const gchar *member_name);
-gdouble               json_object_get_double_member  (JsonObject  *object,
-                                                      const gchar *member_name);
-gboolean              json_object_get_boolean_member (JsonObject  *object,
-                                                      const gchar *member_name);
-const gchar *         json_object_get_string_member  (JsonObject  *object,
-                                                      const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
+gint64                json_object_get_int_member                        (JsonObject  *object,
+                                                                         const gchar *member_name);
+JSON_AVAILABLE_IN_1_6
+gint64                json_object_get_int_member_with_default           (JsonObject  *object,
+                                                                         const char  *member_name,
+                                                                        gint64       default_value);
+JSON_AVAILABLE_IN_1_0
+gdouble               json_object_get_double_member                     (JsonObject  *object,
+                                                                         const gchar *member_name);
+JSON_AVAILABLE_IN_1_6
+double                json_object_get_double_member_with_default        (JsonObject  *object,
+                                                                         const char  *member_name,
+                                                                         double       default_value);
+JSON_AVAILABLE_IN_1_0
+gboolean              json_object_get_boolean_member                    (JsonObject  *object,
+                                                                         const gchar *member_name);
+JSON_AVAILABLE_IN_1_6
+gboolean              json_object_get_boolean_member_with_default       (JsonObject  *object,
+                                                                         const char  *member_name,
+                                                                         gboolean     default_value);
+JSON_AVAILABLE_IN_1_0
+const gchar *         json_object_get_string_member                     (JsonObject  *object,
+                                                                         const gchar *member_name);
+JSON_AVAILABLE_IN_1_6
+const char *          json_object_get_string_member_with_default        (JsonObject  *object,
+                                                                         const char  *member_name,
+                                                                         const char  *default_value);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_object_get_null_member    (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_object_get_array_member   (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_object_get_object_member  (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_object_has_member         (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_remove_member      (JsonObject  *object,
                                                       const gchar *member_name);
+JSON_AVAILABLE_IN_1_0
 GList *               json_object_get_values         (JsonObject  *object);
+JSON_AVAILABLE_IN_1_0
 guint                 json_object_get_size           (JsonObject  *object);
+JSON_AVAILABLE_IN_1_0
 void                  json_object_foreach_member     (JsonObject  *object,
                                                       JsonObjectForeach func,
                                                       gpointer     data);
 
+JSON_AVAILABLE_IN_1_2
+void                  json_object_seal               (JsonObject  *object);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_object_is_immutable       (JsonObject  *object);
+
+JSON_AVAILABLE_IN_1_2
+guint                 json_object_hash               (gconstpointer key);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_object_equal              (gconstpointer a,
+                                                      gconstpointer b);
+
+/**
+ * JsonObjectIter:
+ *
+ * An iterator used to iterate over the members of a #JsonObject. This must
+ * be allocated on the stack and initialised using json_object_iter_init().
+ * The order in which members are returned by the iterator is undefined. The
+ * iterator is invalidated if its #JsonObject is modified during iteration.
+ *
+ * All the fields in the #JsonObjectIter structure are private and should
+ * never be accessed directly.
+ *
+ * Since: 1.2 
+ */
+typedef struct {
+  /*< private >*/
+  gpointer priv_pointer[6];
+  int      priv_int[2];
+  gboolean priv_boolean[1];
+} JsonObjectIter;
+
+JSON_AVAILABLE_IN_1_2
+void                  json_object_iter_init          (JsonObjectIter  *iter,
+                                                      JsonObject      *object);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_object_iter_next          (JsonObjectIter  *iter,
+                                                      const gchar    **member_name,
+                                                      JsonNode       **member_node);
+
+JSON_AVAILABLE_IN_1_0
 GType                 json_array_get_type            (void) G_GNUC_CONST;
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_array_new                 (void);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_array_sized_new           (guint        n_elements);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_array_ref                 (JsonArray   *array);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_unref               (JsonArray   *array);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_element         (JsonArray   *array,
                                                       JsonNode    *node);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_int_element     (JsonArray   *array,
                                                       gint64       value);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_double_element  (JsonArray   *array,
                                                       gdouble      value);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_boolean_element (JsonArray   *array,
                                                       gboolean     value);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_string_element  (JsonArray   *array,
                                                       const gchar *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_null_element    (JsonArray   *array);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_array_element   (JsonArray   *array,
                                                       JsonArray   *value);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_add_object_element  (JsonArray   *array,
                                                       JsonObject  *value);
+JSON_AVAILABLE_IN_1_0
 GList *               json_array_get_elements        (JsonArray   *array);
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_array_get_element         (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 gint64                json_array_get_int_element     (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 gdouble               json_array_get_double_element  (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_array_get_boolean_element (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 const gchar *         json_array_get_string_element  (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 gboolean              json_array_get_null_element    (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 JsonArray *           json_array_get_array_element   (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 JsonObject *          json_array_get_object_element  (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 JsonNode *            json_array_dup_element         (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_remove_element      (JsonArray   *array,
                                                       guint        index_);
+JSON_AVAILABLE_IN_1_0
 guint                 json_array_get_length          (JsonArray   *array);
+JSON_AVAILABLE_IN_1_0
 void                  json_array_foreach_element     (JsonArray   *array,
                                                       JsonArrayForeach func,
                                                       gpointer     data);
+JSON_AVAILABLE_IN_1_2
+void                  json_array_seal                (JsonArray   *array);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_array_is_immutable        (JsonArray   *array);
+
+JSON_AVAILABLE_IN_1_2
+guint                 json_array_hash                (gconstpointer key);
+JSON_AVAILABLE_IN_1_2
+gboolean              json_array_equal               (gconstpointer a,
+                                                      gconstpointer b);
+
+#ifdef G_DEFINE_AUTOPTR_CLEANUP_FUNC
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonArray, json_array_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonObject, json_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonNode, json_node_unref)
+#endif
 
 G_END_DECLS
 

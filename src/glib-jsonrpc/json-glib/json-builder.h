@@ -20,12 +20,12 @@
  *   Luca Bruno  <lethalman88@gmail.com>
  */
 
+#ifndef __JSON_BUILDER_H__
+#define __JSON_BUILDER_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
-
-#ifndef __JSON_BUILDER_H__
-#define __JSON_BUILDER_H__
 
 #include <json-glib/json-types.h>
 
@@ -45,8 +45,8 @@ typedef struct _JsonBuilderClass      JsonBuilderClass;
 /**
  * JsonBuilder:
  *
- * The <structname>JsonBuilder</structname> structure contains only
- * private data and shouls be accessed using the provided API
+ * The `JsonBuilder` structure contains only private data and should be
+ * accessed using the provided API
  *
  * Since: 0.12
  */
@@ -61,8 +61,7 @@ struct _JsonBuilder
 /**
  * JsonBuilderClass:
  *
- * The <structname>JsonBuilder</structname> structure contains only
- * private data
+ * The `JsonBuilderClass` structure contains only private data
  *
  * Since: 0.12
  */
@@ -76,30 +75,51 @@ struct _JsonBuilderClass
   void (* _json_reserved2) (void);
 };
 
+JSON_AVAILABLE_IN_1_0
 GType json_builder_get_type (void) G_GNUC_CONST;
 
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_new                (void);
+JSON_AVAILABLE_IN_1_2
+JsonBuilder *json_builder_new_immutable      (void);
+JSON_AVAILABLE_IN_1_0
 JsonNode    *json_builder_get_root           (JsonBuilder  *builder);
+JSON_AVAILABLE_IN_1_0
 void         json_builder_reset              (JsonBuilder  *builder);
 
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_begin_array        (JsonBuilder  *builder);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_end_array          (JsonBuilder  *builder);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_begin_object       (JsonBuilder  *builder);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_end_object         (JsonBuilder  *builder);
 
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_set_member_name    (JsonBuilder  *builder,
                                               const gchar  *member_name);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_value          (JsonBuilder  *builder,
                                               JsonNode     *node);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_int_value      (JsonBuilder  *builder,
                                               gint64        value);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_double_value   (JsonBuilder  *builder,
                                               gdouble       value);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_boolean_value  (JsonBuilder  *builder,
                                               gboolean      value);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_string_value   (JsonBuilder  *builder,
                                               const gchar  *value);
+JSON_AVAILABLE_IN_1_0
 JsonBuilder *json_builder_add_null_value     (JsonBuilder  *builder);
+
+#ifdef G_DEFINE_AUTOPTR_CLEANUP_FUNC
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonBuilder, g_object_unref)
+#endif
 
 G_END_DECLS
 

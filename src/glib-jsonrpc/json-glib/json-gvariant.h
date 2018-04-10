@@ -24,18 +24,25 @@
 #ifndef __JSON_GVARIANT_H__
 #define __JSON_GVARIANT_H__
 
-#include <glib.h>
-#include <json-glib/json-glib.h>
+#if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
+#error "Only <json-glib/json-glib.h> can be included directly."
+#endif
+
+#include <json-glib/json-types.h>
 
 G_BEGIN_DECLS
 
+JSON_AVAILABLE_IN_1_0
 JsonNode * json_gvariant_serialize        (GVariant *variant);
+JSON_AVAILABLE_IN_1_0
 gchar *    json_gvariant_serialize_data   (GVariant *variant,
                                            gsize    *length);
 
+JSON_AVAILABLE_IN_1_0
 GVariant * json_gvariant_deserialize      (JsonNode     *json_node,
                                            const gchar  *signature,
                                            GError      **error);
+JSON_AVAILABLE_IN_1_0
 GVariant * json_gvariant_deserialize_data (const gchar  *json,
                                            gssize        length,
                                            const gchar  *signature,

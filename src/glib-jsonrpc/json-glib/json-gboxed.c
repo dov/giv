@@ -32,7 +32,7 @@
  * When registering a #GBoxed type you should also register the
  * corresponding transformation functions, e.g.:
  *
- * |[
+ * |[<!-- language="C" -->
  *   GType
  *   my_struct_get_type (void)
  *   {
@@ -66,9 +66,7 @@
  * and to which specific #JsonNodeType.
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -298,8 +296,8 @@ json_boxed_can_deserialize (GType        gboxed_type,
  * Serializes @boxed, a pointer to a #GBoxed of type @gboxed_type,
  * into a #JsonNode
  *
- * Return value: (transfer full): a #JsonNode with the serialization of the
- *   boxed type, or %NULL if serialization either failed or was not possible
+ * Return value: (nullable) (transfer full): a #JsonNode with the serialization of
+ *   the boxed type, or %NULL if serialization either failed or was not possible
  *
  * Since: 0.10
  */

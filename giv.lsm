@@ -1,14 +1,14 @@
 Begin3
 Title:          Giv 
-Version:        0.1
+Version:        0.9.30
 Entered-date:   
 Description:    
 Keywords:        
-Author:         Dov Grobgeld <dov@imagic.weizmann.ac.il> 
-Maintained-by:  Dov Grobgeld <dov@imagic.weizmann.ac.il> 
+Author:         Dov Grobgeld <dov.grobeld@gmail.com> 
+Maintained-by:  Dov Grobgeld <dov.grobeld@gmail.com>
 Primary-site:   	        
-Home-page:      http:// 
+Home-page:      http://github.com/dov/giv
 Original-site:  
-Platforms:       Linux and other Unices
+Platforms:       Linux, and Windows
 Copying-policy: GNU Public License
 End

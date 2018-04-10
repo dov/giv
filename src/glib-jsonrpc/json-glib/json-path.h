@@ -20,12 +20,12 @@
  *   Emmanuele Bassi  <ebassi@linux.intel.com>
  */
 
+#ifndef __JSON_PATH_H__
+#define __JSON_PATH_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
-
-#ifndef __JSON_PATH_H__
-#define __JSON_PATH_H__
 
 #include <json-glib/json-types.h>
 
@@ -59,9 +59,8 @@ typedef enum {
 /**
  * JsonPath:
  *
- * The <structname>JsonPath</structname> structure is an opaque object
- * whose members cannot be directly accessed except through the provided
- * API.
+ * The `JsonPath` structure is an opaque object whose members cannot be
+ * directly accessed except through the provided API.
  *
  * Since: 0.14
  */
@@ -70,27 +69,37 @@ typedef struct _JsonPath        JsonPath;
 /**
  * JsonPathClass:
  *
- * The <structname>JsonPathClass</structname> structure is an opaque
- * object class whose members cannot be directly accessed.
+ * The `JsonPathClass` structure is an opaque object class whose members
+ * cannot be directly accessed.
  *
  * Since: 0.14
  */
 typedef struct _JsonPathClass   JsonPathClass;
 
+JSON_AVAILABLE_IN_1_0
 GType json_path_get_type (void) G_GNUC_CONST;
+JSON_AVAILABLE_IN_1_0
 GQuark json_path_error_quark (void);
 
+JSON_AVAILABLE_IN_1_0
 JsonPath *      json_path_new           (void);
 
+JSON_AVAILABLE_IN_1_0
 gboolean        json_path_compile       (JsonPath    *path,
                                          const char  *expression,
                                          GError     **error);
+JSON_AVAILABLE_IN_1_0
 JsonNode *      json_path_match         (JsonPath    *path,
                                          JsonNode    *root);
 
+JSON_AVAILABLE_IN_1_0
 JsonNode *      json_path_query         (const char  *expression,
                                          JsonNode    *root,
                                          GError     **error);
+
+#ifdef G_DEFINE_AUTOPTR_CLEANUP_FUNC
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonPath, g_object_unref)
+#endif
 
 G_END_DECLS
 

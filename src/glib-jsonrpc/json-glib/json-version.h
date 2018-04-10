@@ -21,12 +21,12 @@
  *   Emmanuele Bassi  <ebassi@linux.intel.com>
  */
 
+#ifndef __JSON_VERSION_H__
+#define __JSON_VERSION_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
-
-#ifndef __JSON_VERSION_H__
-#define __JSON_VERSION_H__
 
 /**
  * SECTION:json-version
@@ -41,46 +41,48 @@
  *
  * Json major version component (e.g. 1 if %JSON_VERSION is 1.2.3)
  */
-#define JSON_MAJOR_VERSION              (0)
+#define JSON_MAJOR_VERSION              (1)
 
 /**
  * JSON_MINOR_VERSION:
  *
  * Json minor version component (e.g. 2 if %JSON_VERSION is 1.2.3)
  */
-#define JSON_MINOR_VERSION              (14)
+#define JSON_MINOR_VERSION              (5)
 
 /**
  * JSON_MICRO_VERSION:
  *
  * Json micro version component (e.g. 3 if %JSON_VERSION is 1.2.3)
  */
-#define JSON_MICRO_VERSION              (0)
+#define JSON_MICRO_VERSION              (1)
 
 /**
  * JSON_VERSION
  *
  * Json version.
  */
-#define JSON_VERSION                    (0.14.0)
+#define JSON_VERSION                    (1.5.1)
 
 /**
  * JSON_VERSION_S:
  *
- * Json version, encoded as a string, useful for printing and
+ * JSON-GLib version, encoded as a string, useful for printing and
  * concatenation.
  */
-#define JSON_VERSION_S                  "0.14.0"
+#define JSON_VERSION_S                  "1.5.1"
+
+#define JSON_ENCODE_VERSION(major,minor,micro) \
+        ((major) << 24 | (minor) << 16 | (micro) << 8)
 
 /**
  * JSON_VERSION_HEX:
  *
- * Json version, encoded as an hexadecimal number, useful for
+ * JSON-GLib version, encoded as an hexadecimal number, useful for
  * integer comparisons.
  */
-#define JSON_VERSION_HEX                (JSON_MAJOR_VERSION << 24 | \
-                                         JSON_MINOR_VERSION << 16 | \
-                                         JSON_MICRO_VERSION << 8)
+#define JSON_VERSION_HEX \
+        (JSON_ENCODE_VERSION (JSON_MAJOR_VERSION, JSON_MINOR_VERSION, JSON_MICRO_VERSION))
 
 /**
  * JSON_CHECK_VERSION:

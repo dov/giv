@@ -1,4 +1,4 @@
-#+startup: hidestars
+#+startup: hidestars showall
 * <2010-10-30 Sat>
 ** Maemo installation
   - Don't install "complex plugins".
@@ -58,3 +58,23 @@
    /usr/lib/gcc/x86_64-w64-mingw32/4.7.0/../../../../x86_64-w64-mingw32/bin/ld: skipping incompatible /usr/local/mingw64/lib/libcfitsio.a when searching for -lcfitsio
    #+end_example
     - Solved fitsio problem by literal inclusion of sources.
+* <2018-04-05 Thu>
+** Done/Todo
+   - Ported giv to gtk3!
+   - [X] Window size is wrong when opening application.
+   - [X] Dragging giv only files clears background.
+   - [X] The histo/contrast widget crashes.
+   - [X] Measuring tool doesn't draw anything.
+* <2018-04-07 Sat>
+** Done/Todo
+   - [X] Tried to speed up parser. Though rewrite with much less allocation, still same speed. :-/
+   - [X] Giv only files do not show scrollbars. 
+   - [ ] The scrollbars are no shown when turning off the the doublebuffer option! Ask about this in the gtk ist.
+   - [ ] Make sure that windows installer works. It does!
+   - [X] Markup is not shown (on windows).
+   - [X] Markup is shown in balloons only if ~$pango_markup~ is set in dataset.
+   - [ ] Verified that windows installation works. :-)
+* <2018-04-08 Sun>
+** Done/Todo
+   - [ ] Images with overlays are scaled to the overlay and not to the image.
+   - [ ] Fix autogen.sh installation.

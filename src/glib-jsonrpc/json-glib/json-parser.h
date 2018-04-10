@@ -21,14 +21,13 @@
  *   Emmanuele Bassi  <ebassi@linux.intel.com>
  */
 
+#ifndef __JSON_PARSER_H__
+#define __JSON_PARSER_H__
+
 #if !defined(__JSON_GLIB_INSIDE__) && !defined(JSON_COMPILATION)
 #error "Only <json-glib/json-glib.h> can be included directly."
 #endif
 
-#ifndef __JSON_PARSER_H__
-#define __JSON_PARSER_H__
-
-#include <glib-object.h>
 #include <gio/gio.h>
 #include <json-glib/json-types.h>
 
@@ -54,6 +53,8 @@ typedef struct _JsonParserClass         JsonParserClass;
  * @JSON_PARSER_ERROR_MISSING_COMMA: expected comma
  * @JSON_PARSER_ERROR_MISSING_COLON: expected colon
  * @JSON_PARSER_ERROR_INVALID_BAREWORD: invalid bareword
+ * @JSON_PARSER_ERROR_EMPTY_MEMBER_NAME: empty member name (Since: 0.16)
+ * @JSON_PARSER_ERROR_INVALID_DATA: invalid data (Since: 0.18)
  * @JSON_PARSER_ERROR_UNKNOWN: unknown error
  *
  * Error enumeration for #JsonParser
@@ -66,7 +67,9 @@ typedef enum {
   JSON_PARSER_ERROR_MISSING_COMMA,
   JSON_PARSER_ERROR_MISSING_COLON,
   JSON_PARSER_ERROR_INVALID_BAREWORD,
-  
+  JSON_PARSER_ERROR_EMPTY_MEMBER_NAME,
+  JSON_PARSER_ERROR_INVALID_DATA,
+
   JSON_PARSER_ERROR_UNKNOWN
 } JsonParserError;
 
@@ -137,36 +140,56 @@ struct _JsonParserClass
   void (* _json_reserved8) (void);
 };
 
+JSON_AVAILABLE_IN_1_0
 GQuark json_parser_error_quark (void);
+JSON_AVAILABLE_IN_1_0
 GType json_parser_get_type (void) G_GNUC_CONST;
 
+JSON_AVAILABLE_IN_1_0
 JsonParser *json_parser_new                     (void);
+JSON_AVAILABLE_IN_1_2
+JsonParser *json_parser_new_immutable           (void);
+JSON_AVAILABLE_IN_1_0
 gboolean    json_parser_load_from_file          (JsonParser           *parser,
                                                  const gchar          *filename,
                                                  GError              **error);
+JSON_AVAILABLE_IN_1_0
 gboolean    json_parser_load_from_data          (JsonParser           *parser,
                                                  const gchar          *data,
                                                  gssize                length,
                                                  GError              **error);
+JSON_AVAILABLE_IN_1_0
 gboolean    json_parser_load_from_stream        (JsonParser           *parser,
                                                  GInputStream         *stream,
                                                  GCancellable         *cancellable,
                                                  GError              **error);
+JSON_AVAILABLE_IN_1_0
 void        json_parser_load_from_stream_async  (JsonParser           *parser,
                                                  GInputStream         *stream,
                                                  GCancellable         *cancellable,
                                                  GAsyncReadyCallback   callback,
                                                  gpointer              user_data);
+JSON_AVAILABLE_IN_1_0
 gboolean    json_parser_load_from_stream_finish (JsonParser           *parser,
                                                  GAsyncResult         *result,
                                                  GError              **error);
 
+JSON_AVAILABLE_IN_1_0
 JsonNode *  json_parser_get_root                (JsonParser           *parser);
+JSON_AVAILABLE_IN_1_4
+JsonNode *  json_parser_steal_root              (JsonParser           *parser);
 
+JSON_AVAILABLE_IN_1_0
 guint       json_parser_get_current_line        (JsonParser           *parser);
+JSON_AVAILABLE_IN_1_0
 guint       json_parser_get_current_pos         (JsonParser           *parser);
+JSON_AVAILABLE_IN_1_0
 gboolean    json_parser_has_assignment          (JsonParser           *parser,
                                                  gchar               **variable_name);
+
+#ifdef G_DEFINE_AUTOPTR_CLEANUP_FUNC
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (JsonParser, g_object_unref)
+#endif
 
 G_END_DECLS
 
