@@ -34,7 +34,7 @@ File /r examples
 File /r python
 
 SetOutPath $INSTDIR\bin
-File src\Giv.exe
+File src\giv.exe
 File src\giv-image.dll
 File src\giv-remote-client.exe
 File ${SYSROOT}\mingw\bin\${LIBGCCDLL}
@@ -76,7 +76,7 @@ FileWrite $9 "[Settings]$\r$\n"
 FileWrite $9 "gtk-theme-name=MS-Windows$\r$\n"
 FileClose $9 ;Closes the filled file
 
-SetOutPath $INSTDIR\etc
+SetOutPath $INSTDIR
 File /r ${SYSROOT}\mingw\etc
 SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
 File /r ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders
@@ -120,9 +120,9 @@ WriteRegStr HKCR ".giv" "" "GivFile"
 DeleteRegKey HKCR "GivFile"
 DeleteRegKey HKCR "Giv.Document"
 WriteRegStr HKCR "GivFile" "" "Giv File"
-WriteRegStr HKCR "GivFile\DefaultIcon" "" "$INSTDIR\bin\Giv.exe,1"
+WriteRegStr HKCR "GivFile\DefaultIcon" "" "$INSTDIR\bin\giv.exe,1"
 WriteRegStr HKCR "GivFile\shell" "" "open"
-WriteRegStr HKCR "GivFile\shell\open\command" "" '$INSTDIR\bin\Giv.exe "%1"'
+WriteRegStr HKCR "GivFile\shell\open\command" "" '$INSTDIR\bin\giv.exe "%1"'
 
 System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 

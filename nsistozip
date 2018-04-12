@@ -1,0 +1,85 @@
+#!/usr/bin/python
+
+# Take a nsis description and create a zip file from it.
+
+import sys,re,os,glob,shutil,zipfile
+
+vars = {}
+
+def resolve_vars(line):
+  while 1:
+    m = re.search(r'\$\{(.*?)\}', line)
+    if m:
+      line = line[0:m.start(0)] + vars[m.group(1)] + line[m.end(0):]
+      continue
+    break
+  return line
+
+def get_recursive(top):
+  dd = []
+  if not top.endswith('/'):
+    top += '/'
+  for dp, dn, filenames in os.walk(top):
+    for f in filenames:
+      dd += [(dp.replace(top,''),f)]
+  return dd
+
+def recursive_mkdir(dir):
+  dir = dir.replace('/./','/')
+  dd = dir.split('/')
+  for i in range(len(dd)):
+    d = '/'.join(dd[0:i+1])
+    if not os.path.exists(d):
+      os.mkdir(d,0o755)
+
+argp=1
+while sys.argv[argp].startswith('-D'):
+  S_ = sys.argv[argp]
+  argp+=1
+  m = re.search('-D(.*)=(.*)',S_)
+  vars[m.group(1)]=m.group(2)
+nsi_file = sys.argv[argp]
+argp+=1
+
+# A list of source and destinations pairs
+files = []
+
+dst_dir = None
+with open(nsi_file) as fh:
+  for line in fh:
+    do_rec = False
+    line = resolve_vars(line)
+    if line.startswith('SetOutPath'):
+      dst_dir = line.split()[1].replace('$INSTDIR','.').replace('\\','/').replace('"','')
+      continue
+    if line.startswith('File '):
+      args = line.split()[1:]
+      while args[0].startswith('/'):
+        arg = args[0]
+        args = args[1:]
+        
+        if arg == '/r':
+          do_rec = True
+          continue
+        print 'Unknown option ' + arg
+      fn = args[0].replace('\\','/')
+      if do_rec:
+        files += [
+          (os.path.join(fn,d,f), os.path.join(dst_dir, os.path.basename(fn), d, f))
+          for d,f in get_recursive(fn)]
+      else:
+        files += [(f, os.path.join(dst_dir,os.path.basename(f)))
+                  for f in glob.glob(fn)]
+          
+print '\n'.join('%s -> %s'%f for f in files)
+
+zipname = 'Giv-'+vars['VER']+'-'+vars['COMMITIDSHORT']
+z = zipfile.ZipFile(zipname + '.zip',
+                    mode='w',
+                    compression=zipfile.ZIP_DEFLATED)
+for src,dst in files:
+  dd = os.path.join('Giv',dst)
+  bn = os.path.basename(src)
+  z.write(src,dd)
+#  recursive_mkdir(dd)
+#  shutil.copyfile(src,os.path.join(dd,bn))

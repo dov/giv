@@ -23,7 +23,7 @@ commit_id = os.popen('git rev-parse HEAD').read().replace('\n','')
 commit_time = os.popen('git log --pretty=\'%ci\' -n1').read().replace('\n','')
 
 # Get version from configure.in
-inp = open("configure.in")
+inp = open("configure.ac")
 for line in inp.readlines():
     m = re.search(r"AM_INIT_AUTOMAKE\(.*,\s*\"?(.*?)\"?\)", line)
     if m:
@@ -74,6 +74,14 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
                 ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+    env.Command("Giv.zip",
+                ["src/giv.exe",
+                 "src/giv-image.dll",
+                 "src/giv-remote-client.exe",
+                 "giv.nsi",
+                 ] + glob.glob("src/plugins/*.dll"),
+                ["./nsistozip -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+                
     env.Append(LINKFLAGS=['-mwindows'])
 
     env['PACKAGE_DOC_DIR'] = '../doc'
