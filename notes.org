@@ -78,3 +78,9 @@
 ** Done/Todo
    - [ ] Images with overlays are scaled to the overlay and not to the image.
    - [ ] Fix autogen.sh installation.
+* <2018-04-11 Wed>
+** Done/Todo
+   - [X] Change copyright date to 2018.
+   - [X] Change font to solve the windows cairo font problem.
+   - [ ] Check if there is still a bug with non-fill opening of overlay. Yes
+   - [ ] Fixed saving of ~do_fill_on_resize~ default parameter.
