@@ -1220,7 +1220,7 @@ class Giv:Win from Gtk:Window
 
         apply_color_map(self);
 
-        //giv_win_shrink_wrap(self);
+        // First time only??
         if (error) {
             // Silently ignore image failures on auto reload
             if (selfp->do_auto_reload && selfp->auto_reload_trigger) {
@@ -1378,10 +1378,9 @@ class Giv:Win from Gtk:Window
 
         //        printf("unfreezing...\n");
         gtk_image_viewer_set_freeze(GTK_IMAGE_VIEWER(selfp->w_imgv), FALSE);
-        if (selfp->do_auto_fit_marks) {
+        if (selfp->do_auto_fit_marks && !selfp->img_display) {
             fit_marks_in_window(self);
         }
-
     }
 
     public void set_image_info(self)
@@ -1553,6 +1552,9 @@ class Giv:Win from Gtk:Window
                         old_window_width + (new_width-old_width),
                         old_window_height + (new_height-old_height) );
 
+
+      // TBD - Only on first or if auto fill on resize is true!
+      gtk_image_viewer_zoom_fit(GTK_IMAGE_VIEWER(selfp->w_imgv));
     }
 
     private bool
@@ -4206,6 +4208,10 @@ draw_caliper(GivWin *self,
     
         pango_layout_set_font_description(pango_layout, font_descr);
         pango_layout_set_text(pango_layout, caliper_text, -1);
+
+        // TBD - Get the layout extents and scale it and move it so that
+        // fits nicely within the bar of the caliper.
+
         int layout_width, layout_height;
         pango_layout_get_size(pango_layout, &layout_width, &layout_height);
     

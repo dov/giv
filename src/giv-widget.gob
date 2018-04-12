@@ -703,28 +703,31 @@ cb_image_annotate(GivWidget *self,
                          selfp->quiver_scale
                          );
     renderer.set_do_no_transparency(selfp->do_no_transparency);
-    if (!selfp->is_dragging && selfp->do_show_marks)
-      renderer.paint();
-    else
+    if (selfp->do_show_marks)
       {
-        int offs_x = selfp->cache_shift_x - shift_x;
-        int offs_y = selfp->cache_shift_y - shift_y;
-        int dst_w = width - abs(offs_x);
-        int dst_h = height - abs(offs_y);
-        int dst_x = 0;
-        int dst_y = 0;
-        if (offs_x > 0)
-            dst_x = offs_x;
-        if (offs_y > 0)
-            dst_y = offs_y;
-        
-        gdk_pixbuf_scale(selfp->cache_pixbuf,
-                         pixbuf,
-                         dst_x,dst_y,
-                         dst_w,dst_h,
-                         offs_x, offs_y,
-                         1.0, 1.0,
-                         GDK_INTERP_NEAREST);
+        if (!selfp->is_dragging)
+          renderer.paint();
+        else
+          {
+            int offs_x = selfp->cache_shift_x - shift_x;
+            int offs_y = selfp->cache_shift_y - shift_y;
+            int dst_w = width - abs(offs_x);
+            int dst_h = height - abs(offs_y);
+            int dst_x = 0;
+            int dst_y = 0;
+            if (offs_x > 0)
+                dst_x = offs_x;
+            if (offs_y > 0)
+                dst_y = offs_y;
+            
+            gdk_pixbuf_scale(selfp->cache_pixbuf,
+                             pixbuf,
+                             dst_x,dst_y,
+                             dst_w,dst_h,
+                             offs_x, offs_y,
+                             1.0, 1.0,
+                             GDK_INTERP_NEAREST);
+          }
       }
 
     gint li_width = gdk_window_get_width(gtk_widget_get_window(GTK_WIDGET(self)));
