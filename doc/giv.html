@@ -17,13 +17,13 @@
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.26</font><br>
+    <font size=+2>Version 0.9.30</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2016-06-08 Wed    </font>
+    <font size=-1>Last modified: 2018-04-12 Thu </font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -31,27 +31,27 @@
 <blockquote>
   giv is an image viewer with the following features:
   <UL>
-    <LI> Based on the dov_image_viewer gtk widget (included), which
-      provides small-memory zoomup of images.</LI>
-    <li>Support for 8-bit, floating point, 16-bit, and 32-bit gray and color images.
+    <LI> Based on the gtk_image_viewer gtk widget (included), which
+      provides small-memory and zoomable view of images.</LI>
+    <li>Support for 8-bit, 16-bit, 32-bit, and floating point gray and color images.
     <li>Plugin support for external loaders.
-    <li>Support for multi-slice images.
+    <li>Support for multi-slice images. E.g. fits
     <li>Includes plugins for reading the npy-format, FITS-format, and DICOM.
     <li>An interactive contrast tool  allows interactively changing
   contrast and brightness.
     <LI> It can display lines and marks on top of an image with sub
       pixel accuracy. </LI>
+    <li>Very fast overlay rendering through the free software library agg,
+      which allows for easily showing hundreds of thousands of overlay points.</li>
     <li> Balloon popups can be tied to any overlay and is shown when the 
     mouse hovers above that overlay.</li>
     <LI> Pseudo coloring of gray level images.</LI>
     <LI> It is especially suited for computational geometry and vision
       scientific and educational applications.</LI>
     <LI> Hierarchical layering of data sets that can be turned on and off.</LI>
-    <LI> Measuring distance in image. </LI>
-    <LI> Using agg - Anti-Grain Geometry - for fast and accurate on 
-      screen drawing. </LI>
+    <LI> Measuring distance in image through a caliper tool. </LI>
     <li> Export and print to png, svg, postscript, and pdf thanks to cairo.
-    <LI> Cross platform on posix and Windows through gtk. </LI>
+    <LI> Cross platform on posix and Windows through gtk-3. </LI>
   </UL>
 </blockquote>
 
@@ -81,7 +81,7 @@
   are drawn on top of the image, or make up a drawing on their own.
   The annotations are loaded in file known as giv files.
   The giv files contains one or more data sets. A data set consists of
-  properties, followed by the list of data points.
+  properties, followed by a list of data points.
   <p>
     A few of the properties are global and they effect not only
     the dataset, e.g. the <tt>$image</tt> property that is used to
@@ -601,6 +601,7 @@ loaders for the following formats:
 <li>FITS
 <li>Tiff
 <li>npy (Numerical python)
+<li>png
 </ul>
 
 <h2><a name="SEC5">5. Remote access protocol</a></h2>

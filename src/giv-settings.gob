@@ -79,6 +79,10 @@ class Giv:Settings from G:Object {
                                "settings",
                                "default_auto_contrast",
                                self->default_auto_contrast);
+        g_key_file_set_boolean(keyfile,
+                               "settings",
+                               "default_auto_resize",
+                               self->default_auto_resize);
 
         gchar *data = g_key_file_to_data(keyfile,NULL, NULL);
         gchar *dirname = g_path_get_dirname(selfp->keyfile_path);
@@ -98,7 +102,9 @@ class Giv:Settings from G:Object {
         // Ignore errors
         if (error) {
             g_error_free(error);
+            return 1;
         }
+        return 0;
     }
 }
   

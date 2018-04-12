@@ -47,7 +47,7 @@ libgivwidget_1_0_la_CPPFLAGS = \
   $(GTK_CFLAGS) 
 
 
-bin_PROGRAMS = giv
+bin_PROGRAMS = giv giv-remote-client
 
 EXTRA_DIST = giv_types.h giv_mark_tree.h colormaps.h svg.c SConscript giv.rc giv-logo.ico logo_150_inline.i giv-logo.i menu-top-xml.i menu-popup-xml.i copyright.i giv-settings.gob giv-contrast.gob giv-histo.gob giv-info.gob giv-mark-tree-dialog.gob giv-widget.gob giv-win.gob giv-win.gob copyright.markup menu-popup.xml menu-top.xml \
   WordBoundaries.h \
@@ -76,6 +76,18 @@ giv_CPPFLAGS = -DPACKAGE_DOC_DIR='"$(prefix)/share/doc/giv"' -DPACKAGE_PLUGIN_DI
   $(all_includes) \
   -I$(top_srcdir)/src \
   -I$(top_srcdir)/src/gtkimageviewer \
+  -I$(top_srcdir)/src/glib-jsonrpc \
+  -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
+  $(GTK_CFLAGS) 
+
+giv_remote_client_SOURCES = \
+    giv-remote-client.cc 
+
+giv_remote_client_LDADD  =  -Lglib-jsonrpc -lglibjsonrpc_local -Lglib-jsonrpc/json-glib -ljsonglib_local
+giv_remote_client_LDFLAGS = @MY_DEP_LIBS@
+giv_remote_client_CPPFLAGS = -DPACKAGE_DOC_DIR='"$(prefix)/share/doc/giv"' -DPACKAGE_PLUGIN_DIR='"$(prefix)/lib/giv-1.0/plugins"' \
+  $(all_includes) \
+  -I$(top_srcdir)/src \
   -I$(top_srcdir)/src/glib-jsonrpc \
   -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
   $(GTK_CFLAGS) 
