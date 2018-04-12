@@ -1,22 +1,35 @@
 Import('env')
 
+# All purpose template filling routine
+def create_version(env, target, source):
+  # Create empty file
+  out = open(str(target[0]), "wb")
+  out.write(("\n").encode('utf8'))
+  out.close()
+
+# Since we don't run configure when doing scons
+config_target = env.Command("config.h",
+                            [],
+                            create_version)
 env2 = env.Clone()
 env2.Library("json-glib_local",
-             ["json-array.c",
-              "json-builder.c",
-              "json-debug.c",
-              "json-enum-types.c",
-              "json-gboxed.c",
-              "json-generator.c",
-              "json-gobject.c",
-              "json-gvariant.c",
-              "json-marshal.c",
-              "json-node.c",
-              "json-object.c",
-              "json-parser.c",
-              "json-path.c",
-              "json-reader.c",
-              "json-scanner.c",
-              "json-serializable.c"],
+             [
+               "json-array.c",
+               "json-builder.c",
+               "json-debug.c",
+               "json-gboxed.c",
+               "json-generator.c",
+               "json-gobject.c",
+               "json-gvariant.c",
+               "json-node.c",
+               "json-object.c",
+               "json-parser.c",
+               "json-path.c",
+               "json-reader.c",
+               "json-scanner.c",
+               "json-serializable.c",
+               "json-utils.c",
+               "json-value.c"
+               ],
              CPPDEFINES=['JSON_COMPILATION'],
              CPPPATH=['..']+env['CPPPATH'])

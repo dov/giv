@@ -3155,7 +3155,7 @@ cb_menu_about(GtkAction *action,
                               ,
                               ("The G(reat|tk) Image Viewer"),
                               ARCH,
-                              ("Copyright &#x00a9; Dov Grobgeld, 2017\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2018\n"),
                               ("dov.grobgeld@gmail.com"),
                               GIT_COMMIT_ID,
                               GIT_COMMIT_TIME);
@@ -4189,10 +4189,12 @@ draw_caliper(GivWin *self,
         cairo_stroke(cr);
       }
 
-      // No need to draw text for label context
-      if (lasso_context != DOVTK_LASSO_CONTEXT_LABEL) {
+      // No need to draw text for label context. Though I'm doing it
+      // because I'm not sure of text height calculations on windows!
+      if (1||lasso_context != DOVTK_LASSO_CONTEXT_LABEL) {
 #ifdef _WIN32
-        PangoFontDescription *font_descr = pango_font_description_from_string("Arial 15");
+        // TBD - Figure out how to get a font that matches the caliper height!
+        PangoFontDescription *font_descr = pango_font_description_from_string("Segoe UI 10");
 #else
         PangoFontDescription *font_descr = pango_font_description_from_string("Sans 15");
 #endif
