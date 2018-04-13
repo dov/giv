@@ -31,8 +31,8 @@
 #define SVG_GRADIENTS_H
 
 
-#include <agg_color_rgba.h>
-#include <agg_trans_affine.h>
+#include "agg_color_rgba.h"
+#include "agg_trans_affine.h"
 #include <string.h>
 #include <string>
 #include <map>

@@ -25,7 +25,11 @@ libagg_a_SOURCES = \
     agg_vcgen_stroke.cpp \
     agg_vpgen_clip_polygon.cpp \
     agg_vpgen_clip_polyline.cpp \
-    agg_vpgen_segmentator.cpp
+    agg_vpgen_segmentator.cpp \
+    agg_svg_gradient.cpp \
+    agg_svg_parser.cpp \
+    agg_svg_path_renderer.cpp \
+    agg_svg_path_tokenizer.cpp
 
 libagg_a_inc_HEADERS = \
     agg_alpha_mask_u8.h \
@@ -149,7 +153,13 @@ libagg_a_inc_HEADERS = \
     agg_vertex_sequence.h \
     agg_vpgen_clip_polygon.h \
     agg_vpgen_clip_polyline.h \
-    agg_vpgen_segmentator.h
+    agg_vpgen_segmentator.h \
+    agg_svg_exception.h \
+    agg_svg_gradient.h \
+    agg_svg_parser.h \
+    agg_svg_path_renderer.h \
+    agg_svg_path_tokenizer.h
+
 
 libagg_a_incdir = $(includedir)/agg
 libagg_a_LIBADD = 

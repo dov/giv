@@ -4,7 +4,8 @@ AM_CPPFLAGS = \
   -I$(top_srcdir)/src \
   -I$(top_srcdir)/src/gtkimageviewer \
   -I$(top_srcdir)/src/glib-jsonrpc \
-  -I$(top_srcdir)/src/glib-jsonrpc/json-glib 
+  -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
+  -I$(top_srcdir)/src/agg
 
 SUBDIRS = plis agg gtkimageviewer plugins pcre glib-jsonrpc
 
@@ -44,6 +45,7 @@ libgivwidget_1_0_la_CPPFLAGS = \
   -I$(top_srcdir)/src/gtkimageviewer \
   -I$(top_srcdir)/src/glib-jsonrpc \
   -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
+  -I$(top_srcdir)/src/agg \
   $(GTK_CFLAGS) 
 
 
@@ -70,7 +72,7 @@ giv_SOURCES = \
     giv-info.cc \
     giv-mark-tree-dialog.cc 
 
-giv_LDADD  =  libgivwidget-1.0.la $(GTK_LIBS) -Lplis -lplis -Lagg -lagg -Lgtkimageviewer -lgtkimageviewer_local -lpcre -Lglib-jsonrpc -lglibjsonrpc_local -Lglib-jsonrpc/json-glib -ljsonglib_local
+giv_LDADD  =  libgivwidget-1.0.la $(GTK_LIBS) -Lplis -lplis -Lagg -lagg -Lgtkimageviewer -lgtkimageviewer_local -lpcre -Lglib-jsonrpc -lglibjsonrpc_local -Lglib-jsonrpc/json-glib -ljsonglib_local -lexpat
 giv_LDFLAGS = @MY_DEP_LIBS@
 giv_CPPFLAGS = -DPACKAGE_DOC_DIR='"$(prefix)/share/doc/giv"' -DPACKAGE_PLUGIN_DIR='"$(prefix)/lib/giv-1.0/plugins"' \
   $(all_includes) \
@@ -78,6 +80,7 @@ giv_CPPFLAGS = -DPACKAGE_DOC_DIR='"$(prefix)/share/doc/giv"' -DPACKAGE_PLUGIN_DI
   -I$(top_srcdir)/src/gtkimageviewer \
   -I$(top_srcdir)/src/glib-jsonrpc \
   -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
+  -I$(top_srcdir)/src/agg \
   $(GTK_CFLAGS) 
 
 giv_remote_client_SOURCES = \

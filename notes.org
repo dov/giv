@@ -84,3 +84,7 @@
    - [X] Change font to solve the windows cairo font problem.
    - [ ] Check if there is still a bug with non-fill opening of overlay. Yes
    - [ ] Fixed saving of ~do_fill_on_resize~ default parameter.
+* <2018-04-13 Fri>
+** Done/Todo
+   - Consider supporting resvg or svgpp instead of aggsvg (needed for cairo backend in any case).
+   - [ ] Adding svg display support through agg.

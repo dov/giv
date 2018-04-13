@@ -145,7 +145,7 @@ env.Append(CPPPATH=[],
                ]
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat")
 
 env.SConscript(['src/SConscript',
                 'doc/SConscript',
@@ -170,8 +170,8 @@ env.Alias("install",
            ])
 
 
-env.Alias("dist",
-          env.Command("giv-${VER}.tar.gz",
-                      [],
-                      create_dist))
+#env.Alias("dist",
+#          env.Command("giv-${VER}.tar.gz",
+#                      [],
+#                      create_dist))
 
