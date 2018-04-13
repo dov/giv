@@ -84,7 +84,7 @@ env.Library("giv-widget",
             CPPDEFINES = cppdefines,
             CPPPATH=cpppath,
             LIBPATH=libpath,
-            LIBS=['giv-image']+libs +['plisx','pcre']
+            LIBS=['giv-image']+libs +['plis_local']
             )
 
 giv_image_lib = env.SharedLibrary('giv-image',
@@ -92,7 +92,7 @@ giv_image_lib = env.SharedLibrary('giv-image',
                                   CPPPATH=cpppath,
                                   CPPDEFINES=cppdefines,
                                   LIBPATH=libpath,
-                                  LIBS=env['LIBS']+['plisx', 'pcre'])
+                                  LIBS=env['LIBS']+['plis_local','pcre'])
 
 giv_exe = env.Program("giv",
                       src_giv_exe,
@@ -103,7 +103,7 @@ giv_exe = env.Program("giv",
                                'json-glib_local',
                                'agg'
                                ]
-                              + libs +['plisx','pcre']
+                              + libs +['plis_local','pcre']
                               ),
                       LIBPATH = libpath,
                       CPPDEFINES = cppdefines,

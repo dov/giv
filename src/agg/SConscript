@@ -4,4 +4,5 @@ Import('env')
 
 src = glob.glob('*.cpp')
 env.Library('agg',
-            src)
+            src,
+            CPPPATH=['.'])

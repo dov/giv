@@ -281,35 +281,35 @@ static GtkActionEntry entries[] =
   { "ColorTableMenuAction", NULL, "_ColorTable" },  
   { "ToolMeasureAction", NULL, "_MeasureDistance" },  
     
-  { "OpenAction", GTK_STOCK_OPEN,
+  { "OpenAction", "document-open",
     "_Open", "<control>O",    
     "Open",
     G_CALLBACK (cb_menu_open) },
-  { "ExportAction", GTK_STOCK_SAVE,
+  { "ExportAction", "document-save",
     "_Export", "<control>E",    
     "Export",
     G_CALLBACK (cb_menu_export) },
-  { "NewWindowAction", GTK_STOCK_NEW,
+  { "NewWindowAction", "document-new",
     "_New Window", "<control>n",    
     "New Window",
     G_CALLBACK (cb_menu_new_window) },
-  { "CloseWindowAction", GTK_STOCK_CLOSE,
+  { "CloseWindowAction", "window-close",
     "_Close Window", "<control>n",    
     "Close Window",
     G_CALLBACK (cb_menu_close_window) },
-  { "ClearAction", GTK_STOCK_CLEAR,
+  { "ClearAction", "edit-clear",
     "_Clear", "<control>c",    
     "Clear",
     G_CALLBACK (cb_menu_clear) },
-  { "PrintAction", GTK_STOCK_PRINT,
+  { "PrintAction", "document-print",
     "_Print", "<control>P",    
     "Print",
     G_CALLBACK (cb_menu_print) },
-  { "QuitAction", GTK_STOCK_QUIT,
+  { "QuitAction", "application-exit",
     "_Quit", "<control>Q",    
     "Quit",
     G_CALLBACK (gtk_main_quit) },
-  { "AboutAction", GTK_STOCK_ABOUT,
+  { "AboutAction", "help-about",
     "_About", NULL,
     "About",
     G_CALLBACK (cb_menu_about) },
@@ -337,7 +337,7 @@ static GtkActionEntry entries[] =
     "View Info",
     G_CALLBACK (cb_menu_info_dialog) },
   { "PreferencesAction",
-    GTK_STOCK_PREFERENCES,    
+    "preferences-system",    
     "_Preferences", NULL,
     "Preferences",
     G_CALLBACK (cb_menu_preferences) },
@@ -731,7 +731,8 @@ class Giv:Win from Gtk:Window
             exit(-1);
           }
             
-        selfp->cursor_plus = gdk_cursor_new(GDK_PLUS);
+        selfp->cursor_plus = gdk_cursor_new_for_display(gdk_display_get_default(),
+                                                        GDK_PLUS);
         selfp->cb_names = g_ptr_array_new();
         selfp->filename_list = g_ptr_array_new();
         selfp->pixelsize_unit = g_strdup("");
@@ -761,14 +762,14 @@ class Giv:Win from Gtk:Window
                           G_CALLBACK (giv_win_destroy), self);
     
     
-        w_vbox = gtk_vbox_new(0,0);
+        w_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
         gtk_widget_show(w_vbox);
         gtk_container_add(GTK_CONTAINER(self),
                           w_vbox);
     
-        selfp->w_menubox = gtk_vbox_new(0,0);
+        selfp->w_menubox = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
         gtk_widget_show(selfp->w_menubox);
-        w_right_box = gtk_hbox_new(0,0);
+        w_right_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
         gtk_widget_show(w_right_box);
     
         action_group = gtk_action_group_new ("TestActions");
@@ -2447,6 +2448,8 @@ cb_menu_preferences (GtkAction *action, gpointer data)
         return;
 
     selfp->w_preferences = giv_settings_editor_new(GIV_SETTINGS(selfp->giv_settings));
+    gtk_window_set_transient_for(GTK_WINDOW(selfp->w_preferences),
+                                 GTK_WINDOW(self));
 
     g_signal_connect (selfp->w_preferences,
                       "response",
@@ -3188,55 +3191,52 @@ static void
 cb_menu_copyright(GtkAction *action,
                   gpointer data)
 {
-    GtkWidget *copyright_window;
-    GtkWidget *scroll_window;
-    GtkWidget *w_text;
-    GtkTextIter end_iter;
-    GtkTextBuffer *text_buffer;
-  
-    copyright_window = gtk_dialog_new ();
-#if 0
-    gtk_window_set_transient_for(GTK_WINDOW(copyright_window),
-                                 GTK_WINDOW(self));
-#endif
-    gtk_dialog_add_button (GTK_DIALOG (copyright_window),
-                           GTK_STOCK_OK, GTK_RESPONSE_OK);
-    gtk_dialog_set_default_response (GTK_DIALOG (copyright_window),
-                                     GTK_RESPONSE_OK);
-  
-    gtk_window_set_title(GTK_WINDOW (copyright_window), "Giv Copyright");
+  GivWin *self = GIV_WIN(data);
+  GtkWidget *copyright_window;
+  GtkWidget *scroll_window;
+  GtkWidget *w_text;
+  GtkTextIter end_iter;
+  GtkTextBuffer *text_buffer;
+  GtkDialogFlags flags = GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT);
 
-#if 0
-    g_signal_connect (G_OBJECT (copyright_window), "delete-event",
-                      G_CALLBACK (gtk_widget_destroy), copyright_window);
-#endif
-  
-    // Insert copyright here
-    scroll_window = gtk_scrolled_window_new(NULL, NULL);
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(copyright_window))),
-                       scroll_window, TRUE, TRUE, 0);
+  copyright_window = gtk_dialog_new_with_buttons (" Giv Copyright",
+                                                  GTK_WINDOW(self),
+                                                  flags,
+                                                  GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+                                                  NULL);
+  gtk_widget_set_size_request(copyright_window, 600, 500);
 
-    w_text = gtk_text_view_new ();
+  gtk_dialog_set_default_response (GTK_DIALOG (copyright_window),
+                                   GTK_RESPONSE_OK);
+  
+  gtk_window_set_title(GTK_WINDOW (copyright_window), "Giv Copyright");
+
+  // Insert copyright here
+  scroll_window = gtk_scrolled_window_new(NULL, NULL);
+  gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(copyright_window))),
+                     scroll_window, TRUE, TRUE, 0);
+
+  w_text = gtk_text_view_new ();
 #if 0
-    // why does this make the bell ring?
-    gtk_text_view_set_editable      (GTK_TEXT_VIEW(w_text), FALSE);
+  // why does this make the bell ring?
+  gtk_text_view_set_editable      (GTK_TEXT_VIEW(w_text), FALSE);
 #endif
-    gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW(w_text), FALSE);
-    gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW(w_text), GTK_WRAP_NONE);
-    gtk_widget_set_size_request (w_text, 600, 500);
-    gtk_container_add(GTK_CONTAINER(scroll_window),
-                      w_text);
-    text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (w_text));
+  gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW(w_text), FALSE);
+  gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW(w_text), GTK_WRAP_NONE);
+  gtk_widget_set_size_request (w_text, 600, 500);
+  gtk_container_add(GTK_CONTAINER(scroll_window),
+                    w_text);
+  text_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (w_text));
     
-    gtk_text_buffer_get_end_iter(text_buffer,
-                                 &end_iter);
-    giv_text_buffer_insert_markup(text_buffer,
-                                  &end_iter,
-                                  copyright_string);
+  gtk_text_buffer_get_end_iter(text_buffer,
+                               &end_iter);
+  giv_text_buffer_insert_markup(text_buffer,
+                                &end_iter,
+                                copyright_string);
 
-    gtk_widget_show_all (copyright_window);
-    gtk_dialog_run (GTK_DIALOG (copyright_window));
-    gtk_widget_destroy (copyright_window);
+  gtk_widget_show_all (copyright_window);
+  gtk_dialog_run (GTK_DIALOG (copyright_window));
+  gtk_widget_destroy (copyright_window);
 }
 
 static int

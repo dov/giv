@@ -144,7 +144,7 @@ class Giv:Contrast from Gtk:Dialog {
         gtk_box_pack_start(GTK_BOX(w_vbox),
                            w_frame, TRUE, TRUE, 0);
         
-        GtkWidget *w_hbox2 = gtk_hbox_new(0,0);
+        GtkWidget *w_hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
         gtk_container_add(GTK_CONTAINER(w_frame),
                           w_hbox2);
 

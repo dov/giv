@@ -155,10 +155,11 @@ class Giv:Widget from Gtk:Image:Viewer
 
         // Make tooltip color yellow. This should probably be configurable
         {
-            GdkColor color = {0,0,0,0};
-            gdk_color_parse("yellow", &color);
-            gtk_widget_modify_bg(selfp->w_balloon_window,
-                                 GTK_STATE_NORMAL, &color);
+          GdkRGBA color;
+          gdk_rgba_parse(&color,"yellow");
+          gtk_widget_override_background_color(selfp->w_balloon_window,
+                                               GTK_STATE_FLAG_NORMAL,
+                                               &color);
                                                                   
         }
 

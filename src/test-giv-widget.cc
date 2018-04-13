@@ -75,7 +75,7 @@ main (int argc, char *argv[])
   gtk_window_set_title (GTK_WINDOW (window), argv[1]);
   g_signal_connect (window, "destroy", G_CALLBACK (gtk_exit), NULL);
 
-  vbox = gtk_vbox_new(0,0);
+  vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
   gtk_container_add (GTK_CONTAINER (window), vbox);
   
   scrolled_win = gtk_scrolled_window_new(NULL,NULL);

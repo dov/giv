@@ -129,7 +129,6 @@ GivImage *giv_plugin_load_file(const char *filename,
       return NULL;
     }
 
-    int png_transforms = PNG_TRANSFORM_PACKING;
     png_bytep *row_pointers = (png_bytep*)g_new0(gpointer, height);
 
     guchar *dst_buf = img->buf.buf;
