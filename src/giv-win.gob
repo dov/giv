@@ -1246,8 +1246,9 @@ class Giv:Win from Gtk:Window
     {
         if (g_str_has_suffix(filename, ".giv")
             || g_str_has_suffix(filename, ".marks")
+            || g_str_has_suffix(filename, ".svg")
             )
-            giv_win_load_giv(self, filename);
+          giv_win_load_giv(self, filename);
         else {
             //            ((GivParser*)selfp->giv_parser)->clear();
             giv_win_load_image(self, filename);

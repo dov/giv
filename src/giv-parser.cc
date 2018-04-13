@@ -12,6 +12,8 @@
 #include "plis/plis.h"
 #include "WordBoundaries.h"
 #include <iostream>
+#include "agg_svg_parser.h"
+
 
 using namespace plis;
 using namespace std;
@@ -47,6 +49,7 @@ enum
   STRING_CHANGE_LINE,
   STRING_CHANGE_NO_MARK,
   STRING_CHANGE_POLYGON,
+  STRING_CHANGE_SVG,
   STRING_BALLOON,
   STRING_IMAGE_REFERENCE,
   STRING_MARKS_REFERENCE,
@@ -66,7 +69,7 @@ enum
   STRING_DEF_STYLE,
   STRING_HIDE,
   STRING_IGNORE,
-  STRING_TEXT_STYLE
+  STRING_TEXT_STYLE,
 };
 
 #define COLOR_NONE 0xfffe
@@ -113,6 +116,9 @@ giv_parser_parse_file(GivParser *gp,
                       const char *filename)
 {
     int ret = 0;
+
+    if (g_str_has_suffix(filename, ".svg"))
+      return giv_parser_add_svgfile(gp,filename);
 
     giv_dataset_t *marks = NULL;
     gboolean is_new_set;
@@ -237,6 +243,30 @@ giv_parser_parse_string(GivParser *gp,
     return ret;
 }
 
+static agg::svg::path_renderer* parse_svg(const char *filename)
+{
+  agg::svg::path_renderer*svg = new agg::svg::path_renderer;
+  agg::svg::parser p(*svg);
+  p.parse(filename);
+  
+  return svg;
+}
+
+
+int giv_parser_add_svgfile(GivParser *giv_parser,
+                            const char *filename)
+{
+  int num_sets = giv_parser->giv_datasets->len;
+  giv_dataset_t *marks = new_giv_dataset(num_sets);
+  marks->svg = parse_svg(filename);
+  
+  // TBD - setup bounding box!
+
+  g_ptr_array_add(giv_parser->giv_datasets, marks);
+
+  return 0;
+}
+
 /*======================================================================
 //  Classify a string.
 //----------------------------------------------------------------------
@@ -343,6 +373,10 @@ parse_string (const WordBoundaries& wb,
       if (wb.CheckMatch(0, "$polygon"))
         {
           type = STRING_CHANGE_POLYGON;
+        }
+      if (wb.CheckMatch(0, "$svg"))
+        {
+          type = STRING_CHANGE_SVG;
         }
       if (wb.CheckMatch(0, "$marks_file"))
         {
@@ -667,6 +701,9 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     break;
   case STRING_CHANGE_POLYGON:
     marks->do_draw_polygon = TRUE;
+    break;
+  case STRING_CHANGE_SVG:
+    marks->svg = parse_svg(wb.GetWordAsString(1).c_str());
     break;
   case STRING_CHANGE_LINE:
     marks->do_draw_lines = TRUE;

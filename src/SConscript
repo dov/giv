@@ -16,7 +16,7 @@ env_command_line.Program('giv-remote-client',
 
 libpath = ["#/src","#/src/plis",'#/src'] + env['LIBPATH']
 libs = env['LIBS'] 
-cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/"]
+cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/","agg"]
 cppdefines = ['PACKAGE_DOC_DIR=\'"${PACKAGE_DOC_DIR}"\'',
               'PACKAGE_PLUGIN_DIR=\'"${PACKAGE_PLUGIN_DIR}"\'',
               ]

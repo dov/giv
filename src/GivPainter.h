@@ -48,6 +48,8 @@ class GivPainter {
     virtual void fill() = 0;
     virtual void stroke() = 0;
     virtual void close_path() = 0;
+    virtual void set_do_paint_by_index(bool do_paint_by_index) = 0;
+
     virtual void set_dashes(int num_dashes,
                             double* dashes) = 0;
     virtual void set_arrow(bool do_start_arrow,
@@ -58,6 +60,10 @@ class GivPainter {
                            double arrow_d4=-1,
                            double arrow_d5=-1
                            )=0;
+    virtual void render_svg_path(agg::svg::path_renderer *svg,
+                                 double mx, double my,
+                                 double scalex, double scaley) = 0;
+                                 
 };
 
 #endif

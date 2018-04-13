@@ -227,7 +227,7 @@ namespace svg
     
         end--;
     
-        int length = int(end - begin + 2);
+        int32 length = end - begin + 2;
         char* result = new char[length];
         memcpy(result, begin, length - 1);
         result[length - 1] = 0;

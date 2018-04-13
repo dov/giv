@@ -31,8 +31,8 @@
 #define SVG_GRADIENTS_H
 
 
-#include "agg_color_rgba.h"
-#include "agg_trans_affine.h"
+#include <agg_color_rgba.h>
+#include <agg_trans_affine.h>
 #include <string.h>
 #include <string>
 #include <map>
@@ -141,7 +141,7 @@ namespace agg {
             {
                 unsigned i;
                 unsigned start = uround(m_color_profile[0].offset * color_lut_size);
-                unsigned end=0;
+                unsigned end;
                 color_type c = m_color_profile[0].color;
                 c.opacity(c.opacity() * opaque);
                 for(i = 0; i < start; i++) 

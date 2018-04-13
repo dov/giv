@@ -67,6 +67,7 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     dataset_p->tree_path_string = NULL;
     dataset_p->is_visible = TRUE;
     dataset_p->arrow_type = ARROW_TYPE_NONE;
+    dataset_p->svg = NULL;
 
     return dataset_p;
 }
@@ -92,6 +93,8 @@ void free_giv_data_set(giv_dataset_t *dataset_p)
           p.text_object=NULL;
         }
     g_array_free(dataset_p->points, TRUE);
+    if (dataset_p->svg)
+      delete dataset_p->svg;
     g_free(dataset_p);
 }
 

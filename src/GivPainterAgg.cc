@@ -505,3 +505,18 @@ GivPainterAgg::label_to_color(int label,
     gg = 1.0/255*(((label+1) >> 8) % 256);
     rr = 1.0/255*(((label+1) >> 16) % 256);
 }
+
+void GivPainterAgg::render_svg_path(agg::svg::path_renderer *svg,
+                                    double mx, double my,
+                                    double scalex, double scaley)
+{
+  agg::trans_affine AggTransform(scalex,0,0,scaley,mx,my); 
+  typedef agg::pixfmt_rgba32 pixfmt;
+  typedef agg::renderer_base<pixfmt> renderer_base;
+
+  // Render the svg in the buffer.
+  svg->render(d->pf, d->sl, d->rbase,
+              AggTransform,
+              d->rbase.clip_box()
+              );
+}

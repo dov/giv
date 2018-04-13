@@ -58,6 +58,9 @@ int giv_parser_parse_file(GivParser *giv_parser,
                           const char *filename);
 int giv_parser_parse_string(GivParser *giv_parser,
                             const char *giv_string);
+int giv_parser_add_svgfile(GivParser *giv_parser,
+                            const char *filename);
+
 void giv_parser_giv_style_add_string(GivParser *giv_parser,
                                      const char* style_name,
                                      const char* style_string);

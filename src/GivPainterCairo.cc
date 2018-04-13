@@ -381,6 +381,13 @@ GivPainterCairo::set_arrow(bool do_start_arrow,
     d->do_end_arrow = do_end_arrow;
 }
 
+void GivPainterCairo::render_svg_path(agg::svg::path_renderer *svg,
+                                      double mx, double my,
+                                      double scalex, double scaley)
+{
+  // TBD - Use svgpp or resvg!
+}
+
 void
 GivPainterCairo::label_to_color(int label,
                                 // output
@@ -512,3 +519,4 @@ draw_arrow(cairo_t *cr,
     cairo_fill(cr);
     cairo_restore(cr);
 }
+

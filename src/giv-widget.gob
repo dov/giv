@@ -228,9 +228,8 @@ class Giv:Widget from Gtk:Image:Viewer
 
         // TBD: Move this to the GivPainterAgg class
         int label = rgb[2]+256*rgb[1]+256*256*rgb[0]-1;
-        
-        if (label>=0) {
-            GPtrArray *datasets = (GPtrArray*)giv_parser_get_giv_datasets(selfp->giv_parser);
+        GPtrArray *datasets = (GPtrArray*)giv_parser_get_giv_datasets(selfp->giv_parser);
+        if (label>=0 && label < (int)datasets->len) {
             giv_dataset_t *mark_set = (giv_dataset_t*)g_ptr_array_index(datasets, label);
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(self));
             GdkScreen *pointer_screen;

@@ -1,5 +1,5 @@
 /********************************************************************
- * Project: XJet custom allocators for agg                          *
+ * Project: Custom allocators for agg                               *
  * Module:                                                          *
  * Module Description:                                              *
  *                                                                  *
@@ -12,10 +12,10 @@
 
 #include <string>
 
-class EXJetAggOutOfMemory : public std::string
+class EAggOutOfMemory : public std::string
 {
   public:
-    EXJetAggOutOfMemory(const char *msg="") : std::string(msg) {}
+    EAggOutOfMemory(const char *msg="") : std::string(msg) {}
 };
 
 namespace agg
@@ -33,7 +33,7 @@ namespace agg
         static T*   allocate(unsigned num)       {
             T* mem = new T [num];
             if (mem == NULL)
-              throw EXJetAggOutOfMemory();
+              throw EAggOutOfMemory();
             return mem;
         }
         static void deallocate(T* ptr, unsigned) { delete [] ptr;      }

@@ -48,6 +48,11 @@ void GivRenderer::paint()
         if (!dataset->is_visible)
             continue;
         
+        if (dataset->svg)
+            // TBD - add transformation
+            painter.render_svg_path(dataset->svg,
+                                    -shift_x,-shift_y,scale_x,scale_y);
+
         painter.set_set_idx(ds_idx);
 
         // Create negative color values for "invisible" datasets

@@ -11,6 +11,7 @@
 #define GIV_DATA_H
 
 #include <gtk/gtk.h>
+#include "agg/agg_svg_path_renderer.h"
 
 enum
 {
@@ -89,6 +90,7 @@ typedef struct
     gdouble *dashes;
     gdouble shadow_offset_x;
     gdouble shadow_offset_y;
+    agg::svg::path_renderer *svg = NULL;  // svg path if data has svg
 } giv_dataset_t;
 
 typedef struct
