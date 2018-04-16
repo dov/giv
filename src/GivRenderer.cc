@@ -48,12 +48,12 @@ void GivRenderer::paint()
         if (!dataset->is_visible)
             continue;
         
+        painter.set_set_idx(ds_idx);
+
         if (dataset->svg)
             // TBD - add transformation
             painter.render_svg_path(dataset->svg,
                                     -shift_x,-shift_y,scale_x,scale_y);
-
-        painter.set_set_idx(ds_idx);
 
         // Create negative color values for "invisible" datasets
         double rr = cs*dataset->color.red;
@@ -207,41 +207,50 @@ void GivRenderer::paint()
             }
             painter.draw_marks();
         }
-        if (dataset->do_draw_marks) {
+        if (dataset->do_draw_marks)
+          {
             GivMarkType mark_type = GivMarkType(dataset->mark_type);
             double mark_size_x = dataset->mark_size;
             double mark_size_y = mark_size_x;
-            if (dataset->do_scale_marks) {
+            if (dataset->do_scale_marks)
+              {
                 mark_size_x *= fabs(scale_x);
                 mark_size_y *= fabs(scale_y);
-            }
+              }
             painter.set_color(rr,gg,bb,alpha);
             // Reset line width as it may have been changed for quiver
             painter.set_line_width(line_width);
+            painter.set_svg_mark(dataset->svg_mark);
             
             for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
-                point_t p = g_array_index(dataset->points, point_t, p_idx);
+              point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-                if (p.op == OP_QUIVER)
-                    continue;
-                if (p.op == OP_TEXT) {
-                    has_text = true;
+              if (p.op == OP_QUIVER)
+                continue;
+              if (p.op == OP_TEXT)
+                {
+                  has_text = true;
                 }
-                else {
-                    double m_x = p.x * scale_x - shift_x;
-                    double m_y = p.y * scale_y - shift_y;
+              else {
+                double m_x = p.x * scale_x - shift_x;
+                double m_y = p.y * scale_y - shift_y;
 
-                    // Crop marks 
-                    if (m_x < -mark_size_x || m_x > width+mark_size_x
-                        || m_y < -mark_size_y || m_y > height+mark_size_y)
-                        continue;
+                // Crop marks 
+                if (m_x < -mark_size_x || m_x > width+mark_size_x
+                    || m_y < -mark_size_y || m_y > height+mark_size_y)
+                  continue;
+                if (dataset->svg_mark)
+                  painter.add_svg_mark(m_x, m_y, scale_x, scale_y);
+                else
+                  {
                     painter.add_mark(mark_type,
                                      mark_size_x, mark_size_y,
                                      m_x, m_y);
                     need_paint = true;
-                }
-                if (need_paint)
-                    painter.draw_marks();
+                  }
+              }
+              if (need_paint)
+                painter.draw_marks();
             }
         }
         if (need_check_for_text || has_text) {

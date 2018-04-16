@@ -67,10 +67,12 @@ public:
     double old_x, old_y;
     PangoFontDescription *font_description;
     PangoLayout *layout;
+    agg::svg::path_renderer  *svg_mark = nullptr;
 
     // used for writing text
     cairo_t *cr;
     cairo_surface_t *surface;
+
 };
 
 GivPainterAggPriv::GivPainterAggPriv(GdkPixbuf *pixbuf,
@@ -182,6 +184,13 @@ int GivPainterAgg::set_line_width(double line_width)
         set_arrow(d->do_start_arrow,
                   d->do_end_arrow);
     return 0;
+}
+
+void GivPainterAgg::add_svg_mark(double x, double y, double sx, double sy) 
+{
+  render_svg_path(d->svg_mark,
+                  x,y,
+                  sx,sy);
 }
 
 // This is really too high level to be in the painter class, which
@@ -515,8 +524,25 @@ void GivPainterAgg::render_svg_path(agg::svg::path_renderer *svg,
   typedef agg::renderer_base<pixfmt> renderer_base;
 
   // Render the svg in the buffer.
+  if (d->do_paint_by_index)
+    {
+      agg::rgba label_color;
+      double rr, gg, bb;
+      label_to_color(d->set_idx,
+                     // output
+                     rr, gg, bb);
+      label_color = agg::rgba(rr,gg,bb,1);
+      svg->set_label_color(label_color);
+    }
+  else
+    svg->set_paint_by_label(false);
   svg->render(d->pf, d->sl, d->rbase,
               AggTransform,
               d->rbase.clip_box()
               );
+}
+
+int GivPainterAgg::set_svg_mark(agg::svg::path_renderer *svg_mark)
+{
+  d->svg_mark = svg_mark;
 }

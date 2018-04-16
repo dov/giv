@@ -56,6 +56,9 @@ class GivPainterAgg : public GivPainter {
                          double mx, double my,
                          double scalex, double scaley) override;
 
+    int set_svg_mark(agg::svg::path_renderer *svgmark) override;
+    void add_svg_mark(double x, double y, double sx, double sy) override;
+
     static void label_to_color(int label,
                                // output
                                double& rr,

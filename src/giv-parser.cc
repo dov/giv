@@ -50,6 +50,7 @@ enum
   STRING_CHANGE_NO_MARK,
   STRING_CHANGE_POLYGON,
   STRING_CHANGE_SVG,
+  STRING_CHANGE_SVG_MARK,
   STRING_BALLOON,
   STRING_IMAGE_REFERENCE,
   STRING_MARKS_REFERENCE,
@@ -180,7 +181,7 @@ giv_parser_parse_file(GivParser *gp,
     fclose(GIV);
 
     /* Get rid of empty data sets */
-    if (marks && marks->points->len == 0) {
+    if (marks && (marks->points->len == 0 && !marks->svg)) {
         g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
 	free_giv_data_set(marks);
 	marks = NULL;
@@ -225,8 +226,8 @@ giv_parser_parse_string(GivParser *gp,
 	}
 	
 	if (len == 0) {
-	    if (marks && ((GArray*)marks->points)->len > 0)
-		is_new_set++;
+          if (marks && (((GArray*)marks->points)->len > 0 || marks->svg))
+              is_new_set++;
 	}
         else
             giv_parser_giv_marks_data_add_line(gp, marks, S_, "string", line_num);
@@ -234,7 +235,7 @@ giv_parser_parse_string(GivParser *gp,
     }
 
     /* Get rid of empty data sets */
-    if (marks && marks->points->len == 0) {
+    if (marks && (marks->points->len == 0 && !marks->svg)) {
         g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
 	free_giv_data_set(marks);
 	marks = NULL;
@@ -259,9 +260,16 @@ int giv_parser_add_svgfile(GivParser *giv_parser,
   int num_sets = giv_parser->giv_datasets->len;
   giv_dataset_t *marks = new_giv_dataset(num_sets);
   marks->svg = parse_svg(filename);
-  
-  // TBD - setup bounding box!
+  marks->file_name = g_strdup(filename);
 
+  if (marks->svg->width_in_pt() > giv_parser->global_mark_max_x)
+    giv_parser->global_mark_max_x = marks->svg->width_in_pt();
+  if (marks->svg->height_in_pt() > giv_parser->global_mark_max_y)
+    giv_parser->global_mark_max_y = marks->svg->height_in_pt();
+  if (giv_parser->global_mark_min_x > 0)
+    giv_parser->global_mark_min_x = 0;
+  if (giv_parser->global_mark_min_y > 0)
+    giv_parser->global_mark_min_y = 0;
   g_ptr_array_add(giv_parser->giv_datasets, marks);
 
   return 0;
@@ -377,6 +385,10 @@ parse_string (const WordBoundaries& wb,
       if (wb.CheckMatch(0, "$svg"))
         {
           type = STRING_CHANGE_SVG;
+        }
+      if (wb.CheckMatch(0, "$svgmarks"))
+        {
+          type = STRING_CHANGE_SVG_MARK;
         }
       if (wb.CheckMatch(0, "$marks_file"))
         {
@@ -704,6 +716,15 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     break;
   case STRING_CHANGE_SVG:
     marks->svg = parse_svg(wb.GetWordAsString(1).c_str());
+    if (marks->svg->width_in_pt() > gp->global_mark_max_x)
+      gp->global_mark_max_x = marks->svg->width_in_pt();
+    if (marks->svg->height_in_pt() > gp->global_mark_max_y)
+      gp->global_mark_max_y = marks->svg->height_in_pt();
+    if (gp->global_mark_min_x > 0)
+      gp->global_mark_min_x = 0;
+    if (gp->global_mark_min_y > 0)
+      gp->global_mark_min_y = 0;
+
     break;
   case STRING_CHANGE_LINE:
     marks->do_draw_lines = TRUE;
@@ -801,6 +822,14 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     // remember last value
     gp->quiver_scale = marks->quiver_scale;
     break;
+  case STRING_CHANGE_SVG_MARK:
+    {
+      marks->do_draw_marks = TRUE;
+      marks->svg_mark = parse_svg(wb.GetWordAsString(1).c_str());
+	
+      break;
+    }
+
   case STRING_CHANGE_MARKS:
     {
       marks->do_draw_marks = TRUE;

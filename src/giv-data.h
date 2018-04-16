@@ -91,6 +91,7 @@ typedef struct
     gdouble shadow_offset_x;
     gdouble shadow_offset_y;
     agg::svg::path_renderer *svg = NULL;  // svg path if data has svg
+    agg::svg::path_renderer *svg_mark = NULL;  // marks drawn by svg
 } giv_dataset_t;
 
 typedef struct

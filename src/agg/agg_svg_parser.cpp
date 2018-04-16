@@ -487,9 +487,15 @@ namespace svg
         for(i = 0; attr[i]; i += 2)
         {
             if (strcmp(attr[i], "width")==0)
+            {
                 m_width_in_mm = parse_distance_to_mm(attr[i+1]);;
+                m_path.set_width_in_mm(m_width_in_mm);
+            }
             if (strcmp(attr[i], "height")==0)
+            {
                 m_height_in_mm = parse_distance_to_mm(attr[i+1]);;
+                m_path.set_height_in_mm(m_height_in_mm);
+            }
             if (strcmp(attr[i], "viewBox")==0)
                 parse_view_box(attr[i+1], m_view_box);
         }
