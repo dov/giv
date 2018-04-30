@@ -520,8 +520,6 @@ void GivPainterAgg::render_svg_path(agg::svg::path_renderer *svg,
                                     double scalex, double scaley)
 {
   agg::trans_affine AggTransform(scalex,0,0,scaley,mx,my); 
-  typedef agg::pixfmt_rgba32 pixfmt;
-  typedef agg::renderer_base<pixfmt> renderer_base;
 
   // Render the svg in the buffer.
   if (d->do_paint_by_index)
@@ -545,4 +543,5 @@ void GivPainterAgg::render_svg_path(agg::svg::path_renderer *svg,
 int GivPainterAgg::set_svg_mark(agg::svg::path_renderer *svg_mark)
 {
   d->svg_mark = svg_mark;
+  return 0;
 }

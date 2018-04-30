@@ -50,6 +50,7 @@ requires 2.0.0
 #include "giv-settings.h"
 #include "giv-settings-editor.h"
 #include "glib-jsonrpc/glib-jsonrpc-json.h"
+#include "webkit2/webkit2.h"
 
 using namespace std;
 using namespace plis;
@@ -148,6 +149,17 @@ static void cb_change_pseudo_color(GtkRadioAction* action,
 static void cb_image_reference(GtkWidget *widget,
                                const char *filename,
                                gpointer user_data);
+static void
+cb_mouse_target_changed (WebKitWebView       *web_view,
+                         WebKitHitTestResult *hit_test_result,
+                         guint                modifiers,
+                         gpointer             user_data);
+static gboolean
+cb_decide_policy (WebKitWebView           *web_view,
+                  WebKitPolicyDecision    *decision,
+                  WebKitPolicyDecisionType decision_type,
+                  gpointer                 user_data);
+
 static void menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container);
 static void
 cb_balloon_changed(GtkWidget *widget,
@@ -489,6 +501,8 @@ class Giv:Win from Gtk:Window
     private GtkWidget *w_balloon_label = NULL;
     private GtkWidget *w_scrolled_win;
     private GtkWidget *w_preferences = NULL;
+    private GtkWidget *w_webview = NULL;
+    private GtkWidget *w_hpaned = NULL;
     private GivImage *img_org = NULL
         destroy {
         if (img_org) {
@@ -535,6 +549,7 @@ class Giv:Win from Gtk:Window
     private GtkUIManager *menu_manager = NULL;
     private GtkUIManager *popup_manager = NULL;
     private gint colormap = PSEUDO_COLOR_OFF;
+    private plis::slip *req_uri = NULL destroy { delete req_uri; };
     private GPtrArray *filename_list = NULL
         destroy {
             g_ptr_array_foreach(filename_list, (GFunc)giv_string_array_free, NULL);
@@ -596,7 +611,7 @@ class Giv:Win from Gtk:Window
         int argp = 1;
         GdkPixbuf *pixbuf_icon;
         bool do_join = false;
-        int width = 500;
+        int width = 900;
         int height = 500;
         double scale = -1;
         double shift_x = 0;
@@ -608,6 +623,7 @@ class Giv:Win from Gtk:Window
         gchar *remote_string=NULL;
         gchar *json_method=NULL;
         gchar *json_params_string=NULL;
+        selfp->req_uri = new slip;
 
         // Parse command line
         while(argp < argc && argv[argp][0] == '-') {
@@ -821,12 +837,26 @@ class Giv:Win from Gtk:Window
         gtk_widget_show(gtk_ui_manager_get_widget(selfp->menu_manager,
                                                   "/menubar"));
 
+        selfp->w_hpaned = gtk_hpaned_new();
+        gtk_box_pack_start(GTK_BOX(w_vbox),
+                           selfp->w_hpaned, TRUE, TRUE, 0);
+        gtk_widget_show(selfp->w_hpaned);
+        selfp->w_webview = webkit_web_view_new();
+        
+        
+        g_signal_connect(G_OBJECT(selfp->w_webview), "decide-policy",
+                         G_CALLBACK(cb_decide_policy), self);
+        g_signal_connect(G_OBJECT(selfp->w_webview), "mouse-target-changed",
+                         G_CALLBACK(cb_mouse_target_changed), self);
+                         
+        gtk_widget_set_size_request(selfp->w_webview, 150, 512);
+        gtk_paned_add1(GTK_PANED(selfp->w_hpaned), selfp->w_webview);
+        gtk_widget_show(selfp->w_webview);
 
         GtkWidget *w_hbox = gtk_hbox_new(FALSE, 0);
         gtk_widget_show(w_hbox);
-        gtk_box_pack_start(GTK_BOX(w_vbox),
-                           w_hbox, TRUE, TRUE, 0);
-        
+        gtk_paned_add2(GTK_PANED(selfp->w_hpaned), w_hbox);
+
         selfp->w_color_map_bar = GTK_WIDGET(giv_color_map_new());
         gtk_box_pack_start(GTK_BOX(w_hbox),
                            selfp->w_color_map_bar, FALSE, FALSE, 0);
@@ -991,38 +1021,43 @@ class Giv:Win from Gtk:Window
         // Handle the command line
         if (argc == argp+1) {
             char *filename = argv[argp++];
-            char *basename = g_path_get_basename(filename);
-
-            giv_win_read_dir_into_filename_list(self, filename);
-            selfp->filename_list_index = -1;
-            for (int i=0; i<(int)selfp->filename_list->len; i++) {
-                GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, i);
-                gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
-                char *fl_basename = g_path_get_basename(filename0);
-                bool are_equal = (slip(fl_basename) == slip(basename));
-                g_free(fl_basename);
-                if (are_equal) {
-                    selfp->filename_list_index = i;
-                    break;
-                }
+            if (slip(filename).m("\\.(givml|html)$")) {
+              giv_win_load_html(self,filename);
             }
-            if (selfp->filename_list->len
-                && selfp->filename_list_index < 0) {
-                app_error(self,
-                          "Failed loading %s! No such file.\n",
-                          filename);
-                GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, 0);
-                gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
-                
-                giv_win_load_file(self, filename0);
-                selfp->filename_list_index = 0;
+            else {
+              char *basename = g_path_get_basename(filename);
+  
+              giv_win_read_dir_into_filename_list(self, filename);
+              selfp->filename_list_index = -1;
+              for (int i=0; i<(int)selfp->filename_list->len; i++) {
+                  GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, i);
+                  gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
+                  char *fl_basename = g_path_get_basename(filename0);
+                  bool are_equal = (slip(fl_basename) == slip(basename));
+                  g_free(fl_basename);
+                  if (are_equal) {
+                      selfp->filename_list_index = i;
+                      break;
+                  }
+              }
+              if (selfp->filename_list->len
+                  && selfp->filename_list_index < 0) {
+                  app_error(self,
+                            "Failed loading %s! No such file.\n",
+                            filename);
+                  GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, 0);
+                  gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
+                  
+                  giv_win_load_file(self, filename0);
+                  selfp->filename_list_index = 0;
+              }
+  #if 0
+              else
+                  giv_win_set_current_file(self,
+                                           selfp->filename_list_index);
+  #endif
+              g_free(basename);
             }
-#if 0
-            else
-                giv_win_set_current_file(self,
-                                         selfp->filename_list_index);
-#endif
-            g_free(basename);
         }
         else {
             selfp->filename_list_index = 0;
@@ -1116,6 +1151,27 @@ class Giv:Win from Gtk:Window
             fit_marks_in_window(self);
             selfp->do_fit_on_load_image = false;
         }
+        
+        giv_win_redraw(self);
+        return 0;
+    }
+
+    public int load_html(self,
+                        const char *filename)
+    {
+        slip html_filename(filename);
+        if (!g_path_is_absolute(html_filename.c_str()))
+          {
+            char *cwd = g_get_current_dir();
+            html_filename = slip(cwd) + "/" + html_filename;
+            free(cwd);
+          }
+        // TBD - Encode the URI properly!
+        slip uri = "file://" + html_filename;
+        
+        printf("uri = %s\n", uri.c_str());
+        webkit_web_view_load_uri(WEBKIT_WEB_VIEW(selfp->w_webview),
+                                 uri.c_str());
         
         giv_win_redraw(self);
         return 0;
@@ -1244,7 +1300,13 @@ class Giv:Win from Gtk:Window
     public void load_file(self,
                           const char *filename)
     {
-        if (g_str_has_suffix(filename, ".giv")
+        if (g_str_has_suffix(filename, ".html")
+            || g_str_has_suffix(filename, ".givml"))
+          {
+            giv_win_load_html(self,filename);
+            return;
+          }
+        else if (g_str_has_suffix(filename, ".giv")
             || g_str_has_suffix(filename, ".marks")
             || g_str_has_suffix(filename, ".svg")
             )
@@ -2710,6 +2772,7 @@ cb_menu_clear (GtkAction *action, gpointer data)
     return;
 }
 
+// This is convoluted and should be fixed!
 static void
 cb_menu_open_response(GtkWidget *dialog,
                         gint response,
@@ -2744,7 +2807,7 @@ cb_menu_open_response(GtkWidget *dialog,
         }
         else
             giv_win_set_current_file(self,
-                                        selfp->filename_list_index);
+                                     selfp->filename_list_index);
 
 #if 0
         giv_win_load_file(self, selected_filename);
@@ -3627,6 +3690,91 @@ static void cb_image_reference(GtkWidget *widget,
     giv_win_set_image_info(self);
 #endif
 
+}
+
+static void
+cb_mouse_target_changed (WebKitWebView       *web_view,
+                         WebKitHitTestResult *hit_test_result,
+                         guint                modifiers,
+                         gpointer             user_data)
+{
+  GivWin *self = (GivWin *)user_data;
+  if (webkit_hit_test_result_context_is_link(hit_test_result))
+    {
+      *selfp->req_uri = webkit_hit_test_result_get_link_uri(hit_test_result);
+    }
+  else
+      *selfp->req_uri = "";
+}
+
+static gboolean
+cb_decide_policy (WebKitWebView           *web_view,
+                  WebKitPolicyDecision    *decision,
+                  WebKitPolicyDecisionType decision_type,
+                  gpointer                 user_data)
+{
+  GivWin *self = (GivWin *)user_data;
+  if (decision_type ==  WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION
+      && selfp->req_uri->m(".giv$")) {
+    webkit_policy_decision_ignore(decision);
+    slip filename = *selfp->req_uri;
+    filename.s("file://","");
+    slip bn = filename;
+    bn.s(".*/",""); // Max expansion
+    slip js = (slip("")
+               + "var els = document.querySelectorAll(\"a[href='"
+               + bn
+               + "']\");\n"
+                 "for (var i=0; i<els.length; i++) {\n"
+                 "   els[i].style.color = \"purple\";\n"
+               "}\n");
+    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(selfp->w_webview),
+                                   js.c_str(),
+                                   NULL,
+                                   NULL,
+                                   user_data
+                                   );
+
+
+    // The following ugly code is the same as is used in the
+    // open response callback. It should be joined!
+    char *basename = g_path_get_basename(filename.c_str());
+    giv_win_read_dir_into_filename_list(self, filename);
+    selfp->filename_list_index = -1;
+    for (int i=0; i<(int)selfp->filename_list->len; i++)
+        {
+          GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
+                                                             i);
+          if (g_str_has_suffix((const gchar*)g_ptr_array_index(fn_list, 0),
+                               basename)) {
+            selfp->filename_list_index = i;
+            break;
+          }
+        }
+    g_free(basename);
+    if (selfp->filename_list->len
+        && selfp->filename_list_index < 0) {
+      GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
+                                                         0);
+    
+      giv_win_load_file(self, (gchar*)g_ptr_array_index(fn_list, 0));
+      selfp->idle_index = 0;
+      selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
+                                      self);
+    }
+    else
+        {
+          selfp->idle_index = selfp->filename_list_index;
+          selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
+                                          self);
+        }
+
+    if (last_image_path)
+        g_free(last_image_path);
+    last_image_path = strdup(filename);
+
+  }
+  return TRUE;
 }
 
 #if 0
