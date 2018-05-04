@@ -611,7 +611,7 @@ class Giv:Win from Gtk:Window
         int argp = 1;
         GdkPixbuf *pixbuf_icon;
         bool do_join = false;
-        int width = 900;
+        int width = 500;
         int height = 500;
         double scale = -1;
         double shift_x = 0;
@@ -851,7 +851,7 @@ class Giv:Win from Gtk:Window
                          
         gtk_widget_set_size_request(selfp->w_webview, 150, 512);
         gtk_paned_add1(GTK_PANED(selfp->w_hpaned), selfp->w_webview);
-        gtk_widget_show(selfp->w_webview);
+        // gtk_widget_show(selfp->w_webview);
 
         GtkWidget *w_hbox = gtk_hbox_new(FALSE, 0);
         gtk_widget_show(w_hbox);
@@ -1022,6 +1022,9 @@ class Giv:Win from Gtk:Window
         if (argc == argp+1) {
             char *filename = argv[argp++];
             if (slip(filename).m("\\.(givml|html)$")) {
+              // A hack to make some more space if show an html window.
+              gtk_window_set_default_size (GTK_WINDOW(self), width+400, height);
+              
               giv_win_load_html(self,filename);
             }
             else {
@@ -1172,6 +1175,8 @@ class Giv:Win from Gtk:Window
         printf("uri = %s\n", uri.c_str());
         webkit_web_view_load_uri(WEBKIT_WEB_VIEW(selfp->w_webview),
                                  uri.c_str());
+        // Only show the widget if the webview is loaded.
+        gtk_widget_show(selfp->w_webview);
         
         giv_win_redraw(self);
         return 0;
