@@ -148,15 +148,15 @@ GivImage *giv_plugin_load_file(const char *filename,
         slice_size = width * wsize * height;
         for (z_idx = 0; z_idx < depth; z_idx++)
             for (row_idx = 0; row_idx < height; row_idx++)
-                memcpy(img->buf.buf + z_idx * slice_size
+                memcpy(img->buf.buf + (uint64_t)z_idx * slice_size
                        + (height - row_idx - 1) * width * wsize,
-                       (guchar*)flip_data + z_idx * slice_size + row_idx * width * wsize,
+                       (guchar*)flip_data + (uint64_t)z_idx * slice_size + row_idx * width * wsize,
                        width * wsize);
     }
 #else
     memcpy(img->buf.buf,
            flip_data,
-           width * height * wsize * depth);
+           (uint64_t)width * height * wsize * depth);
 #endif
     
     fits_close_file(fptr, &status);            /* close the file */

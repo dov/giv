@@ -213,11 +213,11 @@ GivImage *giv_plugin_load_file(const char *filename,
   switch (bpp) {
   case 8:
       img = giv_image_new(GIVIMAGE_U8,width,height);
-      memcpy(img->buf.buf, pix_buf, width*height);
+      memcpy(img->buf.buf, pix_buf, (uint64_t)width*height);
       break;
   case 16:
       img = giv_image_new(GIVIMAGE_U16,width,height);
-      memcpy(img->buf.buf, pix_buf, width*height*2);
+      memcpy(img->buf.buf, pix_buf, (uint64_t)width*height*2);
   default:
       ;
   }

@@ -13,6 +13,7 @@
 #include <glib.h>
 #include <sstream>
 #include <string.h>
+#include <stdint.h>
 #include <math.h>
 #include "plis/plis.h"
 
@@ -77,12 +78,12 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
     case 8:
         img = giv_image_new(GIVIMAGE_U8,width,height);
         if (img)
-            memcpy(img->buf.buf, buf, width*height);
+          memcpy(img->buf.buf, buf, (uint64_t)width*height);
         break;
     case 16:
         img = giv_image_new(GIVIMAGE_U16,width,height);
         if (img)
-            memcpy(img->buf.buf, buf, width*height*2);
+            memcpy(img->buf.buf, buf, (uint64_t)width*height*2);
     default:
         ;
     }

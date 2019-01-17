@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "../givimage.h"
 #include "../givplugin.h"
 #include <glib.h>
@@ -126,7 +127,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     
     memcpy(img->buf.buf,
            npy_string + 10 + header_len,
-           giv_image_type_get_size(image_type) * width * height / 8);
+           (uint64_t)giv_image_type_get_size(image_type) * width * height / 8);
     g_free(npy_string);
 
     return img;

@@ -8,6 +8,7 @@
 #ifndef GIVIMAGE_H
 #define GIVIMAGE_H
 
+#include <stdint.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 
@@ -108,15 +109,6 @@ int giv_image_get_width(GivImage *img);
 int giv_image_get_row_stride(GivImage *img);
 int giv_image_get_height(GivImage *img);
 int giv_image_get_depth(GivImage *img);
-
-/** 
- * Get the size in bits of an image type.
- * 
- * @param img_type 
- * 
- * @return 
- */
-int giv_image_type_get_size(GivImageType img_type);
 
 /** 
  * This should only be used for gray level images and it returns
