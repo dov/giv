@@ -84,6 +84,7 @@ fix_gdk_pixbuf_scale_nn(const GdkPixbuf *src,
                         double scale_y);
 
 static gint zoom_reset(GtkImageViewer *self);
+static gint zoom_multiple(GtkImageViewer *self, int multiple);
 static gint zoom_translate(GtkImageViewer *self, int dx, int dy);
 static gboolean update_adjustments(GtkImageViewer *image_viewer);
 static void vadjustment_value_changed (GtkAdjustment *vadjustment,
@@ -527,6 +528,18 @@ class Gtk:Image:Viewer from Gtk:Widget
     case '1':
     case 'n':
       zoom_reset(self);
+      break;
+    case '2':
+      zoom_multiple(self,2);
+      break;
+    case '3':
+      zoom_multiple(self,3);
+      break;
+    case '4':
+      zoom_multiple(self,4);
+      break;
+    case '8':
+      zoom_multiple(self,8);
       break;
     case 'f':
       gtk_image_viewer_zoom_fit(self);
@@ -1833,6 +1846,12 @@ class Gtk:Image:Viewer from Gtk:Widget
   }
 
   public void
+  zoom_multiple(self, int multiple)
+  {
+    zoom_multiple(self, multiple);
+  }
+
+  public void
   zoom_fit(self)
   {
     gdouble margin = 0;
@@ -2071,6 +2090,13 @@ static gint
 zoom_reset(GtkImageViewer *self)
 {
   view_changed(self, TRUE, 1, 1, 0, 0);
+  return 1;
+}
+
+static gint
+zoom_multiple(GtkImageViewer *self, int multiple)
+{
+  view_changed(self, TRUE, multiple, multiple, 0, 0);
   return 1;
 }
 
