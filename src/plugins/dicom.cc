@@ -44,11 +44,13 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
     OFCondition status = dcm_img.loadFile(filename);
     DcmDataset* ds = dcm_img.getDataset(); // shortcut
 
-    long int width, height, spp, bpp;
+    long int width, height, spp, bpp, num_frames=1;
     ds->findAndGetLongInt(DCM_Columns,         width);
     ds->findAndGetLongInt(DCM_Rows,            height);
     ds->findAndGetLongInt(DCM_SamplesPerPixel, spp);
-    ds->findAndGetLongInt(DCM_BitsAllocated,   bpp);
+    OFCondition ret1 = ds->findAndGetLongInt(DCM_BitsAllocated,   bpp);
+    if (ds->findAndGetLongInt(DCM_NumberOfFrames,  num_frames).status() != OF_ok)
+        num_frames = 1;
 
     guint8 *buf = NULL;
     slip pnm_id;
@@ -73,19 +75,22 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
         
     // Create the image
     GivImage *img = NULL;
-    switch (bpp) {
-    case 8:
-        img = giv_image_new(GIVIMAGE_U8,width,height);
-        if (img)
-            memcpy(img->buf.buf, buf, width*height);
-        break;
-    case 16:
-        img = giv_image_new(GIVIMAGE_U16,width,height);
-        if (img)
-            memcpy(img->buf.buf, buf, width*height*2);
-    default:
-        ;
-    }
+    GivImageType type =  GIVIMAGE_U8;
+    if (bpp == 16)
+        type = GIVIMAGE_U16;
+    int wsize = giv_image_type_get_size(type)/8;  /* Size in bytes */
+    int depth = num_frames;
+
+    img =  giv_image_new_full(type,
+                              width,
+                              width * wsize,
+                              height,
+                              height * wsize * width,
+                              2, // rank - why is it always 2?
+                              depth);
+
+    if (img)
+        memcpy(img->buf.buf, buf, width*height*num_frames*bpp/8);
     if (!img) 
       return NULL;
 
