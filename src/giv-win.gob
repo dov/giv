@@ -1001,7 +1001,7 @@ class Giv:Win from Gtk:Window
                 char *fl_basename = g_path_get_basename(filename0);
                 bool are_equal = (slip(fl_basename) == slip(basename));
                 g_free(fl_basename);
-                if (are_equal) {
+                if (slip(filename).m("\\*|\\?") || are_equal) { // support globbing
                     selfp->filename_list_index = i;
                     break;
                 }
@@ -1565,6 +1565,7 @@ class Giv:Win from Gtk:Window
     {
         char *dirname = g_strdup(path);
         GError *error = NULL;
+        GPatternSpec *pattern = NULL;
 
         if (selfp->filename_list) {
             g_ptr_array_foreach(selfp->filename_list, (GFunc)giv_string_array_free, NULL);
@@ -1572,12 +1573,22 @@ class Giv:Win from Gtk:Window
         }
         selfp->filename_list = g_ptr_array_new();
 
+        
         if (!g_file_test(dirname, GFileTest(G_FILE_TEST_IS_DIR))) {
             g_free(dirname);
             dirname = g_path_get_dirname(path);
             if (!g_file_test(dirname, GFileTest(G_FILE_TEST_IS_DIR)))
                 return false;
         }
+
+        // Support wildcards on windows!
+        if (g_strstr_len(path,-1,"?") ||
+            g_strstr_len(path,-1,"*")) {
+            gchar *basename = g_path_get_basename(path);
+            pattern = g_pattern_spec_new(basename);
+            g_free(basename);
+        }
+
         GDir *dir = g_dir_open(dirname, 0, &error);
         if (error) {
             app_error(self, "%s", error->message);
@@ -1590,8 +1601,12 @@ class Giv:Win from Gtk:Window
             if (!g_file_test(slip(dirname)+"/"+filename,
                              GFileTest(G_FILE_TEST_IS_REGULAR)))
                 continue;
-                                                                    
-            if (slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))) {
+
+            if ((pattern && g_pattern_match(pattern,
+                                            strlen(filename),
+                                            filename,
+                                            NULL))
+                || slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))) {
                 GPtrArray *string_list = g_ptr_array_new();
 
                 g_ptr_array_add(string_list,
@@ -1601,6 +1616,9 @@ class Giv:Win from Gtk:Window
             }
         }
         g_dir_close(dir);
+        if (pattern)
+            g_pattern_spec_free(pattern);
+
         return true;
     }
 
@@ -3601,7 +3619,9 @@ static void cb_image_reference(GtkWidget *widget,
               filename);
 #endif
     
-    if (!g_file_test(fn_path, GFileTest(G_FILE_TEST_IS_REGULAR))) {
+    if (!g_file_test(fn_path, GFileTest(G_FILE_TEST_IS_REGULAR))
+        && selfp->filename_list_index >= 0
+        && selfp->filename_list_index < (int)selfp->filename_list->len) {
         GPtrArray *fn_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list,
                                                            selfp->filename_list_index);
         gchar *fn0 = (gchar*)g_ptr_array_index(fn_list, 0);
