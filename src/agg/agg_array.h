@@ -586,7 +586,7 @@ namespace agg
         for(i = 0; i < v.m_num_blocks; ++i)
         {
             m_blocks[i] = pod_allocator<T>::allocate(block_size);
-            memcpy(m_blocks[i], v.m_blocks[i], block_size * sizeof(T));
+            memcpy((char*)m_blocks[i], v.m_blocks[i], block_size * sizeof(T));
         }
     }
 
@@ -603,7 +603,7 @@ namespace agg
         }
         for(i = 0; i < v.m_num_blocks; ++i)
         {
-            memcpy(m_blocks[i], v.m_blocks[i], block_size * sizeof(T));
+            memcpy((char*)m_blocks[i], v.m_blocks[i], block_size * sizeof(T));
         }
         m_size = v.m_size;
         return *this;

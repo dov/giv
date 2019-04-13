@@ -29,6 +29,7 @@ requires 2.0.0
 #include "giv-color-map.h"
 #include <stdlib.h>
 #include <vector>
+#include <algorithm>
 #include "../config.h"
 #include "gtkimageviewer/gtk-image-viewer.h"
 #include "logo_150_inline.i"
@@ -1589,33 +1590,42 @@ class Giv:Win from Gtk:Window
             g_free(basename);
         }
 
-        GDir *dir = g_dir_open(dirname, 0, &error);
-        if (error) {
-            app_error(self, "%s", error->message);
-            g_error_free(error);
-            return false;
-        }
-        
-        const char *filename;
-        while((filename = g_dir_read_name(dir))) {
-            if (!g_file_test(slip(dirname)+"/"+filename,
-                             GFileTest(G_FILE_TEST_IS_REGULAR)))
-                continue;
-
-            if ((pattern && g_pattern_match(pattern,
-                                            strlen(filename),
-                                            filename,
-                                            NULL))
-                || slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))) {
-                GPtrArray *string_list = g_ptr_array_new();
-
-                g_ptr_array_add(string_list,
-                                g_strdup(slip(dirname) + "/" + filename));
-                g_ptr_array_add(selfp->filename_list,
-                                string_list);
+        llip dir_name_list;
+        {
+            GDir *dir = g_dir_open(dirname, 0, &error);
+            if (error) {
+                app_error(self, "%s", error->message);
+                g_error_free(error);
+                return false;
             }
+            
+            const char *filename;
+            while((filename = g_dir_read_name(dir))) {
+                if (!g_file_test(slip(dirname)+"/"+filename,
+                                 GFileTest(G_FILE_TEST_IS_REGULAR)))
+                    continue;
+                if (pattern && !g_pattern_match(pattern,
+                                                 strlen(filename),
+                                                 filename,
+                                                NULL))
+                    continue;
+                if (!pattern && !(slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))))
+                    continue;
+                dir_name_list.push(filename);
+            }
+            g_dir_close(dir);
+
+            sort(dir_name_list.begin(), dir_name_list.end());
         }
-        g_dir_close(dir);
+
+        for (auto& fn :dir_name_list) {
+            GPtrArray *string_list = g_ptr_array_new();
+
+            g_ptr_array_add(string_list,
+                            g_strdup(slip(dirname) + "/" + fn));
+            g_ptr_array_add(selfp->filename_list,
+                                string_list);
+        }
         if (pattern)
             g_pattern_spec_free(pattern);
 
