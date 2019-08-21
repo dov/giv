@@ -4006,6 +4006,7 @@ static gchar *read_pnm_comment(const char *filename)
     fgets((char*)str, sizeof(str),fh);
 
     if (!((str[0]=='P') && (str[1]>='1' && str[1]<= '6'))) {
+        fclose(fh);
         return NULL;
     }
     
@@ -4031,6 +4032,7 @@ static gchar *read_pnm_comment(const char *filename)
         else 
             break;
     }
+    fclose(fh);
 
     return g_strdup(comment);
 }

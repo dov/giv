@@ -157,6 +157,7 @@ GivImage *giv_plugin_load_image(const char *filename,
         }
         ploaders = ploaders->next;
     }
+    fclose(fh);
     g_free(chunk);
     
     return img;

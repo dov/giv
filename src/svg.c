@@ -58,8 +58,6 @@ void giv_print_svg(const char* filename,
   fprintf (SVG, "</svg>\n");
 
   fclose (SVG);
-    
-  fclose(SVG);
 }
 
 void draw_image_in_svg(GtkWidget *widget, FILE *SVG)
