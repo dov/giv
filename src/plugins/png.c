@@ -48,24 +48,30 @@ GivImage *giv_plugin_load_file(const char *filename,
     fread(header, 1, number, fp);
     gboolean is_png = !png_sig_cmp(header, 0, number);
     if (!is_png) {
+        fclose(fp);
         return NULL;
     }
     
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
     if (!png_ptr)
+    {
+        fclose(fp);
         return NULL;
+    }
 
     // Comments may be stored in the beginning or the end so create
     // a structure for both.
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
         png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
+        fclose(fp);
         return NULL;
     }
 
     png_infop end_info = png_create_info_struct(png_ptr);
     if (!end_info) {
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+        fclose(fp);
         return NULL;
     }
 
@@ -126,6 +132,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     img = giv_image_new(image_type, width, height);
     if (!img) {
       *error = g_error_new(GIV_IMAGE_ERROR, -1, "Failed allocating memory for an image of size %dx%d pixels!", width, height);
+      fclose(fp);
       return NULL;
     }
 
@@ -163,6 +170,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     png_read_end(png_ptr, NULL);
     g_free(row_pointers);
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    fclose(fp);
 
     return img;
 }
