@@ -784,21 +784,34 @@ cb_image_annotate(GivWidget *self,
         x1 = (int)ceil((width+shift_x)/scale_x);
         y1 = (int)ceil((height+shift_y)/scale_y);
 
-        painter.set_giv_color(selfp->pixel_grid_color);
-        painter.set_line_width(1);
-        for (int i=x0; i<=x1; i++) {
-            double px = i*scale_x - shift_x;
-
-            painter.add_line_segment(px,0, px,height);
-            painter.stroke();
+        // Draw twice. The first time in black at width 3
+        // and the second time in the pixel grid color.
+        for (int paint_idx=0; paint_idx<2; ++paint_idx) {
+          if (paint_idx==0) {
+              // grid bg color hardcoded black
+              GivColor pixel_grid_color = { 0,0,0,0x8000 };
+              
+              painter.set_giv_color(pixel_grid_color);
+              painter.set_line_width(3);
+          }
+          else {
+              painter.set_giv_color(selfp->pixel_grid_color);
+              painter.set_line_width(1);
+          }
+          for (int i=x0; i<=x1; i++) {
+              double px = i*scale_x - shift_x;
+  
+              painter.add_line_segment(px,0, px,height);
+              painter.stroke();
+          }
+          for (int i=y0; i<=y1; i++) {
+              double py = i*scale_y - shift_y;
+  
+              painter.add_line_segment(0,py, width,py);
+              painter.stroke();
+          }
+          painter.fill();
         }
-        for (int i=y0; i<=y1; i++) {
-            double py = i*scale_y - shift_y;
-
-            painter.add_line_segment(0,py, width,py);
-            painter.stroke();
-        }
-        painter.fill();
     }
 
     // Create the label image necessary for the balloon popup. The

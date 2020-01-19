@@ -61,7 +61,7 @@ with open(nsi_file) as fh:
         if arg == '/r':
           do_rec = True
           continue
-        print 'Unknown option ' + arg
+        print('Unknown option ' + arg)
       fn = args[0].replace('\\','/')
       if do_rec:
         files += [
@@ -71,7 +71,7 @@ with open(nsi_file) as fh:
         files += [(f, os.path.join(dst_dir,os.path.basename(f)))
                   for f in glob.glob(fn)]
           
-print '\n'.join('%s -> %s'%f for f in files)
+print('\n'.join('%s -> %s'%f for f in files))
 
 zipname = 'Giv-'+vars['VER']+'-'+vars['COMMITIDSHORT']
 z = zipfile.ZipFile(zipname + '.zip',

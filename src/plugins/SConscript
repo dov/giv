@@ -34,7 +34,7 @@ if not env['SBOX']:
                       )
 
     use_system_dcmtk = conf.CheckCXXHeader('dcmtk/ofstd/ofstd.h')
-    print 'use_system_dcmtk=',use_system_dcmtk
+    print('use_system_dcmtk=',use_system_dcmtk)
     dcmtk_path = []
     dcmtk_libpath = []
 

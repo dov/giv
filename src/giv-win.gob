@@ -3189,7 +3189,7 @@ cb_menu_about(GtkAction *action,
                               ,
                               ("The G(reat|tk) Image Viewer"),
                               ARCH,
-                              ("Copyright &#x00a9; Dov Grobgeld, 2018\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2020\n"),
                               ("dov.grobgeld@gmail.com"),
                               GIT_COMMIT_ID,
                               GIT_COMMIT_TIME);
