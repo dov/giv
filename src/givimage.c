@@ -47,7 +47,7 @@ GivImage *giv_image_new_full(GivImageType img_type,
     if (depth < 1)
         depth = 1;
     img->depth = depth;
-    int buf_size = frame_stride * depth;
+    guint64 buf_size = frame_stride * depth;
 
     // This should probably be aligned to be faster...
     img->buf.buf = (guint8*)g_try_new0(guint8, buf_size);

@@ -124,9 +124,10 @@ GivImage *giv_plugin_load_file(const char *filename,
     // Copy the data
         //        printf("image: type size width height= %d %d\n", image_type, giv_image_type_get_size(image_type), width, height);
     
+    guint64 buf_size = (guint64)giv_image_type_get_size(image_type) * width * height /8;
     memcpy(img->buf.buf,
            npy_string + 10 + header_len,
-           giv_image_type_get_size(image_type) * width * height / 8);
+           buf_size);
     g_free(npy_string);
 
     return img;
