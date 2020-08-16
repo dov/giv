@@ -1028,8 +1028,8 @@ class Gtk:Image:Viewer from Gtk:Widget
             /* Check legality */
             DBG(fprintf(stderr, "offs_x copy_x scale_x w = %.0f %d %f %d\n",
                         offs_x, copy_w, scale_x, img_w));
-            // Bug workaround for huge zooms
-            if (scale_x >= 30)
+            // Bug workaround for large zooms
+            if (scale_x >= 4)
               fix_gdk_pixbuf_scale_nn(selfp->image,
                                       img_scaled,
                                       0,0,

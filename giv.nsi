@@ -87,19 +87,24 @@ SetOutPath $INSTDIR\share\themes
 File /r ${SYSROOT}\mingw\share\themes\*
 
 SetOutPath $INSTDIR\share\icons\Adwaita\16x16
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\actions
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\legacy
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\status
 File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\places
 SetOutPath $INSTDIR\share\icons\Adwaita\22x22
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\actions
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\legacy
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\status
 File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\places
 SetOutPath $INSTDIR\share\icons\Adwaita\48x48
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\actions
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\legacy
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\status
 File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\places
 SetOutPath $INSTDIR\share\icons\Adwaita\64x64
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\actions
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\legacy
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\status
 File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\places
 SetOutPath $INSTDIR\share\icons\Adwaita\scalable
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\actions
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\legacy
+File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\status
 File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\places
 
 SetOutPath $INSTDIR\share\glib-2.0
@@ -139,13 +144,20 @@ SectionEnd ; end of default section
 UninstallText "This will uninstall giv from your system"
 
 Section Uninstall
+ReadRegStr $0 HKEY_LOCAL_MACHINE "SOFTWARE\@NAME_CAP@" ""
+DetailPrint "Deleting from $0"
+
 ; add delete commands to delete whatever files/registry keys/etc you installed here.
 DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\giv"
 DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\giv"
-RMDir /r "$INSTDIR"
+
+SetOutPath "$TEMP"
+RMDir /r "$0"
+
 DeleteRegKey HKCR ".giv"
 DeleteRegKey HKCR "GivFile"
 DeleteRegKey HKCR "Applications\giv.exe"
+
 SectionEnd ; end of uninstall section
 
 ; eof

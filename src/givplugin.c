@@ -52,7 +52,6 @@ static void rehash_loaders()
 
     const gchar *name;
     while( (name=g_dir_read_name(plugin_dir)) ) {
-      //        printf("name = %s\n", name);
         // Try to load it as a module if it ends with ".dll"
         // or ".so".
         gchar *extension = g_strrstr(name, ".");

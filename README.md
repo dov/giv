@@ -12,17 +12,13 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-Release notes for version 0.9.26, 2016-06-08 Wed
+Release notes for version 0.9.32, 2020-07-20 Mon
 
 New features:
 
-* Added horizontal and vertical measurement tools.
-* Added ability of copying contents of coordinates, balloon contents, and distance to the clipboard.
-* Lots of crashes.
-* New dedicated remote control client giv-remote-client.
-* Fixed several remote control protocol crashes.
-* Added ellipses datasets
-* Fixed several windows 64 bit-crashes.
+* Added plugin for loading ora (OpenRaster) files.
+* Larger default file for high resolution displays.
+* Fixed bug in offset between pixels and grid lines when pixel grid is shown.
 
 # Development
 

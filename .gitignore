@@ -7,6 +7,9 @@
 *.exe
 *.obj
 *.i
+*.la
+*.lo
+*.zip
 src/giv-calibrate-dialog-private.h
 src/giv-calibrate-dialog.cc
 src/giv-calibrate-dialog.h
