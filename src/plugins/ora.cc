@@ -28,6 +28,7 @@ const guchar *my_memmem(const guchar *haystack,
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
 
+// This is true for both ora and kra files
 static giv_plugin_support_t ora_support = {
     FALSE,
     0,
@@ -47,15 +48,21 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
 {
     // An file is most probably an ora file if it is a zip file
     // and it contains an image/openraster string.
-    const guchar needle[] = "image/openraster";
+    const guchar needle_ora[] = "image/openraster";
+    const guchar needle_kra[] = "mimetypeapplication/x-krita";
     return
       // Is this a zip file?
       my_memmem(start_chunk,start_chunk_len,
                 (const guchar*)"PK\003\004",4)!=NULL
-      // Does it contain a openraster entry?
-      && my_memmem(start_chunk,
-                start_chunk_len,
-                needle,sizeof(needle)-1)!=NULL;  // Subtract one since the chunk data is not zero terminated
+      // Does it contain a openraster or kra entry?
+      // Subtract one since the chunk data is not zero terminated
+      && (my_memmem(start_chunk,
+                    start_chunk_len,
+                    needle_ora,sizeof(needle_ora)-1)!=NULL
+          || my_memmem(start_chunk,
+                    start_chunk_len,
+                       needle_kra,sizeof(needle_kra)-1)!=NULL)
+          ;  
 }
 
 static int GetZipFile(zip *zh, const string&filename,
@@ -98,6 +105,7 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
 
     string pngbuffer;
 
+    // This is true for both ora nad kra files!
     GetZipFile(zh, "mergedimage.png", pngbuffer);
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
@@ -212,8 +220,7 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
             giv_image_set_attribute(img, png_text[i].key, png_text[i].text);
     }
 
-    // TBD - Add info about the ora file, e.g. number of images
-    // etc.
+    // TBD - Add metadata
 
     png_read_end(png_ptr, NULL);
     g_free(row_pointers);
