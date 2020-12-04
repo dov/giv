@@ -34,7 +34,7 @@ static giv_plugin_support_t ora_support = {
     0,
     "PK\003\004",
     TRUE,
-    "ora"
+    "(ora|kra)$"
 };
 
 extern "C" giv_plugin_support_t giv_plugin_get_support()
@@ -49,8 +49,8 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
     // An file is most probably an ora file if it is a zip file
     // and it contains an image/openraster string.
     const guchar needle_ora[] = "image/openraster";
-    const guchar needle_kra[] = "mimetypeapplication/x-krita";
-    return
+    const guchar needle_kra[] = "application/x-krita";
+    return 
       // Is this a zip file?
       my_memmem(start_chunk,start_chunk_len,
                 (const guchar*)"PK\003\004",4)!=NULL
@@ -61,8 +61,8 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
                     needle_ora,sizeof(needle_ora)-1)!=NULL
           || my_memmem(start_chunk,
                     start_chunk_len,
-                       needle_kra,sizeof(needle_kra)-1)!=NULL)
-          ;  
+                    needle_kra,sizeof(needle_kra)-1)!=NULL)
+          ;
 }
 
 static int GetZipFile(zip *zh, const string&filename,
