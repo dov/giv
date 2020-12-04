@@ -52,7 +52,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     GRegex *regex = g_regex_new ("^\\{\\s*"
                                  "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
                                  "'fortran_order':\\s*(\\w+)\\s*,\\s*"
-                                 "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
+                                 "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)(?:,\\s*(\\d+))?\\s*\\),?\\s*"
                                  "\\}", 0, 0, error);
     if (*error) 
         return NULL;
@@ -70,7 +70,7 @@ GivImage *giv_plugin_load_file(const char *filename,
 
     gboolean is_supported_type = TRUE;
     gboolean is_fortran_type = FALSE;
-    gint width=-1, height = -1;
+    gint width=-1, height = -1, depth=-1;
     GivImageType image_type;
     if (is_match) {
         gchar *match_string = g_match_info_fetch(match_info, 1);
@@ -103,6 +103,12 @@ GivImage *giv_plugin_load_file(const char *filename,
         match_string = g_match_info_fetch(match_info, 4);
         width = atoi(match_string);
         g_free(match_string);
+
+        match_string = g_match_info_fetch(match_info, 5);
+        if (match_string && strlen(match_string))
+            depth = atoi(match_string);
+        g_free(match_string);
+
     }
     
     g_regex_unref(regex);
@@ -117,9 +123,26 @@ GivImage *giv_plugin_load_file(const char *filename,
         g_free(npy_string);
         return NULL;
     }
-    
-    img = giv_image_new(image_type,
-                        width, height);
+
+    if (depth>0) {
+        // Note: we need to rotate the indices! Should really rename
+        int tmp = depth;
+        depth = width;
+        width = tmp;
+        int wsize = giv_image_type_get_size(image_type)/8;  /* Size in bytes */
+
+        img =  giv_image_new_full(image_type,
+                                  width,
+                                  width * wsize,
+                                  height,
+                                  height * wsize * width,
+                                  2, // rank
+                                  depth);
+
+    }
+    else
+        img = giv_image_new(image_type,
+                            width, height);
     
     // Copy the data
         //        printf("image: type size width height= %d %d\n", image_type, giv_image_type_get_size(image_type), width, height);
