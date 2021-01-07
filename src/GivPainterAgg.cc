@@ -372,7 +372,7 @@ void GivPainterAgg::fill()
 
 void GivPainterAgg::close_path()
 {
-  d->path.close_polygon();
+    d->path.close_polygon(); 
 }
 
 void GivPainterAgg::draw_marks()

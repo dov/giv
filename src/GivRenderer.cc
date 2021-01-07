@@ -92,6 +92,7 @@ void GivRenderer::paint()
         //    It 1: Draw contours of polygons and other line graphs
         //    It 2: Draw quiver
         bool has_ellipse = false;
+        double last_move_to_x=500, last_move_to_y=500;
         for (int i=0; i<3; i++) {
 
             if ((i==0 && dataset->do_draw_polygon && dataset->color.alpha != COLOR_NONE)
@@ -112,6 +113,11 @@ void GivRenderer::paint()
 
                     double m_x = p.x * scale_x - shift_x;
                     double m_y = p.y * scale_y - shift_y;
+
+                    if (p_idx==0 || p.op == OP_MOVE) {
+                        last_move_to_x = m_x;
+                        last_move_to_y = m_y;
+                    }
 
                     if (i < 2 && p.op == OP_DRAW) {
                         double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
@@ -144,10 +150,18 @@ void GivRenderer::paint()
                     }
                     else if (p.op == OP_TEXT) 
                         has_text = true;
-                    else if (p.op == OP_MOVE && i > 0 && dataset->do_draw_polygon_outline)
-                        painter.close_path();
+                    else if (p.op == OP_MOVE
+                             && i > 0
+                             && dataset->do_draw_polygon_outline
+                             && p_idx > 0)
+                      painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
                     else if (p.op == OP_CLOSE_PATH)
-                        painter.close_path();
+                      {
+                          if (i==0)
+                            painter.close_path();
+                          else
+                            painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
+                      }
                     old_x = m_x;
                     old_y = m_y;
                 }
