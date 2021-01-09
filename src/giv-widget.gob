@@ -10,7 +10,7 @@ requires 2.0.0
 %headertop{
 #include <gtk/gtk.h>
 #include "giv-data.h"
-#include "gtk-image-viewer.h"
+#include "gtk-image-viewer/gtk-image-viewer.h"
 #include "giv-parser.h"
 
 %}
