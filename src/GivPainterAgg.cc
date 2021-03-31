@@ -141,8 +141,12 @@ GivPainterAggPriv::~GivPainterAggPriv()
         pango_font_description_free(font_description);
     if (layout)
         g_object_unref(G_OBJECT(layout));
-    cairo_destroy(cr);
-    cairo_surface_destroy(surface);
+    if (cr)
+        cairo_destroy(cr);
+    if (surface)
+        cairo_surface_destroy(surface);
+        
+        
 }
 
 GivPainterAgg::GivPainterAgg(GdkPixbuf *pixbuf,

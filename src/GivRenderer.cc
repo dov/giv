@@ -152,7 +152,7 @@ void GivRenderer::paint()
                         has_text = true;
                     else if (p.op == OP_MOVE
                              && i > 0
-                             && dataset->do_draw_polygon_outline
+                             && (dataset->do_draw_polygon_outline && dataset->do_draw_polygon)
                              && p_idx > 0)
                       painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
                     else if (p.op == OP_CLOSE_PATH)

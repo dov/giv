@@ -425,7 +425,8 @@ void draw_arrows(cairo_t *cr,
 
     // If the path is closed then just get out!
     int n = path->num_data;
-    if (path->data[n-1].header.type == CAIRO_PATH_CLOSE_PATH) {
+    if (n==0
+        || path->data[n-1].header.type == CAIRO_PATH_CLOSE_PATH) {
         cairo_path_destroy(path);
         return;
     }
