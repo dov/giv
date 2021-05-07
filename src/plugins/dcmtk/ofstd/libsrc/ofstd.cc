@@ -225,7 +225,7 @@ static int my_isinf(double x)
 size_t OFStandard::my_strlcpy(char *dst, const char *src, size_t siz)
 {
   register char *d = dst;
-  register const char *s = src;
+  const char *s = src;
   register size_t n = siz;
 
   /* Copy as many bytes as will fit */
@@ -262,7 +262,7 @@ size_t OFStandard::my_strlcpy(char *dst, const char *src, size_t siz)
 size_t OFStandard::my_strlcat(char *dst, const char *src, size_t siz)
 {
   register char *d = dst;
-  register const char *s = src;
+  const char *s = src;
   register size_t n = siz;
   size_t dlen;
 
@@ -813,7 +813,7 @@ static const double atof_powersOf10[] =
 double OFStandard::atof(const char *s, OFBool *success)
 {
     if (success) *success = OFFalse;
-    register const char *p = s;
+    const char *p = s;
     register char c;
     int sign = 0;
     int expSign = 0;
@@ -1236,7 +1236,7 @@ static char *ftoa_round(double fract, int *expon, char *start, char *end, char c
 static int ftoa_convert(double val, int prec, int flags, char *signp, char fmtch, char *startp, char *endp)
 {
   register char *p;
-  register double fract;
+  double fract;
   int dotrim = 0;
   int expcnt = 0;
   int gformat = 0;

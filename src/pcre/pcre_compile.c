@@ -3048,7 +3048,7 @@ for (;; ptr++)
         {
         BOOL local_negate = FALSE;
         int posix_class, taboffset, tabopt;
-        register const uschar *cbits = cd->cbits;
+        const uschar *cbits = cd->cbits;
         uschar pbits[32];
 
         if (ptr[1] != CHAR_COLON)
@@ -3152,7 +3152,7 @@ for (;; ptr++)
 
         if (c < 0)
           {
-          register const uschar *cbits = cd->cbits;
+          const uschar *cbits = cd->cbits;
           class_charcount += 2;     /* Greater than 1 is what matters */
 
           /* Save time by not doing this in the pre-compile phase. */
@@ -6069,7 +6069,7 @@ Returns:     TRUE or FALSE
 */
 
 static BOOL
-is_anchored(register const uschar *code, int *options, unsigned int bracket_map,
+is_anchored(const uschar *code, int *options, unsigned int bracket_map,
   unsigned int backref_map)
 {
 do {

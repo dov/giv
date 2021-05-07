@@ -460,7 +460,7 @@ so they can be ordinary variables in all cases. Mark some of them with
 
 register int  rrc;         /* Returns from recursive calls */
 register int  i;           /* Used for loops not involving calls to RMATCH() */
-register unsigned int c;   /* Character values not kept over RMATCH() calls */
+unsigned int c;   /* Character values not kept over RMATCH() calls */
 register BOOL utf8;        /* Local copy of UTF-8 flag for speed */
 
 BOOL minimize, possessive; /* Quantifier options */
@@ -2972,7 +2972,7 @@ for (;;)
       /* UTF-8 mode */
       if (utf8)
         {
-        register unsigned int d;
+        unsigned int d;
         for (i = 1; i <= min; i++)
           {
           if (eptr >= md->end_subject)
@@ -3009,7 +3009,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (fi = min;; fi++)
             {
             RMATCH(eptr, ecode, offset_top, md, ims, eptrb, 0, RM28);
@@ -3055,7 +3055,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (i = min; i < max; i++)
             {
             int len = 1;
@@ -3114,7 +3114,7 @@ for (;;)
       /* UTF-8 mode */
       if (utf8)
         {
-        register unsigned int d;
+        unsigned int d;
         for (i = 1; i <= min; i++)
           {
           if (eptr >= md->end_subject)
@@ -3149,7 +3149,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (fi = min;; fi++)
             {
             RMATCH(eptr, ecode, offset_top, md, ims, eptrb, 0, RM32);
@@ -3194,7 +3194,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (i = min; i < max; i++)
             {
             int len = 1;
@@ -5209,7 +5209,7 @@ tables = external_re->tables;
 
 if (extra_data != NULL)
   {
-  register unsigned int flags = extra_data->flags;
+  unsigned int flags = extra_data->flags;
   if ((flags & PCRE_EXTRA_STUDY_DATA) != 0)
     study = (const pcre_study_data *)extra_data->study_data;
   if ((flags & PCRE_EXTRA_MATCH_LIMIT) != 0)
@@ -5543,7 +5543,7 @@ for(;;)
       {
       while (start_match < end_subject)
         {
-        register unsigned int c = *start_match;
+        unsigned int c = *start_match;
         if ((start_bits[c/8] & (1 << (c&7))) == 0) start_match++;
           else break;
         }

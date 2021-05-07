@@ -4743,7 +4743,7 @@ long qselect_median_lng(long arr[], int n)
 
 #undef ELEM_SWAP
 
-#define ELEM_SWAP(a,b) { register double t=(a);(a)=(b);(b)=t; }
+#define ELEM_SWAP(a,b) { double t=(a);(a)=(b);(b)=t; }
 
 /* 
  * qselect_median_dbl - select the median value of a double array

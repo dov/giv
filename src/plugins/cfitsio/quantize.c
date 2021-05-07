@@ -3831,7 +3831,7 @@ static LONGLONG quick_select_longlong(LONGLONG arr[], int n)
 
 /*--------------------------------------------------------------------------*/
 
-#define ELEM_SWAP(a,b) { register double t=(a);(a)=(b);(b)=t; }
+#define ELEM_SWAP(a,b) { double t=(a);(a)=(b);(b)=t; }
 
 static double quick_select_double(double arr[], int n) 
 {

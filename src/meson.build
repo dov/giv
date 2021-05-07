@@ -57,7 +57,8 @@ libgivwidget = shared_library(
     libgtkimageviewer
   ],
   dependencies : [gtk_dep],
-  install : true)
+  install : true,
+)
 
 libgiv_image_src = ['givimage.c',
                     'givplugin.c']

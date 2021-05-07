@@ -78,8 +78,8 @@ class OFBitmanipTemplate
 #elif HAVE_BCOPY
         bcopy(OFstatic_cast(const void *, src), OFstatic_cast(void *, dest), OFstatic_cast(size_t, count) * sizeof(T));
 #else
-        register unsigned long i;
-        register const T *p = src;
+        unsigned long i;
+        const T *p = src;
         register T *q = dest;
         for (i = count; i != 0; --i)
             *q++ = *p++;
@@ -103,7 +103,7 @@ class OFBitmanipTemplate
         else
 #endif
         {
-            register unsigned long i;
+            unsigned long i;
             register T *q = dest;
             for (i = count; i != 0; --i)
                 *q++ = value;
@@ -126,7 +126,7 @@ class OFBitmanipTemplate
 #ifdef HAVE_MEMSET
         memset(OFstatic_cast(void *, dest), 0, OFstatic_cast(size_t, count) * sizeof(T));
 #else
-        register unsigned long i;
+        unsigned long i;
         register T *q = dest;
         for (i = count; i != 0; --i)
             *q++ = 0;

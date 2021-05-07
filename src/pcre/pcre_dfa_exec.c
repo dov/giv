@@ -2965,7 +2965,7 @@ for (;;)
         {
         while (current_subject < end_subject)
           {
-          register unsigned int c = *current_subject;
+          unsigned int c = *current_subject;
           if ((start_bits[c/8] & (1 << (c&7))) == 0) current_subject++;
             else break;
           }
@@ -3007,7 +3007,7 @@ for (;;)
 
       if (req_byte >= 0 && end_subject - current_subject < REQ_BYTE_MAX)
         {
-        register const uschar *p = current_subject + ((first_byte >= 0)? 1 : 0);
+        const uschar *p = current_subject + ((first_byte >= 0)? 1 : 0);
 
         /* We don't need to repeat the search if we haven't yet reached the
         place we found it at last time. */
