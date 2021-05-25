@@ -70,6 +70,7 @@ GivImage *giv_plugin_load_file(const char *filename,
 
     gboolean is_supported_type = TRUE;
     gboolean is_fortran_type = FALSE;
+    gint dim0_size=-1, dim1_size=-1, dim2_size=-1;
     gint width=-1, height = -1, depth=-1;
     GivImageType image_type;
     if (is_match) {
@@ -97,16 +98,16 @@ GivImage *giv_plugin_load_file(const char *filename,
         g_free(match_string);
         
         match_string = g_match_info_fetch(match_info, 3);
-        height = atoi(match_string);
+        dim0_size = atoi(match_string);
         g_free(match_string);
         
         match_string = g_match_info_fetch(match_info, 4);
-        width = atoi(match_string);
+        dim1_size = atoi(match_string);
         g_free(match_string);
 
         match_string = g_match_info_fetch(match_info, 5);
         if (match_string && strlen(match_string))
-            depth = atoi(match_string);
+            dim2_size = atoi(match_string);
         g_free(match_string);
 
     }
@@ -124,11 +125,10 @@ GivImage *giv_plugin_load_file(const char *filename,
         return NULL;
     }
 
-    if (depth>0) {
-        // Note: we need to rotate the indices! Should really rename
-        int tmp = depth;
-        depth = width;
-        width = tmp;
+    if (dim2_size>0) {
+        depth = dim0_size;
+        height = dim1_size;
+        width = dim2_size;
         int wsize = giv_image_type_get_size(image_type)/8;  /* Size in bytes */
 
         img =  giv_image_new_full(image_type,
@@ -140,14 +140,18 @@ GivImage *giv_plugin_load_file(const char *filename,
                                   depth);
 
     }
-    else
+    else {
+        height = dim0_size;
+        width = dim1_size;
+        depth=1;
         img = giv_image_new(image_type,
                             width, height);
+    }
     
     // Copy the data
         //        printf("image: type size width height= %d %d\n", image_type, giv_image_type_get_size(image_type), width, height);
     
-    guint64 buf_size = (guint64)giv_image_type_get_size(image_type) * width * height /8;
+    guint64 buf_size = (guint64)giv_image_type_get_size(image_type) * width * height /8*depth;
     memcpy(img->buf.buf,
            npy_string + 10 + header_len,
            buf_size);
