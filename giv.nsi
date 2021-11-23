@@ -66,46 +66,60 @@ File ${SYSROOT}\mingw\bin\libfontconfig*.dll
 File ${SYSROOT}\mingw\bin\libfreetype*.dll
 File ${SYSROOT}\mingw\bin\libbz2*.dll
 File ${SYSROOT}\mingw\bin\libwinpthread*.dll
+File ${SYSROOT}\mingw\bin\libssp-0.dll
+File ${SYSROOT}\mingw\bin\libfribidi-0.dll
+File ${SYSROOT}\mingw\bin\libharfbuzz-0.dll
 #File \usr\local\mingw32\bin\libjson-glib-1.0-0.dll
 File ${SYSROOT}\mingw\bin\gdk-pixbuf-query-loaders.exe
 
-# Not sure that I need this. It doesn't seem to make any difference.
-SetOutPath $INSTDIR\etc\settings
-FileOpen $9 settings.ini w ;Opens a Empty File an fills it
-FileWrite $9 "[Settings]$\r$\n"
-FileWrite $9 "gtk-theme-name=MS-Windows$\r$\n"
-FileClose $9 ;Closes the filled file
+# # Not sure that I need this. It doesn't seem to make any difference.
+# SetOutPath $INSTDIR\etc\gtk-3.0
+# FileOpen $9 settings.ini w ;Opens a Empty File an fills it
+# FileWrite $9 "[Settings]$\r$\n"
+# FileWrite $9 "gtk-theme-name=win32$\r$\n"
+# FileClose $9 ;Closes the filled file
 
-SetOutPath $INSTDIR
-File /r ${SYSROOT}\mingw\etc
-SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
-File /r ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders
-SetOutPath $INSTDIR\lib\gdk-pixbuf-2.0\2.10.0
-File ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
+SetOutPath $INSTDIR\etc
+File /r ${SYSROOT}\mingw\etc\gtk-3.0
+File /r ${SYSROOT}\mingw\etc\fonts
 
-SetOutPath $INSTDIR\share\themes 
-File /r ${SYSROOT}\mingw\share\themes\*
+SetOutPath $INSTDIR\lib
+File /r ${SYSROOT}\mingw\lib\gdk-pixbuf-2.0
+File /r ${SYSROOT}\mingw\lib\gtk-3.0
 
-SetOutPath $INSTDIR\share\icons\Adwaita\16x16
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\legacy
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\status
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\places
-SetOutPath $INSTDIR\share\icons\Adwaita\22x22
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\legacy
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\status
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\places
-SetOutPath $INSTDIR\share\icons\Adwaita\48x48
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\legacy
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\status
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\places
-SetOutPath $INSTDIR\share\icons\Adwaita\64x64
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\legacy
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\status
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\places
-SetOutPath $INSTDIR\share\icons\Adwaita\scalable
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\legacy
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\status
-File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\places
+
+SetOutPath $INSTDIR\share
+File /r ${SYSROOT}\mingw\share\themes
+SetOutPath $INSTDIR\share\icons
+File /r ${SYSROOT}\mingw\share\icons\Adwaita
+
+#SetOutPath $INSTDIR\share\icons\Adwaita\16x16
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\legacy
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\status
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\16x16\places
+#
+#SetOutPath $INSTDIR\share\icons\Adwaita\22x22
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\devices
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\emblems
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\legacy
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\mimetypes
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\places
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\22x22\status
+#
+#SetOutPath $INSTDIR\share\icons\Adwaita\48x48
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\legacy
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\status
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\48x48\places
+#
+#SetOutPath $INSTDIR\share\icons\Adwaita\64x64
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\legacy
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\status
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\64x64\places
+#
+#SetOutPath $INSTDIR\share\icons\Adwaita\scalable
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\legacy
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\status
+#File /r ${SYSROOT}\mingw\share\icons\Adwaita\scalable\places
 
 SetOutPath $INSTDIR\share\glib-2.0
 File /r ${SYSROOT}\mingw\share\glib-2.0\schemas
@@ -115,8 +129,8 @@ SetOutPath $INSTDIR\plugins
 File src\plugins\*.dll
 
 # Build the gdk-pixbuf.loaders file automatically
-#ExpandEnvStrings $0 %COMSPEC%
-#nsExec::ExecToStack '"$0" /C ""$INSTDIR\bin\gdk-pixbuf-query-loaders" > "$INSTDIR\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache""'
+ExpandEnvStrings $0 %COMSPEC%
+nsExec::ExecToStack '"$0" /C ""$INSTDIR\bin\gdk-pixbuf-query-loaders" > "$INSTDIR\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache""'
 
 ; Set up association with .giv files
 DeleteRegKey HKCR ".giv"
