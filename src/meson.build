@@ -1,7 +1,7 @@
 gob2 = find_program('gob2')
 
 PACKAGE_DOC_DIR = '../doc'
-PACKAGE_PLUGIN_DIR = '../plugins'
+PACKAGE_PLUGIN_DIR = '/usr/local/lib/giv-1.0/plugins/'
 
 add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                       '-DPACKAGE_PLUGIN_DIR="'+PACKAGE_PLUGIN_DIR+'" '],

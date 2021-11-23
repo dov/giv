@@ -1,4 +1,5 @@
 # A trivial example for testing "winding" number drawing in giv
+# Note use of z for closepath
 
 $polygon
 $color pink
@@ -7,6 +8,7 @@ $outline_color red
 100 0
 100 100
 0 100
+z
 m 25 25
 25 75
 75 75

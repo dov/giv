@@ -28,7 +28,6 @@ agg_sources = [
 'agg_vpgen_clip_polygon.cpp',
 'agg_vpgen_clip_polyline.cpp',
 'agg_vpgen_segmentator.cpp',
-'svg2ppm.cpp',
 ]
 
 expat_dep = dependency('expat')

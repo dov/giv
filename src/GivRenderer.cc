@@ -124,13 +124,19 @@ void GivRenderer::paint()
                         double margin = line_width * 20;
 
                         // Don't clip polygons
+#if 0
                         if (i==0
                             || clip_line_to_rectangle(old_x, old_y, m_x, m_y,
                                                    -margin,-margin,
                                                    width+margin,height+margin,
                                                    // output
                                                    &cx0, &cy0, &cx1, &cy1)
-                            ) {
+                            ) 
+#endif
+                        // Always add the line even if it falls outside.
+                        // This will take care of clipping problems
+                        if (true)
+                        {
                             painter.add_line_segment(cx0, cy0, cx1, cy1,
                                                      i==0);
                             need_paint = true;
@@ -150,11 +156,15 @@ void GivRenderer::paint()
                     }
                     else if (p.op == OP_TEXT) 
                         has_text = true;
+#if 0
+                    // When is this ever needed??? Ι need an example
                     else if (p.op == OP_MOVE
                              && i > 0
                              && (dataset->do_draw_polygon_outline && dataset->do_draw_polygon)
-                             && p_idx > 0)
-                      painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
+                             && p_idx > 0) {
+                        painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
+                    }
+#endif
                     else if (p.op == OP_CLOSE_PATH)
                       {
                           if (i==0)
