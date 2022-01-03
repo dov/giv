@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <charconv>
 #include "WordBoundaries.h"
 
 
@@ -60,17 +61,22 @@ const char *WordBoundaries::GetRestAsString(int Index)
 // Get a word as a floating point value.
 double WordBoundaries::GetFloat(int Index)
 {
-  const char *p = InspectionString;
-  const pair<int,int>& pp = (*this)[Index]; 
-  return atof(p+pp.first);
+  const pair<int,int>& pp = (*this)[Index];
+  double d;
+
+  from_chars(InspectionString+pp.first, InspectionString+pp.second, d);
+
+  return d; 
 }
 
 // Get a word as a floating point value.
 int WordBoundaries::GetInt(int Index)
 {
-  const char *p = InspectionString;
-  const pair<int,int>& pp = (*this)[Index]; 
-  return atoi(p+pp.first);
+  const pair<int,int>& pp = (*this)[Index];
+  int i;
+  from_chars(InspectionString+pp.first, InspectionString+pp.second, i);
+
+  return i;
 }
 
 // Get a word as a new string
