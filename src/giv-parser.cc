@@ -13,6 +13,7 @@
 #include "WordBoundaries.h"
 #include <iostream>
 #include "agg_svg_parser.h"
+#include "fast_double_parser.h"
 
 
 using namespace plis;
@@ -81,6 +82,13 @@ static int color_parse(const char *giv_color_name,
                        // output
                        GivColor *color);
 
+// Return true if a given string starts with another string
+bool starts_with(const string& haystack,const string& needle)
+{
+  return (haystack.rfind(needle,0)==0);
+}
+
+
 GivColor set_colors[] =
     { {0xffff, 0, 0, 0xffff},
       {0, 0xffff, 0, 0xffff},  
@@ -136,11 +144,10 @@ giv_parser_parse_file(GivParser *gp,
     gboolean empty_line = false;
     while(!empty_line) {
 	char S_[256];
-	int len;
 	
 	linenum++;
 	fgets(S_, sizeof(S_), GIV);
-	len = strlen(S_);
+	int len = strlen(S_);
 
         // Skip damaged sections with all NULLS
         if (len==0)
@@ -511,6 +518,37 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
   // Only take marks size into account if we are scaling the marks!
   double ms2 = 0.5*marks->mark_size * marks->do_scale_marks;
   static WordBoundaries wb;
+  auto points = marks->points;
+
+  // fast optimization for lines that start with numbers
+  char ch=S_[0];
+  if ((ch>='0' && ch<='9') || ch=='-') {
+    const char *end = fast_double_parser::parse_number(S_, &p.x);
+    while(end && (*end==' ' || *end=='\t'))
+      end++;
+    if (end) {
+      end = fast_double_parser::parse_number(end, &p.y);
+      if (points->len == 0)
+        p.op = OP_MOVE;
+      else
+        p.op = OP_DRAW;
+      g_array_append_val(marks->points, p);
+
+      /* Update bounding box */
+      if (p.x < gp->global_mark_min_x)
+        gp->global_mark_min_x = p.x - ms2;
+      if (p.x > gp->global_mark_max_x)
+        gp->global_mark_max_x = p.x + ms2;
+      if (p.y < gp->global_mark_min_y)
+        gp->global_mark_min_y = p.y - ms2;
+      if (p.y > gp->global_mark_max_y)
+        gp->global_mark_max_y = p.y + ms2;
+
+      return 0;
+    }
+    // fallthrough if the match failed
+  }
+  
   wb.ParseBoundaries(line);
 
   /* Parse the line */
@@ -695,17 +733,15 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     }
   case STRING_ARROW:
     {
-      char *arrow_string = strdup(wb.GetRestAsString(1));
-      if (arrow_string == NULL)
+      string arrow_string = wb.GetRestAsString(1);
+      if (arrow_string.size() == 0)
         marks->arrow_type = ARROW_TYPE_END;
-      if (strcmp(arrow_string, "start")==0)
+      if (starts_with(arrow_string,"start"))
         marks->arrow_type = ARROW_TYPE_START;
-      else if (strcmp(arrow_string, "both")==0)
+      else if (starts_with(arrow_string,"both"))
         marks->arrow_type = ARROW_TYPE_BOTH;
       else 
         marks->arrow_type = ARROW_TYPE_END;
-      if (arrow_string)
-        free(arrow_string);
       break;
     }
   case STRING_CHANGE_NO_LINE:

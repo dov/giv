@@ -9,6 +9,7 @@
 #include <iostream>
 #include <charconv>
 #include "WordBoundaries.h"
+#include "fast_double_parser.h"
 
 
 using namespace std;
@@ -61,12 +62,11 @@ const char *WordBoundaries::GetRestAsString(int Index)
 // Get a word as a floating point value.
 double WordBoundaries::GetFloat(int Index)
 {
+  const char *p = InspectionString;
   const pair<int,int>& pp = (*this)[Index];
-  double d;
-
-  from_chars(InspectionString+pp.first, InspectionString+pp.second, d);
-
-  return d; 
+  double x;
+  fast_double_parser::parse_number(p+pp.first, &x);
+  return x;
 }
 
 // Get a word as a floating point value.
