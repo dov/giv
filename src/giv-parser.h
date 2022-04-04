@@ -22,17 +22,22 @@ typedef void (*giv_parser_set_orientation_t)(giv_parser_orientation_t horint,
                                              giv_parser_orientation_t vorint,
                                              gpointer data);
 
+typedef void (*giv_parser_set_pixelsize_t)(double pixel_size,
+                                           const gchar *pixelsize_unit,
+                                           gpointer data);
 typedef void (*giv_parser_set_vlock_t)(gboolean vlock, gpointer data);
 
-typedef struct {
+struct GivParser {
     GPtrArray* giv_datasets;
     GHashTable *style_hash;
-    giv_parser_file_reference_t cb_file_reference;
+    giv_parser_file_reference_t cb_file_reference=nullptr;
     gpointer cb_file_reference_data;
-    giv_parser_set_orientation_t cb_set_orientation;
+    giv_parser_set_orientation_t cb_set_orientation=nullptr;
     gpointer cb_set_orientation_data;
     giv_parser_set_vlock_t cb_set_vlock;
     gpointer cb_set_vlock_data;
+    giv_parser_set_pixelsize_t cb_set_pixelsize;
+    gpointer cb_set_pixelsize_data;
 
     // Bounding box of data
     double global_mark_max_x;
@@ -41,7 +46,7 @@ typedef struct {
     double global_mark_min_y;
 
     double quiver_scale;
-}  GivParser;
+};
 
 GivParser *giv_parser_new();
 void giv_parser_free(GivParser *giv_parser);
@@ -51,6 +56,9 @@ void giv_parser_set_reference_callback(GivParser *giv_parser,
 void giv_parser_set_orientation_callback(GivParser *giv_parser,
                                          giv_parser_set_orientation_t fr,
                                          gpointer user_data);
+void giv_parser_set_pixelsize_callback(GivParser *giv_parser,
+                                       giv_parser_set_pixelsize_t cb,
+                                       gpointer user_data);
 void giv_parser_set_vlock_callback(GivParser *giv_parser,
                                    giv_parser_set_vlock_t vlock,
                                    gpointer user_data);

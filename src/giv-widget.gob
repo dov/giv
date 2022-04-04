@@ -65,9 +65,12 @@ static void cb_image_reference(const char *filename,
                                gpointer self);
 static void cb_set_orientation(giv_parser_orientation_t hflip,
                                giv_parser_orientation_t vflip,
-                               gpointer self);
+                               gpointer user_data);
+static void cb_set_pixelsize(double pixelsize,
+                             const gchar *unit,
+                             gpointer user_data);
 static void cb_set_vlock(gboolean vlock,
-                         gpointer self);
+                         gpointer user_data);
 
 %}
 
@@ -142,6 +145,9 @@ class Giv:Widget from Gtk:Image:Viewer
                                           &cb_image_reference, (gpointer)self);
         giv_parser_set_orientation_callback(selfp->giv_parser,
                                             &cb_set_orientation, (gpointer)self);
+        giv_parser_set_pixelsize_callback(selfp->giv_parser,
+                                          &cb_set_pixelsize,
+                                          (gpointer)self);
         giv_parser_set_vlock_callback(selfp->giv_parser,
                                       &cb_set_vlock,
                                       (gpointer)self);
@@ -250,7 +256,7 @@ class Giv:Widget from Gtk:Image:Viewer
                               mark_set->path_name);
             else {
                 GString *balloon_string = g_string_new("");
-                g_string_sprintfa(balloon_string, "label = %d", label);
+                g_string_append_printf(balloon_string, "label = %d", label);
                 gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                               balloon_string->str);
                 g_string_free(balloon_string, TRUE);
@@ -674,6 +680,8 @@ class Giv:Widget from Gtk:Image:Viewer
     signal last NONE (POINTER)
     void file_reference(self, const gchar *filename);
 
+    signal last NONE (DOUBLE, POINTER)
+    void set_pixelsize(self, double pixelsize, const gchar *unit);
 }
 
 %{
@@ -1064,6 +1072,16 @@ static void cb_set_orientation(giv_parser_orientation_t orientation_hflip,
     gtk_image_viewer_set_flip(GTK_IMAGE_VIEWER(self),
                               hflip, vflip);
 }       
+
+static void cb_set_pixelsize(double pixelsize,
+                             const gchar *unit,
+                             gpointer user_data)
+{
+    GivWidget *self = GIV_WIDGET(user_data);
+
+    // Emit a signal
+    giv_widget_set_pixelsize(self, pixelsize, unit);
+}
 
 static void cb_set_vlock(gboolean vlock,
                          gpointer user_data)

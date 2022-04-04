@@ -149,6 +149,10 @@ static void cb_change_pseudo_color(GtkRadioAction* action,
 static void cb_image_reference(GtkWidget *widget,
                                const char *filename,
                                gpointer user_data);
+static void cb_set_pixelsize(GtkWidget *widget,
+                             double pixelsize,
+                             const gchar *pixelsize_unit,
+                             gpointer user_data);
 static void menu_add_widget (GtkUIManager *ui, GtkWidget *widget, GtkContainer *container);
 static void
 cb_balloon_changed(GtkWidget *widget,
@@ -859,6 +863,8 @@ class Giv:Win from Gtk:Window
         gtk_widget_show(selfp->w_imgv);
         g_signal_connect(selfp->w_imgv, "file-reference",
                          G_CALLBACK(cb_image_reference), self);
+        g_signal_connect(selfp->w_imgv, "set-pixelsize",
+                         G_CALLBACK(cb_set_pixelsize), self);
         g_signal_connect(selfp->w_imgv, "button-press-event",
                          G_CALLBACK(cb_button_press_event), self);
         g_signal_connect(selfp->w_imgv, "button-release-event",
@@ -1063,7 +1069,7 @@ class Giv:Win from Gtk:Window
         }
 
         selfp->idle_index = selfp->filename_list_index;
-        selfp->do_fit_on_load_image = TRUE;
+        selfp->do_fit_on_load_image = FALSE;
         selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
                                         self);
 #if 0
@@ -2122,9 +2128,9 @@ cb_motion_event(GtkWidget *widget,
             do_update_label = false;
     }
     else if (selfp->do_show_sub_pixel)
-        g_string_sprintf(info_label, " (%7.3f, %7.3f)", x, y);
+        g_string_printf(info_label, " (%7.3f, %7.3f)", x, y);
     else
-        g_string_sprintf(info_label, " (%4.0f, %4.0f)", floor(x), floor(y));
+        g_string_printf(info_label, " (%4.0f, %4.0f)", floor(x), floor(y));
     
     if (do_update_measure_distance) {
         double m_dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
@@ -2153,11 +2159,11 @@ cb_motion_event(GtkWidget *widget,
                 // TBD - clean this up so it works for arbitrary size date
                 double val = giv_image_get_value(selfp->img_org,
                                                  (int)x, (int)y, selfp->current_slice);
-                g_string_sprintfa(info_label, " [");
-                g_string_sprintfa(info_label,
+                g_string_append_printf(info_label, " [");
+                g_string_append_printf(info_label,
                                   selfp->format,
                                   val);
-                g_string_sprintfa(info_label,
+                g_string_append_printf(info_label,
                                   "] = #%02X",
                                   (int)val);
                 if (selfp->w_contrast_view)
@@ -2168,7 +2174,7 @@ cb_motion_event(GtkWidget *widget,
                      || selfp->img_org->img_type == GIVIMAGE_RGBA_U16) {
                 GivImageRgbAlpha16 rgba = giv_image_get_rgba_value(selfp->img_org,
                                                                    (int)x, (int)y, selfp->current_slice);
-                g_string_sprintfa(info_label,
+                g_string_append_printf(info_label,
                                   " [%3d %3d %3d %3d] = #%08lX",
                                   rgba.red, rgba.green, rgba.blue, rgba.alpha,
                                   (unsigned long)(rgba.red<<24)
@@ -2179,7 +2185,7 @@ cb_motion_event(GtkWidget *widget,
             else {
                 GivImageRgb16 rgb = giv_image_get_rgb_value(selfp->img_org,
                                                             (int)x, (int)y, 0);
-                g_string_sprintfa(info_label,
+                g_string_append_printf(info_label,
                                   " [%3d %3d %3d] = #%6X",
                                   rgb.red, rgb.green, rgb.blue,
                                   (int)(rgb.red<<16) + (rgb.green<<8) + rgb.blue);
@@ -3667,6 +3673,19 @@ static void cb_image_reference(GtkWidget *widget,
     giv_win_set_image_info(self);
 #endif
 
+}
+
+// Update the pixel size from the giv file
+static void cb_set_pixelsize(GtkWidget *widget,
+                             double pixelsize,
+                             const gchar *pixelsize_unit,
+                             gpointer user_data)
+{
+    GivWin *self = (GivWin *)user_data;
+    selfp->pixelsize = pixelsize;
+    if (selfp->pixelsize_unit)
+        g_free(selfp->pixelsize_unit);
+    selfp->pixelsize_unit = g_strdup(pixelsize_unit);
 }
 
 #if 0

@@ -43,7 +43,7 @@ File ${SYSROOT}\mingw\bin\libstdc++-6.dll
 File ${SYSROOT}\mingw\bin\iconv.dll
 File ${SYSROOT}\mingw\bin\libpcre-1.dll
 File ${SYSROOT}\mingw\bin\libintl-8.dll
-File ${SYSROOT}\mingw\bin\libffi-6.dll
+File ${SYSROOT}\mingw\bin\libffi-8.dll
 File ${SYSROOT}\mingw\bin\libgdk_pixbuf*.dll
 File ${SYSROOT}\mingw\bin\libgtk-3-0.dll
 File ${SYSROOT}\mingw\bin\libgdk-3-0.dll

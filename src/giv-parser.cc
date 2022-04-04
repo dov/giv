@@ -72,6 +72,7 @@ enum
   STRING_HIDE,
   STRING_IGNORE,
   STRING_TEXT_STYLE,
+  STRING_PIXEL_SIZE
 };
 
 #define COLOR_NONE 0xfffe
@@ -452,6 +453,10 @@ parse_string (const WordBoundaries& wb,
       if (wb.CheckMatch(0, "$hide"))
         {
           type = STRING_HIDE;
+        }
+      if (wb.CheckMatch(0, "$pixelsize"))
+        {
+          type = STRING_PIXEL_SIZE;
         }
 #if 0
       if (type == -1)
@@ -926,6 +931,19 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
       g_free(text_style);
       break;
     }
+  case STRING_PIXEL_SIZE:
+    {
+      double pixel_size = wb.GetFloat(1);
+      char *pixelsize_unit = NULL;
+      if (wb.size() > 1)
+          pixelsize_unit = strdup(wb.GetRestAsString(2));
+      if (gp->cb_set_pixelsize)
+          (*(gp->cb_set_pixelsize))(pixel_size, pixelsize_unit, gp->cb_set_pixelsize_data);
+      if (pixelsize_unit)
+          g_free(pixelsize_unit);
+
+      break;
+    }
   default:
     ;
 #if 0
@@ -1087,6 +1105,15 @@ giv_parser_set_orientation_callback(GivParser *gp,
 {
     gp->cb_set_orientation = cb;
     gp->cb_set_orientation_data = user_data;
+}
+
+void
+giv_parser_set_pixelsize_callback(GivParser *gp,
+                                  giv_parser_set_pixelsize_t cb,
+                                  gpointer user_data)
+{
+  gp->cb_set_pixelsize = cb;
+  gp->cb_set_pixelsize_data = user_data;
 }
 
 void
