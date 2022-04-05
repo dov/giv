@@ -12,6 +12,7 @@
 #include "plis/plis.h"
 #include "WordBoundaries.h"
 #include <iostream>
+#include <filesystem>
 #include "agg_svg_parser.h"
 #include "fast_double_parser.h"
 
@@ -82,6 +83,27 @@ enum
 static int color_parse(const char *giv_color_name,
                        // output
                        GivColor *color);
+
+// If filename does not an absolute path, then return it relative
+// to the reference.
+static string resolve_path(string filename,
+                           string reference)
+{
+  // First check if filename is an absolute path
+  if (filesystem::path(filename).is_absolute())
+    return filename;
+
+  size_t i = reference.find_last_of('/');
+
+#ifdef _WIN32
+  if (i == string::npos)
+    i = reference.find_last_of('\\');
+#endif
+  if (i == string::npos)
+    return filename;
+
+  return reference.substr(0,i + 1) + filename;
+}
 
 // Return true if a given string starts with another string
 bool starts_with(const string& haystack,const string& needle)
@@ -256,7 +278,12 @@ static agg::svg::path_renderer* parse_svg(const char *filename)
 {
   agg::svg::path_renderer*svg = new agg::svg::path_renderer;
   agg::svg::parser p(*svg);
-  p.parse(filename);
+  try {
+    p.parse(filename);
+  }
+  catch(std::exception&) {
+    // currently just ignore
+  }
   
   return svg;
 }
@@ -866,7 +893,9 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
   case STRING_CHANGE_SVG_MARK:
     {
       marks->do_draw_marks = TRUE;
-      marks->svg_mark = parse_svg(wb.GetWordAsString(1).c_str());
+
+      string path = resolve_path(wb.GetWordAsString(1), filename);
+      marks->svg_mark = parse_svg(path.c_str());
 	
       break;
     }

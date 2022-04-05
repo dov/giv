@@ -1,0 +1,30 @@
+# An example file with svgmarks in it
+
+$path border
+$color red
+0 0 
+0 1000
+1000 1000
+1000 0
+z
+
+$balloon Note that the svg reference
+$balloon is either a relative or an absolute path
+$path drops
+$svgmarks drop.svg
+$noline
+200 200
+800 200
+500 500
+
+$balloon The origin of the svg file
+$balloon is used for positions
+$path drop pos
+$marks fcircle
+$color green/0.5
+$marksize 10
+$noline
+200 200
+800 200
+500 500
+

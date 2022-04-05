@@ -586,6 +586,7 @@ class Giv:Win from Gtk:Window
     private GLibJsonRpcAsyncQuery *json_query = NULL;
     private gboolean do_pick_coordinate = FALSE;
     private gboolean do_fit_on_load_image = FALSE;
+    private gboolean do_fit_on_giv_start = TRUE;  // Always fit on giv start!
     private gdouble margin = 10;
     private GtkActionGroup *toggle_actions = nullptr;
     private gboolean in_menu_measure = FALSE;
@@ -1129,9 +1130,10 @@ class Giv:Win from Gtk:Window
         ((GivParser*)selfp->giv_parser)->parse_file(filename);
         selfp->quiver_scale = ((GivParser*)selfp->giv_parser)->get_quiver_scale();
 #endif
-        if (selfp->do_fit_on_load_image || selfp->do_auto_fit_marks) {
+        if (selfp->do_fit_on_giv_start || selfp->do_fit_on_load_image || selfp->do_auto_fit_marks) {
             fit_marks_in_window(self);
             selfp->do_fit_on_load_image = false;
+            selfp->do_fit_on_giv_start = false;
         }
         
         giv_win_redraw(self);

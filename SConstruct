@@ -14,7 +14,7 @@ env = Environment(LIBPATH=[],
                                          '-Wno-reorder',
                                          '-Wno-unused-but-set-variable',
                                          '-Wno-unused-function'],
-                  CXXFLAGS=['-std=c++1y']
+                  CXXFLAGS=['-std=c++2a']
                   )
 
 env['SBOX'] = False

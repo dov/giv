@@ -93,13 +93,13 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.30</font><br>
+    <font size=+2>Version 0.9.32</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2018-04-12 Thu </font>
+    <font size=-1>Last modified: 2022-04-05 Tue</font>
 </h2>
 
 <: section("Description") :>
@@ -132,9 +132,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 
 <: subsection("Images") :>
 <blockquote>
-  Images are loaded through gdk_pixbuf and giv supports all the formats
-  supported by it. The image may be scrolled and zoomed with the
-  mouse or the keyboard.
+  Images are loaded through gdk_pixbuf and through additional image loaders. The image may be scrolled and zoomed with the mouse or the keyboard.
   <p>
     Here is an example of the image display:
   <table>
@@ -157,8 +155,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
   properties, followed by a list of data points.
   <p>
     A few of the properties are global and they effect not only
-    the dataset, e.g. the <tt>$image</tt> property that is used to
-    load a different image.
+    the dataset but the entire display, e.g. the <tt>$image</tt>, and the <tt>$vflip</tt>.
   <p>
   The properties all start with the $ sign. Here is a list of all
   the properties supported:<p>
@@ -197,6 +194,9 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 	      <li>square
 	      <li>fsquare
 	    </ul>
+    <:TR():><: td() :>$svgmarks
+        <: td() :>$svgmarks drop.svg
+	<: td() :>Reference an external svg file as a marker.
     <:TR():><: td() :>$hide
         <: td() :>$hide
 	<: td() :>Initially hide the dataset. It may be turned on by the marks viewer.
@@ -282,13 +282,16 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <:TR():><: td() :>$title
         <: td() :>$title
 	<: td() :>Set the window title.
+    <:TR():><: td() :>$pixelsize
+        <: td() :>$pixelsize 5 µm
+	<: td() :>Set the pixelsize for the measurement tool
   </table>
   
 </blockquote>
 
 <: subsection("Text annotations") :>
 <blockquote>
-Text is drawn by adding the "T" control character in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left.
+Text is drawn by adding the letter "T" in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left. To write multiline text add string "\n".
 <p>
 The following example illustrates the various anchor options.
 <: code_snippet("text-align.giv") :>
@@ -456,10 +459,10 @@ giv. The result is shown in the screenshow below.
     <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
         <td align=center><img src="alpha-example.jpg">
     </tr>
+    <tr><td align=center><img src="svg-marks-example.png">
+    </tr>
     <tr>
-      <td align=center valign=top>Pseudo color of a gray level image.
-      <td>Overlays may be painted with transparency as in this "annotation"
-        of the Lena image.
+      <td align=center valign=top>Example use of <tt>svgmarks</tt> where the markers are read from an external svg file.
     </tr>
 
     <!----->

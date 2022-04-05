@@ -17,13 +17,13 @@
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.30</font><br>
+    <font size=+2>Version 0.9.32</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2018-04-12 Thu </font>
+    <font size=-1>Last modified: 2022-04-05 Tue</font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -58,9 +58,7 @@
 <h3><a name="SEC1.1">1.1. Images</a></h3>
 
 <blockquote>
-  Images are loaded through gdk_pixbuf and giv supports all the formats
-  supported by it. The image may be scrolled and zoomed with the
-  mouse or the keyboard.
+  Images are loaded through gdk_pixbuf and through additional image loaders. The image may be scrolled and zoomed with the mouse or the keyboard.
   <p>
     Here is an example of the image display:
   <table>
@@ -84,8 +82,7 @@
   properties, followed by a list of data points.
   <p>
     A few of the properties are global and they effect not only
-    the dataset, e.g. the <tt>$image</tt> property that is used to
-    load a different image.
+    the dataset but the entire display, e.g. the <tt>$image</tt>, and the <tt>$vflip</tt>.
   <p>
   The properties all start with the $ sign. Here is a list of all
   the properties supported:<p>
@@ -115,91 +112,97 @@
 	      <li>square
 	      <li>fsquare
 	    </ul>
-    <tr><td bgcolor=#fbf2ee valign=top>$hide
-        <td bgcolor=#fbf2ee valign=top>$hide
-	<td bgcolor=#fbf2ee valign=top>Initially hide the dataset. It may be turned on by the marks viewer.
+    <tr><td bgcolor=#fbf2ee valign=top>$svgmarks
+        <td bgcolor=#fbf2ee valign=top>$svgmarks drop.svg
+	<td bgcolor=#fbf2ee valign=top>Reference an external svg file as a marker.
+    <tr><td bgcolor=#ffeeee valign=top>$hide
+        <td bgcolor=#ffeeee valign=top>$hide
+	<td bgcolor=#ffeeee valign=top>Initially hide the dataset. It may be turned on by the marks viewer.
 	  
-    <tr><td bgcolor=#ffeeee valign=top>$scale_marks
-        <td bgcolor=#ffeeee valign=top>$scale_marks
-	<td bgcolor=#ffeeee valign=top>Indicates whether the marks should be scaled together with the image. Default is not to scale.
+    <tr><td bgcolor=#fbf2ee valign=top>$scale_marks
+        <td bgcolor=#fbf2ee valign=top>$scale_marks
+	<td bgcolor=#fbf2ee valign=top>Indicates whether the marks should be scaled together with the image. Default is not to scale.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$linedash
-        <td bgcolor=#fbf2ee valign=top>$linedash 10 5
-        <td bgcolor=#fbf2ee valign=top>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
+    <tr><td bgcolor=#ffeeee valign=top>$linedash
+        <td bgcolor=#ffeeee valign=top>$linedash 10 5
+        <td bgcolor=#ffeeee valign=top>Specifies that lines should be drawn with dashes. The numbers indicate the dash and the spacing size. There may be multiple pairs, indicating sequential shapes.
 
-    <tr><td bgcolor=#ffeeee valign=top>$mark_size
-        <td bgcolor=#ffeeee valign=top>$mark_size 15
-        <td bgcolor=#ffeeee valign=top>Specify the size of the marks in pixels.
+    <tr><td bgcolor=#fbf2ee valign=top>$mark_size
+        <td bgcolor=#fbf2ee valign=top>$mark_size 15
+        <td bgcolor=#fbf2ee valign=top>Specify the size of the marks in pixels.
 
-    <tr><td bgcolor=#fbf2ee valign=top>$lw
-        <td bgcolor=#fbf2ee valign=top>$lw 3
-        <td bgcolor=#fbf2ee valign=top>Line width. This also affects the width of the outline marks (e.g. circle and square).
-    <tr><td bgcolor=#ffeeee valign=top>$image
-        <td bgcolor=#ffeeee valign=top>$image maja.pgm
-        <td bgcolor=#ffeeee valign=top>Reference image to be shown below the image. Several images lines may be given. The user may rotate between the different images through the shift-Up and shift-down key bindings.
-    <tr><td bgcolor=#fbf2ee valign=top>$arrow
-        <td bgcolor=#fbf2ee valign=top>$arrow start
-        <td bgcolor=#fbf2ee valign=top>Indicate that arrows should be added to the lines. Arrows may be drawn at the start, of the line, the end of the line, or both by giving the keywords "start", "end", "both" after $arrow.
-    <tr><td bgcolor=#ffeeee valign=top>$font
-        <td bgcolor=#ffeeee valign=top>$font Monospace 24
-        <td bgcolor=#ffeeee valign=top>Font to be used for drawing text. The name of the font
+    <tr><td bgcolor=#ffeeee valign=top>$lw
+        <td bgcolor=#ffeeee valign=top>$lw 3
+        <td bgcolor=#ffeeee valign=top>Line width. This also affects the width of the outline marks (e.g. circle and square).
+    <tr><td bgcolor=#fbf2ee valign=top>$image
+        <td bgcolor=#fbf2ee valign=top>$image maja.pgm
+        <td bgcolor=#fbf2ee valign=top>Reference image to be shown below the image. Several images lines may be given. The user may rotate between the different images through the shift-Up and shift-down key bindings.
+    <tr><td bgcolor=#ffeeee valign=top>$arrow
+        <td bgcolor=#ffeeee valign=top>$arrow start
+        <td bgcolor=#ffeeee valign=top>Indicate that arrows should be added to the lines. Arrows may be drawn at the start, of the line, the end of the line, or both by giving the keywords "start", "end", "both" after $arrow.
+    <tr><td bgcolor=#fbf2ee valign=top>$font
+        <td bgcolor=#fbf2ee valign=top>$font Monospace 24
+        <td bgcolor=#fbf2ee valign=top>Font to be used for drawing text. The name of the font
           is according to requirements of pango font string representation.
-    <tr><td bgcolor=#fbf2ee valign=top>$text_style
-        <td bgcolor=#fbf2ee valign=top>$text_style shadow
-        <td bgcolor=#fbf2ee valign=top>The style used to draw the text. The only valid style is "shadow".
-    <tr><td bgcolor=#ffeeee valign=top>$shadow_color
-        <td bgcolor=#ffeeee valign=top>$shadow_color black/0.3
-        <td bgcolor=#ffeeee valign=top>For the shadow style, the color of shadows.
-    <tr><td bgcolor=#fbf2ee valign=top>$shadow_offset
-        <td bgcolor=#fbf2ee valign=top>$shadow_offset 1 1
-        <td bgcolor=#fbf2ee valign=top>For the shadow style, the x and y offsets of the shadow.
-    <tr><td bgcolor=#ffeeee valign=top>$pango_markup
-        <td bgcolor=#ffeeee valign=top>$pango_markup
-        <td bgcolor=#ffeeee valign=top>Indicates that the text should be interpreted as a pango markup string. See: http://developer.gnome.org/pango/stable/PangoMarkupFormat.html
-    <tr><td bgcolor=#fbf2ee valign=top>$scale_font
-        <td bgcolor=#fbf2ee valign=top>$scale_font 1
-        <td bgcolor=#fbf2ee valign=top>Indicates that the text should be scaled with the current zoom level. Default is not to zoom up text.
-    <tr><td bgcolor=#ffeeee valign=top>$balloon
-        <td bgcolor=#ffeeee valign=top>$balloon Suspect
-        <td bgcolor=#ffeeee valign=top>Adds another line to the popup balloon that is shown
+    <tr><td bgcolor=#ffeeee valign=top>$text_style
+        <td bgcolor=#ffeeee valign=top>$text_style shadow
+        <td bgcolor=#ffeeee valign=top>The style used to draw the text. The only valid style is "shadow".
+    <tr><td bgcolor=#fbf2ee valign=top>$shadow_color
+        <td bgcolor=#fbf2ee valign=top>$shadow_color black/0.3
+        <td bgcolor=#fbf2ee valign=top>For the shadow style, the color of shadows.
+    <tr><td bgcolor=#ffeeee valign=top>$shadow_offset
+        <td bgcolor=#ffeeee valign=top>$shadow_offset 1 1
+        <td bgcolor=#ffeeee valign=top>For the shadow style, the x and y offsets of the shadow.
+    <tr><td bgcolor=#fbf2ee valign=top>$pango_markup
+        <td bgcolor=#fbf2ee valign=top>$pango_markup
+        <td bgcolor=#fbf2ee valign=top>Indicates that the text should be interpreted as a pango markup string. See: http://developer.gnome.org/pango/stable/PangoMarkupFormat.html
+    <tr><td bgcolor=#ffeeee valign=top>$scale_font
+        <td bgcolor=#ffeeee valign=top>$scale_font 1
+        <td bgcolor=#ffeeee valign=top>Indicates that the text should be scaled with the current zoom level. Default is not to zoom up text.
+    <tr><td bgcolor=#fbf2ee valign=top>$balloon
+        <td bgcolor=#fbf2ee valign=top>$balloon Suspect
+        <td bgcolor=#fbf2ee valign=top>Adds another line to the popup balloon that is shown
           when the balloon popups have been turned on (in the view menu)
           and the mouse hovers over the dataset. 
-    <tr><td bgcolor=#fbf2ee valign=top>$polygon
-        <td bgcolor=#fbf2ee valign=top>$polygon
-        <td bgcolor=#fbf2ee valign=top>Indicates that the dataset should be filled.
-    <tr><td bgcolor=#ffeeee valign=top>$def_style
-        <td bgcolor=#ffeeee valign=top>$def_style Ref $color green
-        <td bgcolor=#ffeeee valign=top>Add an additional property to a style. (See style section)
-    <tr><td bgcolor=#fbf2ee valign=top>$style
-        <td bgcolor=#fbf2ee valign=top>$style Ref
-        <td bgcolor=#fbf2ee valign=top>Imports all dataset properties from the namedo style. This is simply a shortcut to explicitely writing all style properties.
-    <tr><td bgcolor=#ffeeee valign=top>$path
-        <td bgcolor=#ffeeee valign=top>$path reference/pads
-        <td bgcolor=#ffeeee valign=top>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the hierarchy tree.
-    <tr><td bgcolor=#fbf2ee valign=top>$quiver_color
-        <td bgcolor=#fbf2ee valign=top>$quiver_color green
-	<td bgcolor=#fbf2ee valign=top>The color of a quiver arrow
-    <tr><td bgcolor=#ffeeee valign=top>$quiver_scale
-        <td bgcolor=#ffeeee valign=top>$quiver_scale 100
-	<td bgcolor=#ffeeee valign=top>The original scale of the quiver plot
-    <tr><td bgcolor=#fbf2ee valign=top>$vflip
-        <td bgcolor=#fbf2ee valign=top>$vflip
-	<td bgcolor=#fbf2ee valign=top>Flip the vertical axis of the marks and images.
-    <tr><td bgcolor=#ffeeee valign=top>$novflip
-        <td bgcolor=#ffeeee valign=top>$novflip
-	<td bgcolor=#ffeeee valign=top>Turn off the vertical flip.
-    <tr><td bgcolor=#fbf2ee valign=top>$hflip
-        <td bgcolor=#fbf2ee valign=top>$hflip
-	<td bgcolor=#fbf2ee valign=top>Flip the horizontal axis of the marks and images.
-    <tr><td bgcolor=#ffeeee valign=top>$nohflip
-        <td bgcolor=#ffeeee valign=top>$nohflip
-	<td bgcolor=#ffeeee valign=top>Turn off the horizontal flip.
-    <tr><td bgcolor=#fbf2ee valign=top>$vlock
-        <td bgcolor=#fbf2ee valign=top>$vlock
-	<td bgcolor=#fbf2ee valign=top>Lock the vertical axis zoom. Useful e.g. for exploring time plots.
-    <tr><td bgcolor=#ffeeee valign=top>$title
-        <td bgcolor=#ffeeee valign=top>$title
-	<td bgcolor=#ffeeee valign=top>Set the window title.
+    <tr><td bgcolor=#ffeeee valign=top>$polygon
+        <td bgcolor=#ffeeee valign=top>$polygon
+        <td bgcolor=#ffeeee valign=top>Indicates that the dataset should be filled.
+    <tr><td bgcolor=#fbf2ee valign=top>$def_style
+        <td bgcolor=#fbf2ee valign=top>$def_style Ref $color green
+        <td bgcolor=#fbf2ee valign=top>Add an additional property to a style. (See style section)
+    <tr><td bgcolor=#ffeeee valign=top>$style
+        <td bgcolor=#ffeeee valign=top>$style Ref
+        <td bgcolor=#ffeeee valign=top>Imports all dataset properties from the namedo style. This is simply a shortcut to explicitely writing all style properties.
+    <tr><td bgcolor=#fbf2ee valign=top>$path
+        <td bgcolor=#fbf2ee valign=top>$path reference/pads
+        <td bgcolor=#fbf2ee valign=top>Creates a hierarchical name of the dataset that will be used in the dataset browser. Each slash indicates another branch in the hierarchy tree.
+    <tr><td bgcolor=#ffeeee valign=top>$quiver_color
+        <td bgcolor=#ffeeee valign=top>$quiver_color green
+	<td bgcolor=#ffeeee valign=top>The color of a quiver arrow
+    <tr><td bgcolor=#fbf2ee valign=top>$quiver_scale
+        <td bgcolor=#fbf2ee valign=top>$quiver_scale 100
+	<td bgcolor=#fbf2ee valign=top>The original scale of the quiver plot
+    <tr><td bgcolor=#ffeeee valign=top>$vflip
+        <td bgcolor=#ffeeee valign=top>$vflip
+	<td bgcolor=#ffeeee valign=top>Flip the vertical axis of the marks and images.
+    <tr><td bgcolor=#fbf2ee valign=top>$novflip
+        <td bgcolor=#fbf2ee valign=top>$novflip
+	<td bgcolor=#fbf2ee valign=top>Turn off the vertical flip.
+    <tr><td bgcolor=#ffeeee valign=top>$hflip
+        <td bgcolor=#ffeeee valign=top>$hflip
+	<td bgcolor=#ffeeee valign=top>Flip the horizontal axis of the marks and images.
+    <tr><td bgcolor=#fbf2ee valign=top>$nohflip
+        <td bgcolor=#fbf2ee valign=top>$nohflip
+	<td bgcolor=#fbf2ee valign=top>Turn off the horizontal flip.
+    <tr><td bgcolor=#ffeeee valign=top>$vlock
+        <td bgcolor=#ffeeee valign=top>$vlock
+	<td bgcolor=#ffeeee valign=top>Lock the vertical axis zoom. Useful e.g. for exploring time plots.
+    <tr><td bgcolor=#fbf2ee valign=top>$title
+        <td bgcolor=#fbf2ee valign=top>$title
+	<td bgcolor=#fbf2ee valign=top>Set the window title.
+    <tr><td bgcolor=#ffeeee valign=top>$pixelsize
+        <td bgcolor=#ffeeee valign=top>$pixelsize 5 µm
+	<td bgcolor=#ffeeee valign=top>Set the pixelsize for the measurement tool
   </table>
   
 </blockquote>
@@ -207,7 +210,7 @@
 <h3><a name="SEC1.3">1.3. Text annotations</a></h3>
 
 <blockquote>
-Text is drawn by adding the "T" control character in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left.
+Text is drawn by adding the letter "T" in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left. To write multiline text add string "\n".
 <p>
 The following example illustrates the various anchor options.
 <table border><tr><th bgcolor=#E0E0FF><a href="text-align.giv">text-align.giv</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font># Show the text alignment relative to the alignment number 
@@ -557,10 +560,10 @@ giv. The result is shown in the screenshow below.
     <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
         <td align=center><img src="alpha-example.jpg">
     </tr>
+    <tr><td align=center><img src="svg-marks-example.png">
+    </tr>
     <tr>
-      <td align=center valign=top>Pseudo color of a gray level image.
-      <td>Overlays may be painted with transparency as in this "annotation"
-        of the Lena image.
+      <td align=center valign=top>Example use of <tt>svgmarks</tt> where the markers are read from an external svg file.
     </tr>
 
     <!----->
