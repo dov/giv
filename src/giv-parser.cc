@@ -281,7 +281,7 @@ static agg::svg::path_renderer* parse_svg(const char *filename)
   try {
     p.parse(filename);
   }
-  catch(std::exception&) {
+  catch(agg::svg::exception&) {
     // currently just ignore
   }
   
