@@ -70,6 +70,11 @@ if not env['SBOX']:
                       LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
                       LIBS=['png','libzip', 'z','giv-image']+env['LIBS'],
                       )
+    env.SharedLibrary('webp',
+                      ['webp.cc'],
+                      LIBPATH=['..','../gtkimageviewer','../agg','../pcre','../plis'] + env['LIBPATH'],
+                      LIBS=['webp','giv-image']+env['LIBS'],
+                      )
 
     if plugin_dicom is not None and not use_system_dcmtk:
         env.Depends(plugin_dicom,

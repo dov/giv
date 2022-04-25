@@ -175,8 +175,8 @@ env.Alias("install",
            ])
 
 
-#env.Alias("dist",
-#          env.Command("giv-${VER}.tar.gz",
-#                      [],
-#                      create_dist))
+env.Alias("dist",
+          env.Command("giv-${VER}.tar.gz",
+                      [],
+                      create_dist))
 
