@@ -103,7 +103,7 @@ namespace agg
         if(m_step == m_num) 
         {
             ++m_step;
-            return path_cmd_end_poly | path_flags_close | path_flags_ccw;
+            return int(path_cmd_end_poly) | int(path_flags_close) | int(path_flags_ccw);
         }
         if(m_step > m_num) return path_cmd_stop;
         double angle = double(m_step) / double(m_num) * 2.0 * pi;

@@ -269,7 +269,7 @@ namespace agg
 	  else
 	  {
         m_status = status_stop;
-        return path_cmd_end_poly | path_flags_close;
+        return int(path_cmd_end_poly) | int(path_flags_close);
       }
     }
 	else
@@ -284,7 +284,7 @@ namespace agg
 	else
     {
       m_status = status_move_to;
-      return path_cmd_end_poly | path_flags_close;
+      return int(path_cmd_end_poly) | int(path_flags_close);
     }
   }
 }

@@ -13,7 +13,8 @@ env = Environment(LIBPATH=[],
                   CPPFLAGS = cppflags + ['-Wno-deprecated-declarations',
                                          '-Wno-reorder',
                                          '-Wno-unused-but-set-variable',
-                                         '-Wno-unused-function'],
+                                         '-Wno-unused-function',
+                                         '-Wno-register'],
                   CXXFLAGS=['-std=c++2a']
                   )
 
@@ -145,7 +146,7 @@ env.Append(CPPPATH=[],
                ]
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt")
 
 env.SConscript(['src/SConscript',
                 'doc/SConscript',

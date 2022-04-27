@@ -74,12 +74,10 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
       return NULL;
     
     WebPBitstreamFeatures features;
-    VP8StatusCode ret = WebPGetFeatures((uint8_t*)data.data(),
-                                        data.size(),
-                                        &features);
+    WebPGetFeatures((uint8_t*)data.data(),
+                    data.size(),
+                    &features);
     
-
-
     GivImageType image_type;
     if (features.has_alpha) 
       image_type = GIVIMAGE_RGBA_U8;
