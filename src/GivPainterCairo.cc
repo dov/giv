@@ -56,6 +56,7 @@ public:
     bool do_start_arrow;
     bool do_end_arrow;
     double stroke_width;
+    double text_angle;
 };
 
 GivPainterCairo::GivPainterCairo(cairo_t *cr,
@@ -160,6 +161,13 @@ GivPainterCairo::set_line_width(double line_width)
 }
 
 int
+GivPainterCairo::set_line_cap(int line_cap)
+{
+  cairo_set_line_cap (d->cr, cairo_line_cap_t(line_cap));
+  return 0;
+}
+
+int
 GivPainterCairo::add_mark(GivMarkType mark_type,
                           double mark_size_x, double mark_size_y,
                           double x, double y)
@@ -227,10 +235,14 @@ GivPainterCairo::add_text(const char *text,
     pango_layout_get_extents(d->layout,
                              NULL,
                              &logical_rect);
-    cairo_move_to(d->cr,
-                  x-h_align/PANGO_SCALE*logical_rect.width,
-                  y-v_align/PANGO_SCALE*logical_rect.height);
+    cairo_save(d->cr);
+    cairo_translate(d->cr,x,y);
+    cairo_rotate(d->cr, d->text_angle);
+    cairo_translate(d->cr,
+                    -h_align/PANGO_SCALE*logical_rect.width,
+                    -v_align/PANGO_SCALE*logical_rect.height);
     pango_cairo_show_layout(d->cr, d->layout);
+    cairo_restore(d->cr);
     
 #if 0
     cairo_set_font_size(d->cr, 30);
@@ -350,6 +362,12 @@ GivPainterCairo::set_text_size(double text_size)
     return 0;
 }
 
+int
+GivPainterCairo::set_text_angle(double text_angle)
+{
+    d->text_angle = text_angle;
+    return 0;
+}
 int
 GivPainterCairo::set_font(const char* font_name)
 {

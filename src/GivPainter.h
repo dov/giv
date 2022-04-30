@@ -29,8 +29,10 @@ class GivPainter {
                   giv_color.alpha * s);
     }
     virtual int set_line_width(double line_width) = 0;
+    virtual int set_line_cap(int line_cap) = 0;
     virtual int set_svg_mark(agg::svg::path_renderer *svgmark) = 0;
     virtual int set_text_size(double text_size) = 0;
+    virtual int set_text_angle(double text_angle) = 0;
     virtual int set_font(const char* font) = 0;
     virtual int add_mark(GivMarkType mark_type,
                          double mark_size_x, double mark_size_y,

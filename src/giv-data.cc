@@ -40,6 +40,7 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     dataset_p->line_style = 0;
     dataset_p->line_width = 1;
     dataset_p->text_size = -1;
+    dataset_p->text_angle = 0;
     dataset_p->do_scale_fonts = FALSE;
     dataset_p->do_pango_markup = FALSE;
     dataset_p->num_dashes = 0;

@@ -20,6 +20,7 @@ class GivPainterAgg : public GivPainter {
     void set_set_idx(int set_idx) override;
     void set_color(double red, double green, double blue, double alpha) override;
     int set_line_width(double line_width) override;
+    int set_line_cap(int line_cap) override;
 
     int add_mark(GivMarkType mark_type,
                  double mark_size_x, double mark_size_y,
@@ -46,6 +47,7 @@ class GivPainterAgg : public GivPainter {
     void close_path() override;
     void draw_marks() override;
     int set_text_size(double text_size) override;
+    int set_text_angle(double text_angle) override;
     int set_font(const char* font) override;
     void set_do_paint_by_index(bool do_paint_by_index) override;
     void set_dashes(int num_dashes,

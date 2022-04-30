@@ -25,8 +25,10 @@ typedef struct {
   GdkColor outline_color;
   gint line_width;
   gint line_style;
+  gint line_cap;
   gint mark_type;
-  gint text_size;
+  double text_size;
+  double text_angle;
   gint num_dashes;
   gdouble mark_size;
   gboolean do_scale_marks;

@@ -9,6 +9,7 @@
 #include <math.h>
 
 #define COLOR_NONE 0xfffe 
+static constexpr const char* DEFAULT_FONT="Sans 15"; // does this exist on windows?
 
 static gboolean
 clip_line_to_rectangle(double x0, double y0, double x1, double y1,
@@ -74,6 +75,7 @@ void GivRenderer::paint()
 
         double line_width = dataset->line_width;
         painter.set_line_width(line_width);
+        painter.set_line_cap(dataset->line_cap);
         painter.set_dashes(dataset->num_dashes,
                            dataset->dashes);
         GivArrowType arrow = dataset->arrow_type;
@@ -298,6 +300,9 @@ void GivRenderer::paint()
         if (need_check_for_text || has_text) {
             if (dataset->font_name)
                 painter.set_font(dataset->font_name);
+            else
+                painter.set_font(DEFAULT_FONT);
+            painter.set_text_angle(dataset->text_angle);
             if (dataset->text_size > 0 || dataset->do_scale_fonts) {
                 double scale = 1.0;
                 if (dataset->do_scale_fonts)

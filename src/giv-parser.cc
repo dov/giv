@@ -16,6 +16,7 @@
 #include "agg_svg_parser.h"
 #include "fast_double_parser.h"
 
+static constexpr double DEG2RAD = 3.1415926535/180;
 
 using namespace plis;
 using namespace std;
@@ -42,6 +43,7 @@ enum
   STRING_CHANGE_QUIVER_SCALE,
   STRING_CHANGE_QUIVER_HEAD,
   STRING_CHANGE_LINE_WIDTH,
+  STRING_CHANGE_LINE_CAP,
   STRING_CHANGE_MARKS,
   STRING_CHANGE_NO_LINE,
   STRING_CHANGE_SCALE_MARKS,
@@ -49,6 +51,7 @@ enum
   STRING_CHANGE_PANGO_MARKUP,
   STRING_CHANGE_MARK_SIZE,
   STRING_CHANGE_TEXT_SIZE,
+  STRING_CHANGE_TEXT_ANGLE,
   STRING_CHANGE_LINE,
   STRING_CHANGE_NO_MARK,
   STRING_CHANGE_POLYGON,
@@ -384,6 +387,10 @@ parse_string (const WordBoundaries& wb,
         {
           type = STRING_CHANGE_LINE_WIDTH;
         }
+      if (wb.CheckMatch(0, "$line_cap"))
+        {
+          type = STRING_CHANGE_LINE_CAP;
+        }
       if (wb.CheckMatch(0, "$balloon"))
         {
           type = STRING_BALLOON;
@@ -443,6 +450,10 @@ parse_string (const WordBoundaries& wb,
       if (wb.CheckMatch(0, "$text_size"))
         {
           type = STRING_CHANGE_TEXT_SIZE;
+        }
+      if (wb.CheckMatch(0, "$text_angle"))
+        {
+          type = STRING_CHANGE_TEXT_ANGLE;
         }
       if (wb.CheckMatch(0, "$font"))
         {
@@ -756,6 +767,17 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
   case STRING_CHANGE_LINE_WIDTH:
     marks->line_width = wb.GetFloat(1);
     break;
+  case STRING_CHANGE_LINE_CAP:
+    {
+      string cap_string = wb.GetRestAsString(1);
+      if (starts_with(cap_string, "but"))
+          marks->line_cap = 0;
+      else if (starts_with(cap_string, "square"))
+          marks->line_cap = 2;
+      else 
+          marks->line_cap = 1;
+    }
+    break;
   case STRING_BALLOON:
     {
       char *s = strdup(wb.GetRestAsString(1));
@@ -888,6 +910,9 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     break;
   case STRING_CHANGE_TEXT_SIZE:
     marks->text_size = wb.GetFloat(1);
+    break;
+  case STRING_CHANGE_TEXT_ANGLE:
+    marks->text_angle = wb.GetFloat(1) * DEG2RAD;
     break;
   case STRING_FONT:
     if (marks->font_name)

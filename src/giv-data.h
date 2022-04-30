@@ -65,8 +65,10 @@ typedef struct
     gdouble line_width;
     gdouble quiver_scale;
     gint line_style;
+    gint line_cap;
     gint mark_type;
     gdouble text_size;
+    gdouble text_angle;
     gboolean do_scale_fonts;
     gboolean do_pango_markup;
     enum GivTextStyle text_style;

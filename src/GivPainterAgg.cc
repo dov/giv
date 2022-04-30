@@ -37,6 +37,7 @@ public:
     int width;
     int height;
     double stroke_width;
+    double text_angle;
     agg::rendering_buffer rbuf;
     int set_idx;
     double red, green, blue, alpha;
@@ -192,6 +193,15 @@ int GivPainterAgg::set_line_width(double line_width)
     return 0;
 }
 
+// 0 = butt, 1=round, 2 = square
+int GivPainterAgg::set_line_cap(int line_cap)
+{
+    constexpr agg::line_cap_e agg_caps[3] = {agg::butt_cap, agg::round_cap, agg::square_cap};
+    d->cstroke.line_cap(agg_caps[line_cap]);
+    d->stroke_dash.line_cap(agg_caps[line_cap]);
+    return 0;
+}
+
 void GivPainterAgg::add_svg_mark(double x, double y, double sx, double sy) 
 {
   render_svg_path(d->svg_mark,
@@ -287,6 +297,10 @@ GivPainterAgg::add_text(const char *text,
     /* Create a PangoLayout, set the font and text */
     PangoRectangle logical_rect;
 
+    // TBD - Rotate the text and calculate the bounding box of the
+    // rotated text. Do this by calculating the axis aligned bounding,
+    // rotating it, and then taking the resulting bounding box.
+
     // Translate the 1-9 square to alignment
     double h_align = 1.0*((text_align - 1) % 3) / 2.0;
     double v_align = 1.0-(1.0*((text_align - 1) / 3) / 2.0);
@@ -299,10 +313,14 @@ GivPainterAgg::add_text(const char *text,
     pango_layout_get_extents(d->layout,
                              NULL,
                              &logical_rect);
-    cairo_move_to(d->cr,
-                  x-h_align/PANGO_SCALE*logical_rect.width,
-                  y-v_align/PANGO_SCALE*logical_rect.height);
+    cairo_save(d->cr);
+    cairo_translate(d->cr,x,y);
+    cairo_rotate(d->cr, d->text_angle);
+    cairo_translate(d->cr,
+                    -h_align/PANGO_SCALE*logical_rect.width,
+                    -v_align/PANGO_SCALE*logical_rect.height);
     pango_cairo_show_layout(d->cr, d->layout);
+    cairo_restore(d->cr);
 
 
 #if 0
@@ -473,6 +491,14 @@ GivPainterAgg::set_text_size(double text_size)
         pango_layout_set_font_description(d->layout,
                                           d->font_description);
     }
+
+    return 0;
+}
+
+int
+GivPainterAgg::set_text_angle(double text_angle)
+{
+    d->text_angle = text_angle;
 
     return 0;
 }

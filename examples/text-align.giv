@@ -12,6 +12,8 @@ $noline
 300 300
 
 $color blue
+$text_angle 45
+$text_size 30
 T7 100 100 T7
 T8 200 100 T8
 T9 300 100 T9

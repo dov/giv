@@ -51,9 +51,11 @@ requires 2.0.0
 #include "giv-settings.h"
 #include "giv-settings-editor.h"
 #include "glib-jsonrpc/glib-jsonrpc-json.h"
+#include "fmt/core.h"
 
 using namespace std;
 using namespace plis;
+using namespace fmt;
 
 #define CASE(s) if (strcmp(s,S_)==0)
 #ifdef WIN32
@@ -121,6 +123,7 @@ static void cb_view_auto_reload (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance_horizontal (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance_vertical (GtkAction *action, gpointer data);
+static void cb_menu_measure_keep (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
 static void cb_menu_count_marks (GtkAction *action, gpointer data);
@@ -360,7 +363,12 @@ static GtkActionEntry entries[] =
     NULL,    
     "_Calibrate pixel size", NULL,
     "Calibrate",
-    G_CALLBACK (cb_menu_calibrate) }
+    G_CALLBACK (cb_menu_calibrate) },
+  { "ToolMeasureKeepAction",
+    NULL,    
+    "_Keep the last measurement", NULL,
+    "Keep the last measurement",
+    G_CALLBACK (cb_menu_measure_keep)}
 };
 
 static GtkToggleActionEntry toggle_entries[] =
@@ -565,6 +573,7 @@ class Giv:Win from Gtk:Window
     private double measure_y1=-1;
     private double measure_x2=-1;
     private double measure_y2=-1;
+    private double measure_counter=0;  // counter for kept measurements
     private double quiver_scale = 1.0;
     private GdkCursor *current_cursor=0;
     private GdkCursor *cursor_plus=0;
@@ -2610,7 +2619,8 @@ menu_measure_distance (GivWin *self, GtkAction *action, int measure_type)
         //free_giv_backstore (selfp->back_store);
         //selfp->back_store = NULL;
         gdk_window_set_cursor(gtk_widget_get_window(selfp->w_imgv), NULL);
-        dovtk_lasso_destroy(selfp->lasso);
+        if (selfp->lasso)
+            dovtk_lasso_destroy(selfp->lasso);
         selfp->lasso = NULL;
       }
   
@@ -2623,6 +2633,112 @@ cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data)
   GivWin *self = GIV_WIN(data);
 
   menu_measure_distance(self, action, MEASURE_TYPE_DIAGONAL);
+}
+
+static int measure_counter = 0;
+
+void
+cb_menu_measure_keep (GtkAction *action, gpointer data)
+{
+  GivWin *self = GIV_WIN(data);
+  GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
+
+  print("TBD: Keep last measurement: ({},{}) -> ({},{})\n",
+        selfp->measure_x1,
+        selfp->measure_y1,
+        selfp->measure_x2,
+        selfp->measure_y2
+        );
+
+#ifdef _WIN32
+  // TBD - Figure out how to get a font that matches the caliper height!
+  string font_name = "Segoe UI 10";
+#else
+  string font_name = "Sans 10";
+#endif
+
+  string color_string = format("#{:02x}{:02x}{:02x}/0.5",
+                               0xff,0xaa,0);
+  giv_parser_parse_string(giv_parser,
+                          format("$path measure/{}\n"
+                                 "$color {}\n"
+                                 "$line_cap butt\n"
+                                 "$lw 25\n"
+                                 //                                 "$arrow both\n"
+                                 "{} {}\n"
+                                 "{} {}\n\n",
+                                 selfp->measure_counter,
+                                 color_string,
+                                 selfp->measure_x1,
+                                 selfp->measure_y1,
+                                 selfp->measure_x2,
+                                 selfp->measure_y2
+                                 ).c_str());
+
+  double text_angle = atan2(selfp->measure_y2-selfp->measure_y1,
+                            selfp->measure_x2-selfp->measure_x1);
+  double dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
+                     +sqr(selfp->measure_y2 - selfp->measure_y1));
+  string measure_string = format("{:.1f}{}",
+                                 dist*selfp->pixelsize,
+                                 selfp->pixelsize_unit);
+
+  giv_parser_parse_string(giv_parser,
+                          format("$path measure/{}\n"
+                                 "$color black\n"
+                                 "$text_angle {}\n"
+                                 "$text_size 15\n" // Do I need this?
+                                 "$font {}\n"
+                                 "T5 {} {} {}\n"
+                                 ,
+                                 selfp->measure_counter,
+                                 text_angle * 180/3.14159,
+                                 font_name,
+                                 0.5*(selfp->measure_x1 + selfp->measure_x2),
+                                 0.5*(selfp->measure_y1 + selfp->measure_y2),
+                                 measure_string
+                                 ).c_str());
+
+#if 0
+  giv_parser_parse_string(giv_parser,
+                          format("$path measure/{}\n"
+                                 "$color black\n"
+                                 "$marks fcircle\n"
+                                 "$noline\n"
+                                 "{} {}\n"
+                                 "{} {}\n\n",
+                                 selfp->measure_counter,
+                                 selfp->measure_x1,
+                                 selfp->measure_y1,
+                                 selfp->measure_x2,
+                                 selfp->measure_y2
+                                 ).c_str());
+#endif
+
+  selfp->measure_counter++;
+
+  // turn off all mesurements. This should be merged with the
+  // toggle
+  struct {
+      const char *action_name;
+      int measure_type;
+  } actions[] {
+      { "ToolMeasureDistanceDiagonalAction", MEASURE_TYPE_DIAGONAL },
+      { "ToolMeasureDistanceHorizontalAction", MEASURE_TYPE_HORIZONTAL },
+      { "ToolMeasureDistanceVerticalAction", MEASURE_TYPE_VERTICAL }};
+              
+  selfp->is_measuring_distance = FALSE;
+  dovtk_lasso_destroy(selfp->lasso);
+  selfp->lasso = NULL;
+  selfp->measure_x1 = selfp->measure_x2 =selfp->measure_y1 = selfp->measure_y2 = -1;
+
+  for (auto act : actions) {
+      GtkAction *action
+          = gtk_action_group_get_action(selfp->toggle_actions,
+                                        act.action_name);
+      gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), FALSE);
+  }
+  giv_win_redraw(self);
 }
 
 void
