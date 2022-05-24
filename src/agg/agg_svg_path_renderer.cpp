@@ -49,7 +49,8 @@ namespace svg
         m_curved_stroked_trans(m_curved_stroked, m_transform),
 
         m_curved_trans(m_curved_count, m_transform),
-        m_curved_trans_contour(m_curved_trans)
+        m_curved_trans_contour(m_curved_trans),
+        m_paint_by_label(false)
     {
         m_curved_trans_contour.auto_detect_orientation(false);
     }

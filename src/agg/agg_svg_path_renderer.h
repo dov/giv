@@ -216,7 +216,7 @@ namespace svg
   
           m_curved_trans(m_curved_count, m_transform),
           m_curved_trans_contour(m_curved_trans),
-          m_paint_by_label(false)
+          m_paint_by_label(other.m_paint_by_label)
         {
           for (size_t i=0; i<other.m_gradients.size(); i++)
                 m_gradients.push_back(other.m_gradients[i]->clone());
@@ -231,6 +231,7 @@ namespace svg
             m_user_transform = other.m_user_transform;
             for (size_t i=0; i<other.m_gradients.size(); i++)
                 m_gradients.push_back(other.m_gradients[i]->clone());
+            m_paint_by_label = other.m_paint_by_label;
 
             return *this;
         }
@@ -564,6 +565,7 @@ namespace svg
         void start_gradient(bool radial = false);
         void end_gradient();
         gradient* current_gradient() const { return m_cur_gradient; }
+
         double width_in_mm() const { return m_width_in_mm; }
         double height_in_mm() const { return m_height_in_mm; }
         double width_in_pt() const { return m_width_in_mm*SVG_MM_TO_POINT; }
@@ -603,7 +605,7 @@ namespace svg
 
         curved_trans                 m_curved_trans;
         curved_trans_contour         m_curved_trans_contour;
-        bool m_paint_by_label;
+        bool m_paint_by_label = false;
         rgba m_label_color;
     };
 
