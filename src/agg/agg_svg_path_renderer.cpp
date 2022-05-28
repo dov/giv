@@ -104,6 +104,14 @@ namespace svg
         m_storage.move_to(x, y);
     }
 
+    //-------------------------------------------------------
+    void path_renderer::set_balloon(const char *balloon)
+    {
+        path_attributes& attr = cur_attr();
+        m_balloon_labels.push_back(balloon);
+        attr.set_balloon_index(m_balloon_labels.size()-1);
+    }
+  
     //------------------------------------------------------------------------
     void path_renderer::line_to(double x,  double y, bool rel)         // L, l
     {
@@ -255,8 +263,12 @@ namespace svg
     void path_renderer::fill(const rgba8& f)
     {
         path_attributes& attr = cur_attr();
-        if (m_paint_by_label)
-            attr.fill_color = m_label_color;
+        if (m_paint_by_label) {
+            if (attr.label_index>=0)
+                attr.fill_color = attr.get_label_color(this->m_balloon_base_index);
+            else
+                attr.fill_color = m_label_color;
+        }
         else
             attr.fill_color = f;
         
@@ -267,8 +279,12 @@ namespace svg
     void path_renderer::stroke(const rgba8& s)
     {
         path_attributes& attr = cur_attr();
-        if (m_paint_by_label)
-          attr.stroke_color = m_label_color;
+        if (m_paint_by_label) {
+            if (attr.label_index>=0)
+                attr.fill_color = attr.get_label_color(this->m_balloon_base_index);
+            else
+                attr.fill_color = m_label_color;
+        }
         else
           attr.stroke_color = s;
         attr.stroke_flag = true;
@@ -437,8 +453,8 @@ namespace svg
                     for(i = 1; i < 3; i++) {
                       arg[i] = tok.next(cmd);
                     }
-					bool large_arc_flag = tok.next(cmd) ? true : false;
-					bool sweep_flag = tok.next(cmd) ? true : false;
+                    bool large_arc_flag = tok.next(cmd) ? true : false;
+                    bool sweep_flag = tok.next(cmd) ? true : false;
                     for(i = 3; i < 5; i++) {
                        arg[i] = tok.next(cmd);
                     }

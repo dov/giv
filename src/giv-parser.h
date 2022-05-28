@@ -27,7 +27,12 @@ typedef void (*giv_parser_set_pixelsize_t)(double pixel_size,
                                            gpointer data);
 typedef void (*giv_parser_set_vlock_t)(gboolean vlock, gpointer data);
 
-struct GivParser {
+class GivParser {
+    public:
+    // Constructor
+    GivParser();
+    // Destructor
+    ~GivParser();
     GPtrArray* giv_datasets;
     GHashTable *style_hash;
     giv_parser_file_reference_t cb_file_reference=nullptr;
@@ -38,6 +43,7 @@ struct GivParser {
     gpointer cb_set_vlock_data;
     giv_parser_set_pixelsize_t cb_set_pixelsize;
     gpointer cb_set_pixelsize_data;
+    int tooltip_num_labels ;
 
     // Bounding box of data
     double global_mark_max_x;
@@ -46,6 +52,9 @@ struct GivParser {
     double global_mark_min_y;
 
     double quiver_scale;
+
+    // balloon labels
+    std::vector<std::string> balloon_strings;
 };
 
 GivParser *giv_parser_new();

@@ -37,6 +37,9 @@
 #include "agg_svg_parser.h"
 #include "expat.h"
 #include "agg_svg_gradient.h"
+#include "fmt/core.h"
+
+using namespace fmt;
 
 namespace agg
 {
@@ -271,7 +274,7 @@ namespace svg
     void parser::parse(const char* fname)
     {
         char msg[1024];
-        XML_Parser p = XML_ParserCreate(NULL);
+        XML_Parser p = XML_ParserCreate("UTF-8");
         if(p == 0) 
         {
             throw exception("Couldn't allocate memory for parser");
@@ -599,6 +602,10 @@ namespace svg
                 m_tokenizer.set_path_str(attr[i + 1]);
                 m_path.parse_path(m_tokenizer);
             }
+            else if(strcmp(attr[i], "title") == 0) {
+              // How to inherit from a group element?
+              m_path.set_balloon(attr[i+1]);
+            }
             else
             {
                 // Create a temporary single pair "name-value" in order
@@ -801,15 +808,21 @@ namespace svg
         } 
         else
         if (strcmp(name, "stop-opacity") == 0) {
-          m_gradient_stop_color.opacity(parse_double(value));
+            m_gradient_stop_color.opacity(parse_double(value));
         }
         else
-        if (strncmp(value, "url", 3) == 0) 
+        if (strncmp(name, "url", 3) == 0) 
         {
-          char* url = parse_url(value);
-          m_path.fill_url(url);
-          delete[] url;
+            char* url = parse_url(value);
+            m_path.fill_url(url);
+            delete[] url;
         } 
+        else
+        if(strcmp(name, "title") == 0) {
+            // How to inherit from a group element?
+            m_path.set_balloon(value);
+        }
+
         //else
         //if(strcmp(el, "<OTHER_ATTRIBUTES>") == 0) 
         //{
@@ -928,6 +941,10 @@ namespace svg
                 if(strcmp(attr[i], "height") == 0) h = parse_double(attr[i + 1]);
                 if(strcmp(attr[i], "rx") == 0)     rx = parse_double(attr[i + 1]);
                 if(strcmp(attr[i], "ry") == 0)     ry = parse_double(attr[i + 1]);
+                if(strcmp(attr[i], "title") == 0) {
+                    // How to inherit from a group element?
+                    m_path.set_balloon(attr[i+1]);
+                }
             }
         }
 
@@ -999,6 +1016,10 @@ namespace svg
                 if(strcmp(attr[i], "cy") == 0)    cy = parse_double(attr[i + 1]);
                 if(strcmp(attr[i], "rx") == 0)    rx = parse_double(attr[i + 1]);
                 if(strcmp(attr[i], "ry") == 0)    ry = parse_double(attr[i + 1]);
+                if(strcmp(attr[i], "title") == 0) {
+                    // How to inherit from a group element?
+                    m_path.set_balloon(attr[i+1]);
+                }
             }
         }
 

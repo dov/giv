@@ -44,8 +44,11 @@ typedef void (*giv_widget_file_reference_callback_t)(const char *filename,
 #include "colormaps.h"
 #include "giv-data.h"
 #include "math.h"
+#include <fmt/core.h>
+
 
 using namespace std;
+using namespace fmt;
 
 static void
 cb_image_annotate(GivWidget *imgv,
@@ -71,7 +74,10 @@ static void cb_set_pixelsize(double pixelsize,
                              gpointer user_data);
 static void cb_set_vlock(gboolean vlock,
                          gpointer user_data);
-
+static bool contains(const std::string& haystack, const std::string& needle);
+static void search_and_replace(std::string& subject,
+                               const std::string& needle,
+                               const std::string& replace);
 %}
 
 %privateheader{
@@ -96,7 +102,7 @@ class Giv:Widget from Gtk:Image:Viewer
     private GivParser *giv_parser = NULL
         destroy {
             if (giv_parser)
-                giv_parser_free(giv_parser);
+                delete giv_parser;
         };
                                   
     private bool is_dragging = FALSE;
@@ -106,6 +112,7 @@ class Giv:Widget from Gtk:Image:Viewer
     private bool do_show_balloon = FALSE;
     private bool do_no_transparency = FALSE;
     private bool do_show_grid = FALSE;
+    private bool do_pango_markup = TRUE;                                      
     private gint last_cx = 0;
     private gint last_cy = 0;
     private gint last_move_x = 0;
@@ -140,7 +147,7 @@ class Giv:Widget from Gtk:Image:Viewer
         if (pixbuf)
             g_object_ref(pixbuf);
         selfp->img_org = pixbuf;
-        selfp->giv_parser = giv_parser_new();
+        selfp->giv_parser = new GivParser();
         giv_parser_set_reference_callback(selfp->giv_parser,
                                           &cb_image_reference, (gpointer)self);
         giv_parser_set_orientation_callback(selfp->giv_parser,
@@ -235,32 +242,28 @@ class Giv:Widget from Gtk:Image:Viewer
         // TBD: Move this to the GivPainterAgg class
         int label = rgb[2]+256*rgb[1]+256*256*rgb[0]-1;
         GPtrArray *datasets = (GPtrArray*)giv_parser_get_giv_datasets(selfp->giv_parser);
-        if (label>=0 && label < (int)datasets->len) {
-            giv_dataset_t *mark_set = (giv_dataset_t*)g_ptr_array_index(datasets, label);
+        if (label>=0 && label < selfp->giv_parser->tooltip_num_labels) {
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(self));
             GdkScreen *pointer_screen;
             gint px, py;
             int balloon_x, balloon_y;
-            
-            if (mark_set->balloon_string)
-              {
-                if (mark_set->do_pango_markup)
+            string balloon_string = selfp->giv_parser->balloon_strings[label];
+
+            // Allow for new lines in the string. Is there a standard way?
+            search_and_replace(balloon_string, "\\n","\n");
+            search_and_replace(balloon_string, "\\r","\n");
+
+            if (balloon_string.size()) {
+                if (selfp->do_pango_markup)
                   gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
-                                       mark_set->balloon_string->str);
+                                       balloon_string.c_str());
                 else
                   gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
-                                     mark_set->balloon_string->str);
-              }
-            else if (mark_set->path_name)
-                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
-                              mark_set->path_name);
-            else {
-                GString *balloon_string = g_string_new("");
-                g_string_append_printf(balloon_string, "label = %d", label);
-                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
-                              balloon_string->str);
-                g_string_free(balloon_string, TRUE);
+                                     balloon_string.c_str());
             }
+            else 
+                gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
+                                   format("label = {}", label).c_str());
             
             gdk_display_get_pointer (gdk_screen_get_display (screen),
                                      &pointer_screen, &px, &py, NULL);
@@ -1091,6 +1094,25 @@ static void cb_set_vlock(gboolean vlock,
     gtk_image_viewer_set_vertical_lock(GTK_IMAGE_VIEWER(self),
                                        vlock);
 }       
+
+static bool contains(const std::string& haystack, const std::string& needle)
+{
+    return haystack.find(needle) != std::string::npos;
+}
+
+static void search_and_replace(std::string& subject,
+                               const std::string& needle,
+                               const std::string& replace)
+{
+    size_t pos = subject.find(needle);
+
+    // Repeat till end is reached
+    while( pos != string::npos)
+    {
+        subject.replace(pos, needle.size(), replace);
+        pos = subject.find(subject, pos + replace.size());
+    }
+}
 
 %}
 
