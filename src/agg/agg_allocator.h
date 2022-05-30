@@ -52,7 +52,7 @@ namespace agg
         static T*   allocate()         {
             T* mem = new T;
             if (mem == NULL)
-              throw EXJetAggOutOfMemory();
+              throw EAggOutOfMemory();
             return mem;
         }
         static void deallocate(T* ptr) { delete ptr;   }
