@@ -62,6 +62,7 @@ public:
     bool do_dash;
     bool do_start_arrow;
     bool do_end_arrow;
+    bool has_curve;
     double arrow_d1, arrow_d2, arrow_d3, arrow_d4, arrow_d5;
     string font;
     double old_x, old_y;
@@ -99,6 +100,7 @@ GivPainterAggPriv::GivPainterAggPriv(GdkPixbuf *pixbuf,
       do_dash(false),
       do_start_arrow(false),
       do_end_arrow(false),
+      has_curve(false),
       arrow_d1(0),
       arrow_d2(3),
       arrow_d3(2),
@@ -327,6 +329,23 @@ int GivPainterAgg::add_line_segment(double x0, double y0,
     return 0;
 }
 
+int GivPainterAgg::add_curve_segment(double x0, double y0,
+                                     double cx0, double cy0,
+                                     double cx1, double cy1,
+                                     double x1, double y1,
+                                     bool /*do_polygon*/)
+{
+    if (d->old_x != x0
+        || d->old_y != y0)
+        d->path.move_to(x0, y0);
+    d->path.curve4(cx0,cy0,cx1,cy1,x1,y1);
+    d->old_x = x1;
+    d->old_y = y1;
+    d->has_curve = true;
+
+    return 0;
+}
+
 void GivPainterAgg::fill()
 {
     agg::rgba color;
@@ -358,13 +377,20 @@ void GivPainterAgg::fill()
     }
 
     typedef agg::conv_clipper<agg::path_storage, agg::path_storage> poly_clipper;
-    poly_clipper clipped(d->path,
-                         d->bbox,
-                         agg::clipper_and,
-                         agg::clipper_non_zero,
-                         agg::clipper_non_zero);
-    
-    d->pf.add_path(clipped);
+    if (d->has_curve) {
+      // Currently no support for clipping curves
+      d->pf.add_path(d->curve);
+    }
+    else {
+      poly_clipper clipped(d->path,
+                           d->bbox,
+                           agg::clipper_and,
+                           agg::clipper_non_zero,
+                           agg::clipper_non_zero);
+      
+      d->pf.add_path(clipped);
+    }
+
     if (d->do_antialiased)
         agg::render_scanlines_aa_solid(d->pf, d->sl, d->rbase, color);
     else

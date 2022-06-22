@@ -12,13 +12,12 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-Release notes for version 0.9.32, 2020-07-20 Mon
+Release notes for version 0.9.34, 2022-06-23 Thu
 
 New features:
 
-* Added plugin for loading ora (OpenRaster) files.
-* Larger default file for high resolution displays.
-* Fixed bug in offset between pixels and grid lines when pixel grid is shown.
+* Added support for C coordinate command for Bezier paths.
+* Added support for tooltips of svg titles for svg commands.
 
 # Development
 

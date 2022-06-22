@@ -35,6 +35,12 @@ class GivPainterAgg : public GivPainter {
                          double x1, double y1,
                          bool do_polygon = false
                          ) override;
+    int add_curve_segment(double x0, double y0,
+                          double cx0, double cy0,
+                          double cx1, double cy1,
+                          double x1, double y1,
+                          bool do_polygon = false);
+
     void fill() override;
     void stroke() override;
     void close_path() override;

@@ -1,3 +1,9 @@
+Version 0.9.34: 
+
+* Giv now supports the display of Bezier Curves. See the examples/bezier.giv for an example of how to use it.
+* Giv now supports tooltips of the label field of svg files.
+
+
 Version 0.9.26: Multiple updates.
 
 * Added horizontal and vertical measurement tools.

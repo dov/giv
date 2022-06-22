@@ -79,7 +79,7 @@ void GivRenderer::paint()
         GivArrowType arrow = dataset->arrow_type;
         painter.set_arrow(arrow & ARROW_TYPE_START,
                           arrow & ARROW_TYPE_END);
-        double old_x=-1, old_y=-1;
+        double old_x=-9e9, old_y=-9e9;
         bool need_paint = false;
         bool has_text = false; // Assume by default we don't have text
 
@@ -141,6 +141,24 @@ void GivRenderer::paint()
                                                      i==0);
                             need_paint = true;
                         }
+                    }
+                    else if (i < 2 && p.op == OP_CURVE) {
+                      double cpx0 = m_x, cpy0 = m_y;
+                      p = g_array_index(dataset->points, point_t, p_idx+1);
+                      double cpx1 = p.x * scale_x - shift_x;
+                      double cpy1 = p.y * scale_y - shift_y;
+                      p = g_array_index(dataset->points, point_t, p_idx+2);
+                      p_idx += 2;
+                      
+                      m_x = p.x * scale_x - shift_x;
+                      m_y = p.y * scale_y - shift_y;
+
+                      painter.add_curve_segment(old_x, old_y,
+                                                cpx0, cpy0,
+                                                cpx1, cpy1,
+                                                m_x, m_y,
+                                                i==0);
+                      need_paint = true;
                     }
                     else if (i < 2 && p.op == OP_ELLIPSE) {
                         p_idx++; p_idx++;

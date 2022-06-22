@@ -109,7 +109,7 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
 
 else:
     # Posix by default
-    env['PKGCONFIG'] = "pkg-config"
+    env['PKGCONFIG'] = "env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig pkg-config"
     env['LIBPATH'] = []
     # Needed for maemo!
     env['SBOX'] = 'SBOX_UNAME_MACHINE' in os.environ

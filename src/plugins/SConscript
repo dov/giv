@@ -45,13 +45,13 @@ if not env['SBOX']:
          dcmtk_libpath = ['#/src/plugins/dcmtk/${ARCHDIR}/${VARIANT}']
 
     if not ARGUMENTS.get('nodicom', 0):
-        plugin_dicom = env.SharedLibrary('dicom',
-                          ['dicom.cc'],
-                          CPPPATH=dcmtk_path + [
-                                   '..'
-                                   ] + env['CPPPATH'],
-                          LIBPATH=['..'] + dcmtk_libpath + env['LIBPATH']+env['LIBPATH'],
-                          LIBS=['dcmdata','ofstd','giv-image']+env['LIBS'])
+        env_copy = env.Clone()
+        env_copy.ParseConfig('${PKGCONFIG} --cflags --libs dcmtk plis')
+        env_copy.Append(CPPFLAGS=env['CPPFLAGS'] + ['..'],
+                        LIBPATH=env['LIBPATH']+['..'],
+                        LIBS=env['LIBS'] + ['giv-image']),
+        plugin_dicom = env_copy.SharedLibrary('dicom',
+                          ['dicom.cc'])
     else:
          plugin_dicom = None
 

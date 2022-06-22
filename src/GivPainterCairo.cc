@@ -256,6 +256,23 @@ GivPainterCairo::add_line_segment(double x0, double y0,
     return 0;
 }
 
+int
+GivPainterCairo::add_curve_segment(double x0, double y0,
+                                   double cx0, double cy0,
+                                   double cx1, double cy1,
+                                   double x1, double y1,
+                                   bool do_polygon)
+{
+    if (d->last_x != x0 || d->last_y != y0) 
+        cairo_move_to (d->cr,  x0, y0 );
+    cairo_curve_to (d->cr,  cx0,cy0, cx1,cy1, x1, y1 );
+    d->last_x = x1;
+    d->last_y = y1;
+    d->need_stroke = true;
+    
+    return 0;
+}
+
 void
 GivPainterCairo::draw_marks()
 {
