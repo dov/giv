@@ -25,6 +25,7 @@ enum
   STRING_NOP,
   STRING_DRAW,
   STRING_ELLIPSE,
+  STRING_CUBIC_BEZIER,
   STRING_COMMENT,
   STRING_MOVE,
   STRING_CLOSE_PATH,
@@ -555,6 +556,10 @@ parse_string (const WordBoundaries& wb,
     {
       type = STRING_ELLIPSE;
     }
+  else if (first_char == 'C' || first_char == 'c')
+    {
+      type = STRING_CUBIC_BEZIER;
+    }
   else if (first_char == 'Q' || first_char == 'q')
       type = STRING_QUIVER;
   else if (first_char == 'T' || first_char == 't')
@@ -586,6 +591,22 @@ giv_parse_mark_type (const WordBoundaries& wb, int idx, const gchar * fn, gint l
 }
 
 
+// Update the bounding box
+static void update_bbox(GivParser *gp,
+                        double ms2,  // Half the current mark size
+                        point_t &p)
+{
+  /* Update bounding box */
+  if (p.x < gp->global_mark_min_x)
+    gp->global_mark_min_x = p.x - ms2;
+  if (p.x > gp->global_mark_max_x)
+    gp->global_mark_max_x = p.x + ms2;
+  if (p.y < gp->global_mark_min_y)
+    gp->global_mark_min_y = p.y - ms2;
+  if (p.y > gp->global_mark_max_y)
+      gp->global_mark_max_y = p.y + ms2;
+}
+
 int
 giv_parser_giv_marks_data_add_line(GivParser *gp,
                                    giv_dataset_t *marks,
@@ -616,15 +637,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         p.op = OP_DRAW;
       g_array_append_val(marks->points, p);
 
-      /* Update bounding box */
-      if (p.x < gp->global_mark_min_x)
-        gp->global_mark_min_x = p.x - ms2;
-      if (p.x > gp->global_mark_max_x)
-        gp->global_mark_max_x = p.x + ms2;
-      if (p.y < gp->global_mark_min_y)
-        gp->global_mark_min_y = p.y - ms2;
-      if (p.y > gp->global_mark_max_y)
-        gp->global_mark_max_y = p.y + ms2;
+      update_bbox(gp, ms2, p);
 
       return 0;
     }
@@ -641,6 +654,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
   case STRING_DRAW:
   case STRING_MOVE:
   case STRING_ELLIPSE:
+  case STRING_CUBIC_BEZIER:
   case STRING_QUIVER:
     if (type == STRING_DRAW) {
       if (wb.size()==2) {
@@ -650,6 +664,25 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
           p.op = OP_MOVE;
         else
           p.op = OP_DRAW;
+      }
+    }
+    else if (type == STRING_CUBIC_BEZIER) {
+      if (wb.size()==7) {
+        p.x = wb.GetFloat(1);
+        p.y = wb.GetFloat(2);
+        p.op = OP_CURVE;
+        update_bbox(gp,ms2,p);
+        g_array_append_val(marks->points, p);
+        p.op = OP_CONT;
+        p.x = wb.GetFloat(3);
+        p.y = wb.GetFloat(4);
+        update_bbox(gp,ms2,p);
+        g_array_append_val(marks->points, p);
+        p.op = OP_CONT;
+        p.x = wb.GetFloat(5);
+        p.y = wb.GetFloat(6);
+        update_bbox(gp,ms2,p);
+        g_array_append_val(marks->points, p);
       }
     }
     else if (type == STRING_ELLIPSE) {

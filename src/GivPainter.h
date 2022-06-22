@@ -41,6 +41,11 @@ class GivPainter {
     virtual int add_line_segment(double x0, double y0,
                                  double x1, double y1,
                                  bool do_polygon = 0) = 0;
+    virtual int add_curve_segment(double x0, double y0,
+                                  double cx0, double cy0,
+                                  double cx1, double cy1,
+                                  double x1, double y1,
+                                  bool do_polygon = false) = 0;
     virtual int add_text(const char *text,
                          double x, double y,
                          int text_align,

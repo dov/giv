@@ -16,12 +16,13 @@
 enum
 {
   OP_MOVE = 0,
-  OP_DRAW = 1,
-  OP_TEXT = 2,
-  OP_QUIVER = 3,
-  OP_ELLIPSE = 4,
-  OP_CONT = 5,           // Misc continue operation for ops with more than two cordinates
-  OP_CLOSE_PATH = 6
+  OP_DRAW,
+  OP_CURVE,
+  OP_TEXT,
+  OP_QUIVER,
+  OP_ELLIPSE,
+  OP_CONT,           // Misc continue operation for ops with more than two cordinates
+  OP_CLOSE_PATH
 };
 
 /* Mark types */
