@@ -2643,13 +2643,6 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
   GivWin *self = GIV_WIN(data);
   GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
 
-  print("TBD: Keep last measurement: ({},{}) -> ({},{})\n",
-        selfp->measure_x1,
-        selfp->measure_y1,
-        selfp->measure_x2,
-        selfp->measure_y2
-        );
-
 #ifdef _WIN32
   // TBD - Figure out how to get a font that matches the caliper height!
   string font_name = "Segoe UI 10";
@@ -3323,7 +3316,7 @@ cb_menu_about(GtkAction *action,
                               ,
                               ("The G(reat|tk) Image Viewer"),
                               ARCH,
-                              ("Copyright &#x00a9; Dov Grobgeld, 2020\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2022\n"),
                               ("dov.grobgeld@gmail.com"),
                               GIT_COMMIT_ID,
                               GIT_COMMIT_TIME);

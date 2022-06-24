@@ -19,6 +19,7 @@ New features:
 * Added support for C coordinate command for Bezier paths.
 * Added support for tooltips of svg titles for svg commands.
 * Added option "keep" to measurements to keep it on screen
+* Added new dataset command "$text_angle" for rotating text
 
 # Development
 

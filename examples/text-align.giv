@@ -12,7 +12,6 @@ $noline
 300 300
 
 $color blue
-$text_angle 45
 $text_size 30
 T7 100 100 T7
 T8 200 100 T8
@@ -24,4 +23,29 @@ T1 100 300 T1
 T2 200 300 T2
 T3 300 300 T3
 
+$marks fcircle
+$color red
+$noline
+450 100
+550 100
+650 100
+450 200
+550 200
+650 200
+450 300
+550 300
+650 300
+
+$color green
+$text_angle 45
+$text_size 30
+T7 450 100 T7
+T8 550 100 T8
+T9 650 100 T9
+T4 450 200 T4
+T5 550 200 T5
+T6 650 200 T6
+T1 450 300 T1
+T2 550 300 T2
+T3 650 300 T3
 
