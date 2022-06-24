@@ -12,12 +12,13 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-Release notes for version 0.9.34, 2022-06-23 Thu
+Release notes for version 0.9.34, 2022-06-24 Fri
 
 New features:
 
 * Added support for C coordinate command for Bezier paths.
 * Added support for tooltips of svg titles for svg commands.
+* Added option "keep" to measurements to keep it on screen
 
 # Development
 
