@@ -7,15 +7,14 @@
 
 #include "GivRenderer.h"
 #include <math.h>
+#include "SutherlandHodgmanPolygonClipping.h"
+#include <fmt/core.h>
+
+using namespace sutherland_hodgeman_polygon_clipping;
+using namespace fmt;
 
 #define COLOR_NONE 0xfffe 
 static constexpr const char* DEFAULT_FONT="Sans 15"; // does this exist on windows?
-
-static gboolean
-clip_line_to_rectangle(double x0, double y0, double x1, double y1,
-                       double rect_x0, double rect_y0, double rect_x1, double rect_y1,
-                       /* output */
-                       double *cx0, double *cy0, double *cx1, double *cy1);
 
 GivRenderer::GivRenderer(GPtrArray *_datasets,
                          GivPainter& _painter,
@@ -38,6 +37,48 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
     quiver_scale(_quiver_scale),
     do_no_transparency(false)
 {
+}
+
+static void print_polygon(const Polygon& poly)
+{
+    print("{{");
+    for (int i=0; i<(int)poly.size(); i++) {
+        const auto& p = poly[i];
+        print("{{{:.3f},{:.3f}}}", p.x,p.y);
+        if (i<(int)poly.size()-1)
+            print(",");
+    }
+    print("}}\n");
+}
+// Apply the clipping algorithm and add the given polygon
+void GivRenderer::add_clipped_poly(const Polygon& poly)
+{
+    int n = (int)poly.size();
+    if (n<2)
+        return;
+
+    Polygon clip = poly_clip(poly, clip_rect);
+#if 0
+    print("input_poly: "); print_polygon(poly);
+    print("clip_poly: "); print_polygon(clip_rect);
+    print("clipped_poly: "); print_polygon(clip);
+#endif
+    painter.new_path(); // Causes a moveto
+    n = (int)clip.size();
+    for (int i=0; i<(int)clip.size()-1; i++) 
+        painter.add_line_segment(clip[i].x, clip[i].y,
+                                 clip[(i+1)%n].x, clip[(i+1)%n].y, 
+                                 true);
+}
+
+// Build a clipping path given the given margin
+void GivRenderer::build_clip_rect(double margin)
+{
+    clip_rect.clear();
+    clip_rect.push_back({-margin,-margin});
+    clip_rect.push_back({-margin,height+margin});
+    clip_rect.push_back({width+margin,height+margin});
+    clip_rect.push_back({width+margin,-margin});
 }
 
 void GivRenderer::paint()
@@ -81,7 +122,7 @@ void GivRenderer::paint()
         GivArrowType arrow = dataset->arrow_type;
         painter.set_arrow(arrow & ARROW_TYPE_START,
                           arrow & ARROW_TYPE_END);
-        double old_x=-9e9, old_y=-9e9;
+        double old_x=-9e9, old_y=-9e9, old_clip_x=-9e9, old_clip_y=-9e9;
         bool need_paint = false;
         bool has_text = false; // Assume by default we don't have text
 
@@ -96,6 +137,7 @@ void GivRenderer::paint()
         bool has_ellipse = false;
         double last_move_to_x=500, last_move_to_y=500;
         for (int i=0; i<3; i++) {
+            Polygon poly;
 
             if ((i==0 && dataset->do_draw_polygon && dataset->color.alpha != COLOR_NONE)
                 || (i==1 && dataset->do_draw_lines)
@@ -110,8 +152,10 @@ void GivRenderer::paint()
                 if (i==1 && dataset->do_draw_polygon
                     && !dataset->do_draw_polygon_outline)
                     continue;
-                for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
-                    point_t p = g_array_index(dataset->points, point_t, p_idx);
+                int n = (int)dataset->points->len;
+                bool newpath = false;
+                for (int p_idx=0; p_idx<n+1; p_idx++) {
+                    point_t p = g_array_index(dataset->points, point_t, p_idx%n);
 
                     double m_x = p.x * scale_x - shift_x;
                     double m_y = p.y * scale_y - shift_y;
@@ -119,48 +163,40 @@ void GivRenderer::paint()
                     if (p_idx==0 || p.op == OP_MOVE) {
                         last_move_to_x = m_x;
                         last_move_to_y = m_y;
-                    }
 
-                    if (i < 2 && p.op == OP_DRAW) {
-                        double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
-                        double margin = line_width * 20;
-
-                        // Don't clip polygons
-#if 0
-                        if (i==0
-                            || clip_line_to_rectangle(old_x, old_y, m_x, m_y,
-                                                   -margin,-margin,
-                                                   width+margin,height+margin,
-                                                   // output
-                                                   &cx0, &cy0, &cx1, &cy1)
-                            ) 
-#endif
-                        // Always add the line even if it falls outside.
-                        // This will take care of clipping problems
-                        if (true)
-                        {
-                            painter.add_line_segment(cx0, cy0, cx1, cy1,
-                                                     i==0);
-                            need_paint = true;
+                        if (i<2 && p.op == OP_MOVE) {
+                            add_clipped_poly(poly);
+                            poly.clear();
+                            painter.new_path();
+                            poly.push_back({m_x,m_y});
                         }
                     }
-                    else if (i < 2 && p.op == OP_CURVE) {
-                      double cpx0 = m_x, cpy0 = m_y;
-                      p = g_array_index(dataset->points, point_t, p_idx+1);
-                      double cpx1 = p.x * scale_x - shift_x;
-                      double cpy1 = p.y * scale_y - shift_y;
-                      p = g_array_index(dataset->points, point_t, p_idx+2);
-                      p_idx += 2;
-                      
-                      m_x = p.x * scale_x - shift_x;
-                      m_y = p.y * scale_y - shift_y;
 
-                      painter.add_curve_segment(old_x, old_y,
-                                                cpx0, cpy0,
-                                                cpx1, cpy1,
-                                                m_x, m_y,
-                                                i==0);
-                      need_paint = true;
+                    if (i < 2 && p.op == OP_DRAW && (p_idx<n || dataset->do_draw_polygon)) {
+                        double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
+                        double margin = line_width * 20;
+                        build_clip_rect(margin);
+
+                        poly.push_back({m_x,m_y});
+                    }
+                    else if (i < 2 && p.op == OP_CURVE) {
+                        // TBD - add clipping
+                        double cpx0 = m_x, cpy0 = m_y;
+                        p = g_array_index(dataset->points, point_t, p_idx+1);
+                        double cpx1 = p.x * scale_x - shift_x;
+                        double cpy1 = p.y * scale_y - shift_y;
+                        p = g_array_index(dataset->points, point_t, p_idx+2);
+                        p_idx += 2;
+                        
+                        m_x = p.x * scale_x - shift_x;
+                        m_y = p.y * scale_y - shift_y;
+  
+                        painter.add_curve_segment(old_x, old_y,
+                                                  cpx0, cpy0,
+                                                  cpx1, cpy1,
+                                                  m_x, m_y,
+                                                  i==0);
+                        need_paint = true;
                     }
                     else if (i < 2 && p.op == OP_ELLIPSE) {
                         p_idx++; p_idx++;
@@ -170,6 +206,7 @@ void GivRenderer::paint()
                         double qscale = dataset->quiver_scale * this->quiver_scale;
                         double q_x = old_x + p.x * scale_x * qscale;
                         double q_y = old_y + p.y * scale_y * qscale;
+                        painter.new_path();
                         painter.add_line_segment(old_x, old_y, q_x, q_y,
                                                  false);
                         need_paint = true;
@@ -187,17 +224,23 @@ void GivRenderer::paint()
 #endif
                     else if (p.op == OP_CLOSE_PATH)
                       {
-                          if (i==0)
-                            painter.close_path();
-                          else
-                            painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
+                        double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
+                        double margin = line_width * 20;
+                        build_clip_rect(margin);
+
+                        add_clipped_poly(poly);
+                        painter.close_path();
+                        poly.clear();
                       }
                     old_x = m_x;
                     old_y = m_y;
                 }
 
-                if (i==0) // draw polygon
-                    painter.fill();
+                if (i<2) { // draw polygon
+                    add_clipped_poly(poly);
+                    if (i==0)
+                        painter.fill();
+                }
                 if (i==1 && dataset->do_draw_polygon) {
                     if (dataset->outline_color.alpha == COLOR_NONE) 
                         painter.set_color(-1,-1,-1);
@@ -410,112 +453,5 @@ line_ver_line_intersect(double x0, double y0, double x1, double y1,
         x1=tmp;
     }
     return (*y_cross >= line_y0 && *y_cross <= line_y1 && *x_cross >= x0 && *x_cross <= x1);
-}
-
-gboolean
-clip_line_to_rectangle(double x0, double y0, double x1, double y1,
-                       double rect_x0, double rect_y0, double rect_x1, double rect_y1,
-                       /* output */
-                       double *cx0, double *cy0, double *cx1, double *cy1)
-{
-    gboolean z0_inside, z1_inside;
-    int num_crosses = 0;
-    double cross_x[4], cross_y[4];
-    
-    /* Trivial tests if the point is outside the window on the same side*/
-    if (x0 < rect_x0 && x1 < rect_x0)     return FALSE;
-    if (y0 < rect_y0 && y1 < rect_y0)     return FALSE;
-    if (x0 > rect_x1 && x1 > rect_x1)     return FALSE;
-    if (y0 > rect_y1 && y1 > rect_y1)     return FALSE;
-
-    /* Test if p1 is inside the window */
-    z0_inside = (   x0 >= rect_x0 && x0 <= rect_x1
-                    && y0 >= rect_y0 && y0 <= rect_y1);
-
-    /* Test if p2 is inside the window */
-    z1_inside = (   x1 >= rect_x0 && x1 <= rect_x1
-                    && y1 >= rect_y0 && y1 <= rect_y1);
-
-#ifdef DEBUG_CLIP
-    printf("z0_inside z1_inside = %d %d  z0=(%d %d)  z1=(%d %d) rect=(%d %d %d %d)\n", z0_inside, z1_inside, (int)x0, (int)y0, (int)x1, (int)y1, (int)rect_x0, (int)rect_y0, (int)rect_x1, (int)rect_y1);
-#endif
-    
-    /* Check if both are inside */
-    if (z0_inside && z1_inside) {
-        *cx0 = x0; *cy0 = y0;
-        *cx1 = x1; *cy1 = y1;
-        return TRUE;
-    }
-
-    /* Check for line intersection with the four edges */
-    if (line_hor_line_intersect(x0, y0, x1, y1,
-                                rect_x0, rect_x1, rect_y0,
-                                &cross_x[num_crosses], &cross_y[num_crosses]))
-        ++num_crosses;
-
-    if (line_hor_line_intersect(x0, y0, x1, y1,
-                                rect_x0, rect_x1, rect_y1,
-                                &cross_x[num_crosses], &cross_y[num_crosses]))
-        ++num_crosses;
-
-    if (line_ver_line_intersect(x0, y0, x1, y1,
-                                rect_y0, rect_y1, rect_x0, 
-                                &cross_x[num_crosses], &cross_y[num_crosses]))
-        ++num_crosses;
-
-    if (line_ver_line_intersect(x0, y0, x1, y1,
-                                rect_y0, rect_y1, rect_x1, 
-                                &cross_x[num_crosses], &cross_y[num_crosses]))
-        ++num_crosses;
-
-#ifdef DEBUG_CLIP
-    {
-        int i;
-        printf("num_crosses = %d\n", num_crosses);
-        for (i=0; i<num_crosses; i++) {
-            printf("   crossing[%d] = (%.2f %.2f)\n", i, cross_x[i], cross_y[i]);
-        }
-    }
-#endif
-    
-    if (num_crosses == 0)
-        return FALSE;
-    else if (num_crosses == 1) {
-        if (z0_inside) {
-            *cx1 = cross_x[0];
-            *cy1 = cross_y[0];
-            *cx0 = x0;
-            *cy0 = y0;
-        } else {
-            *cx0 = cross_x[0];
-            *cy0 = cross_y[0];
-            *cx1 = x1;
-            *cy1 = y1;
-        }
-        return TRUE;
-    }
-    else {
-        // This is wrong. The right thing is to choose which of the points [0] or [1]
-        // sit on the rectangle, and use that point.
-        if (z0_inside) {
-            *cx1 = cross_x[0];
-            *cy1 = cross_y[0];
-            *cx0 = x0;
-            *cy0 = y0;
-        }
-        else if (z1_inside) {
-            *cx0 = cross_x[0];
-            *cy0 = cross_y[0];
-            *cx1 = x1;
-            *cy1 = y1;
-        }
-        else {
-            *cx0 = cross_x[0];
-            *cy0 = cross_y[0];
-            *cx1 = cross_x[1];
-            *cy1 = cross_y[1];
-        }
-        return TRUE;
-    }
 }
 

@@ -31,7 +31,8 @@ giv_widget_sources = [
   'giv_agg_arrowhead.cc',
   'giv-settings.cc',
   'giv-settings-editor.cc',
-  'clipper.cpp'
+  'clipper.cpp',
+  'SutherlandHodgmanPolygonClipping.cc'
 ]
 
 subdir('agg')
@@ -43,6 +44,7 @@ incagg = include_directories('agg')
 incgtkimageviewer = include_directories('agg')
 
 gtk_dep = dependency('gtk+-3.0')
+fmt_dep = dependency('fmt')
 gmodule_dep = dependency('gmodule-2.0')
 libgivwidget = shared_library(
   'giv-widget',
@@ -56,7 +58,7 @@ libgivwidget = shared_library(
     libplis,
     libgtkimageviewer
   ],
-  dependencies : [gtk_dep],
+  dependencies : [gtk_dep,fmt_dep],
   install : true,
 )
 
@@ -74,9 +76,13 @@ libgiv_image = shared_library(
 
 subdir('plugins')
 
+libgiv_color = static_library(
+  'giv-color-map',
+  ['giv-color-map.vala'],
+  dependencies : [gtk_dep])
+
 giv_src = ['giv.cc',
-           'dovtk-lasso.c',
-           'giv-color-map.vala']
+           'dovtk-lasso.c']
 
 foreach basename : ['giv-win',
             'giv-mark-tree-dialog',
@@ -107,10 +113,11 @@ giv = executable('giv',
                    libgtkimageviewer,
                    libglibjsonrpc,
                    libjsonglib,
-                   libgiv_image
+                   libgiv_image,
+                   libgiv_color,
                  ],
                  include_directories : incglibjsonrpc,
-                 dependencies : [gtk_dep],
+                 dependencies : [gtk_dep, fmt_dep],
                 )
 
 giv_remote_client = executable('giv-remote-client',

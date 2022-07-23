@@ -26,8 +26,11 @@
 #include "giv_agg_arrowhead.h"
 #include "cairo.h"
 #include "math.h"
+#include <fmt/core.h>
+
 
 using namespace std;
+using namespace fmt;
 
 class GivPainterAggPriv {
 public:
@@ -64,6 +67,7 @@ public:
     bool do_start_arrow;
     bool do_end_arrow;
     bool has_curve;
+    bool do_new_path = false;
     double arrow_d1, arrow_d2, arrow_d3, arrow_d4, arrow_d5;
     string font;
     double old_x, old_y;
@@ -102,6 +106,7 @@ GivPainterAggPriv::GivPainterAggPriv(GdkPixbuf *pixbuf,
       do_start_arrow(false),
       do_end_arrow(false),
       has_curve(false),
+      do_new_path(false),
       arrow_d1(0),
       arrow_d2(3),
       arrow_d3(2),
@@ -333,13 +338,20 @@ GivPainterAgg::add_text(const char *text,
     return 0;
 }
 
+void GivPainterAgg::new_path(void)
+{
+    d->do_new_path=true;
+}
+
 int GivPainterAgg::add_line_segment(double x0, double y0,
                                     double x1, double y1,
                                     bool /*do_polygon*/)
 {
-    if (d->old_x != x0
-        || d->old_y != y0)
+    if (d->do_new_path) {
+        d->do_new_path=false;
         d->path.move_to(x0, y0);
+    }
+
     d->path.line_to(x1, y1);
     d->old_x = x1;
     d->old_y = y1;

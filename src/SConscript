@@ -48,6 +48,7 @@ src_giv_exe = ["giv.cc",
                "giv-color-map.c",
                "giv-calibrate-dialog.cc",
                "dovtk-lasso.c",
+               'SutherlandHodgmanPolygonClipping.cc'
                ]
 
 if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64',0):

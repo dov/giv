@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "GivPainter.h"
+#include "SutherlandHodgmanPolygonClipping.h"
 
 class GivRenderer {
  public:
@@ -23,6 +24,10 @@ class GivRenderer {
     }
 
  private:
+    void add_clipped_poly(const sutherland_hodgeman_polygon_clipping::Polygon& poly);
+    void build_clip_rect(double margin);
+
+
     GPtrArray *datasets;
     GivPainter& painter;
     double scale_x;
@@ -33,6 +38,7 @@ class GivRenderer {
     double height;
     double quiver_scale;
     bool do_no_transparency;
+    sutherland_hodgeman_polygon_clipping::Polygon clip_rect;
 };
 
 #endif /* GIVRENDERER */

@@ -72,6 +72,8 @@ class GivPainter {
                                  double mx, double my,
                                  double scalex, double scaley) = 0;
     virtual void add_svg_mark(double x, double y, double sx, double sy) = 0;
+
+    virtual void new_path() = 0;
 };
 
 #endif

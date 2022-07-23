@@ -795,6 +795,18 @@ cb_image_annotate(GivWidget *self,
         x1 = (int)ceil((width+shift_x)/scale_x);
         y1 = (int)ceil((height+shift_y)/scale_y);
 
+        // The following is needed for horizontal and vertical flipping
+        if (y0 > y1) {
+            int tmp=y0;
+            y0=y1;
+            y1=tmp;
+        }
+        if (x0 > x1) {
+            int tmp=x0;
+            x0=x1;
+            x1=tmp;
+        }
+
         // Draw twice. The first time in black at width 3
         // and the second time in the pixel grid color.
         for (int paint_idx=0; paint_idx<2; ++paint_idx) {
@@ -812,12 +824,14 @@ cb_image_annotate(GivWidget *self,
           for (int i=x0; i<=x1; i++) {
               double px = i*scale_x - shift_x;
   
+              painter.new_path();
               painter.add_line_segment(px,0, px,height);
               painter.stroke();
           }
           for (int i=y0; i<=y1; i++) {
               double py = i*scale_y - shift_y;
   
+              painter.new_path();
               painter.add_line_segment(0,py, width,py);
               painter.stroke();
           }

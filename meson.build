@@ -11,6 +11,6 @@ pkgconfig.generate(libgivwidget,
   name: 'givwidget',
   description: 'A library for giv as a widget',
   version: meson.project_version(),
-  requires: ['gtk-image-viewer'],
+  requires: ['gtk-image-viewer','fmt'],
   filebase: 'giv',
 )

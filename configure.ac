@@ -5,7 +5,7 @@ AM_CONFIG_HEADER(config.h)
 PACKAGE=givwidget
 GIVWIDGET_API_VERSION=2.0
 
-AM_INIT_AUTOMAKE(giv, 0.9.34)
+AM_INIT_AUTOMAKE(giv, 0.9.35)
 
 dnl Use libtool to get shared libraries
 LT_PREREQ
@@ -32,7 +32,7 @@ ARCH=`arch`
 AC_DEFINE_UNQUOTED([ARCH],["$SYS $ARCH"],["arch"])
 
 GTK_REQUIRED_VERSION=3.0.0
-REQ_PACKAGES="gtk+-3.0"
+REQ_PACKAGES="gtk+-3.0 fmt"
 
 AM_PATH_GTK_3_0($GTK_REQUIRED_VERSION, :,
   AC_MSG_ERROR([

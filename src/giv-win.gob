@@ -2313,11 +2313,11 @@ static void cb_view_pixel_grid (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
     GtkWidget *menu_widget = gtk_ui_manager_get_widget(selfp->menu_manager,
-                                                       "/menubar/ViewMenu/ViewPixelGrid");
+                                                       "/menubar/ViewMenu/PixelGrid");
 
-    gboolean old_val = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
-    giv_widget_set_show_grid(GIV_WIDGET(selfp->w_imgv), !old_val);
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_widget), !old_val);
+    gboolean show_pixel_grid = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
+    giv_widget_set_show_grid(GIV_WIDGET(selfp->w_imgv), show_pixel_grid);
+    //    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_widget), !old_val);
 
     giv_win_redraw(self);
 }
@@ -4722,3 +4722,4 @@ static void create_remote_commands(GivWin *self)
 }
 
 %}
+

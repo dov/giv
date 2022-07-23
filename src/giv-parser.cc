@@ -174,6 +174,9 @@ GivParser::~GivParser()
 
 void populate_balloons(GivParser *gp)
 {
+    // Should this be external to this function?
+    gp->balloon_strings.clear();
+
     // Loop over the datasets and populate the gp balloon strings
     for (int i=0; i<(int)gp->giv_datasets->len; i++) {
         giv_dataset_t *marks = (giv_dataset_t*)g_ptr_array_index(gp->giv_datasets, i);

@@ -12,14 +12,12 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-Release notes for version 0.9.34, 2022-06-24 Fri
+Release notes for version 0.9.35, 2022-06-24 Fri
 
-New features:
+A bug fix release:
 
-* Added support for C coordinate command for Bezier paths.
-* Added support for tooltips of svg titles for svg commands.
-* Added option "keep" to measurements to keep it on screen
-* Added new dataset command "$text_angle" for rotating text
+* Fixed clipping of polygons at high zoom levels
+* Fixed grid lines when in horizontal and vertical flip mode
 
 # Development
 

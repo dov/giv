@@ -1,4 +1,5 @@
 $image maja.pgm
+$path contour
 m 155.500 6.125
 154.531 6.500
 m 156.125 5.500

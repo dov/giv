@@ -32,7 +32,8 @@ libgivwidget_1_0_la_SOURCES = giv-widget.cc \
               giv-calibrate-dialog.cc \
               dovtk-lasso.c \
               clipper.cpp \
-              WordBoundaries.cc 
+              WordBoundaries.cc \
+              SutherlandHodgmanPolygonClipping.cc
 
 libgivwidget_1_0_la_inc_HEADERS = giv-parser.h giv-widget.h giv-data.h 
 
@@ -124,7 +125,9 @@ noinst_HEADERS = \
     giv-histo.h giv-histo-private.h \
     giv-win.cc giv-win.h giv-win-private.h \
     giv-settings-editor.h \
-    giv-settings-editor-private.h
+    giv-settings-editor-private.h \
+    SutherlandHodgmanPolygonClipping.h \
+    fast_double_parser.h
 
 EXTRA_DIST += giv-widget.cc giv-widget.h giv-widget-private.h
 
