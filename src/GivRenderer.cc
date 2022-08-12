@@ -153,6 +153,8 @@ void GivRenderer::paint()
                     && !dataset->do_draw_polygon_outline)
                     continue;
                 int n = (int)dataset->points->len;
+                if (!n)
+                    continue;
                 bool newpath = false;
                 for (int p_idx=0; p_idx<n+1; p_idx++) {
                     point_t p = g_array_index(dataset->points, point_t, p_idx%n);

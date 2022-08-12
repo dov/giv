@@ -5,7 +5,8 @@ AM_CPPFLAGS = \
   -I$(top_srcdir)/src/gtkimageviewer \
   -I$(top_srcdir)/src/glib-jsonrpc \
   -I$(top_srcdir)/src/glib-jsonrpc/json-glib \
-  -I$(top_srcdir)/src/agg
+  -I$(top_srcdir)/src/agg \
+  -I$(top_srcdir)/src/plis
 
 SUBDIRS = plis agg gtkimageviewer plugins pcre glib-jsonrpc
 
