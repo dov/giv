@@ -87,7 +87,7 @@ void free_giv_data_set(giv_dataset_t *dataset_p)
     for (int i=0; i<(int)dataset_p->points->len; i++)
         {
           point_t p = g_array_index(dataset_p->points, point_t, i);
-          if (p.op == OP_TEXT) {
+          if (p.op == Op::OP_TEXT) {
             g_free(p.text_object->string);
             g_free(p.text_object);
           }

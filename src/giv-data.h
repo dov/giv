@@ -13,9 +13,9 @@
 #include <gtk/gtk.h>
 #include "agg/agg_svg_path_renderer.h"
 
-enum
+enum class Op
 {
-  OP_MOVE = 0,
+  OP_MOVE,
   OP_DRAW,
   OP_CURVE,
   OP_TEXT,
@@ -106,7 +106,7 @@ typedef struct
 
 typedef struct
 {
-  gint op;
+  Op op;
   gdouble x, y;
   text_mark_t *text_object;
 } point_t;

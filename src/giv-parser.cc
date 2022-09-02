@@ -646,9 +646,9 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     if (end) {
       end = fast_double_parser::parse_number(end, &p.y);
       if (points->len == 0)
-        p.op = OP_MOVE;
+        p.op = Op::OP_MOVE;
       else
-        p.op = OP_DRAW;
+        p.op = Op::OP_DRAW;
       g_array_append_val(marks->points, p);
 
       update_bbox(gp, ms2, p);
@@ -675,42 +675,41 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         p.x = wb.GetFloat(0);
         p.y = wb.GetFloat(1);
         if (marks->points->len == 0)
-          p.op = OP_MOVE;
+          p.op = Op::OP_MOVE;
         else
-          p.op = OP_DRAW;
+          p.op = Op::OP_DRAW;
       }
     }
     else if (type == STRING_CUBIC_BEZIER) {
       if (wb.size()==7) {
         p.x = wb.GetFloat(1);
         p.y = wb.GetFloat(2);
-        p.op = OP_CURVE;
+        p.op = Op::OP_CURVE;
         update_bbox(gp,ms2,p);
         g_array_append_val(marks->points, p);
-        p.op = OP_CONT;
+        p.op = Op::OP_CONT;
         p.x = wb.GetFloat(3);
         p.y = wb.GetFloat(4);
         update_bbox(gp,ms2,p);
         g_array_append_val(marks->points, p);
-        p.op = OP_CONT;
+        p.op = Op::OP_CONT;
         p.x = wb.GetFloat(5);
         p.y = wb.GetFloat(6);
         update_bbox(gp,ms2,p);
-        g_array_append_val(marks->points, p);
       }
     }
     else if (type == STRING_ELLIPSE) {
       double x,y,xsize, ysize, angle;
       sscanf(S_, "%s %lf %lf %lf %lf %lf", dummy, &x, &y, &xsize,&ysize,&angle);
-      p.op = OP_ELLIPSE;
+      p.op = Op::OP_ELLIPSE;
       p.x = x;
       p.y = y;
       g_array_append_val(marks->points, p);
-      p.op = OP_CONT;
+      p.op = Op::OP_CONT;
       p.x = xsize;
       p.y = ysize;
       g_array_append_val(marks->points, p);
-      p.op = OP_CONT;
+      p.op = Op::OP_CONT;
       p.x = angle;
       g_array_append_val(marks->points, p);
 
@@ -723,11 +722,11 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         p.x = wb.GetFloat(1);
         p.y = wb.GetFloat(2);
         if (type == STRING_QUIVER) {
-          p.op = OP_QUIVER;
+          p.op = Op::OP_QUIVER;
           marks->has_quiver = TRUE;
         }
         else
-          p.op = OP_MOVE;
+          p.op = Op::OP_MOVE;
       }
     }
 
@@ -743,7 +742,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
     g_array_append_val(marks->points, p);
     break;
   case STRING_CLOSE_PATH:
-    p.op = OP_CLOSE_PATH;
+    p.op = Op::OP_CLOSE_PATH;
     g_array_append_val(marks->points, p);
     break;
   case STRING_TEXT:
@@ -762,7 +761,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         }
       else
           tm->string = strdup(s);
-      p.op = OP_TEXT;
+      p.op = Op::OP_TEXT;
       p.text_object = tm;
       g_array_append_val(marks->points, p);
     }

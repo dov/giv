@@ -162,11 +162,11 @@ void GivRenderer::paint()
                     double m_x = p.x * scale_x - shift_x;
                     double m_y = p.y * scale_y - shift_y;
 
-                    if (p_idx==0 || p.op == OP_MOVE) {
+                    if (p_idx==0 || p.op == Op::OP_MOVE) {
                         last_move_to_x = m_x;
                         last_move_to_y = m_y;
 
-                        if (i<2 && p.op == OP_MOVE) {
+                        if (i<2 && p.op == Op::OP_MOVE) {
                             add_clipped_poly(poly);
                             poly.clear();
                             painter.new_path();
@@ -174,14 +174,14 @@ void GivRenderer::paint()
                         }
                     }
 
-                    if (i < 2 && p.op == OP_DRAW && (p_idx<n || dataset->do_draw_polygon)) {
+                    if (i < 2 && p.op == Op::OP_DRAW && (p_idx<n || dataset->do_draw_polygon)) {
                         double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
                         double margin = line_width * 20;
                         build_clip_rect(margin);
 
                         poly.push_back({m_x,m_y});
                     }
-                    else if (i < 2 && p.op == OP_CURVE) {
+                    else if (i < 2 && p.op == Op::OP_CURVE) {
                         // TBD - add clipping
                         double cpx0 = m_x, cpy0 = m_y;
                         p = g_array_index(dataset->points, point_t, p_idx+1);
@@ -200,11 +200,11 @@ void GivRenderer::paint()
                                                   i==0);
                         need_paint = true;
                     }
-                    else if (i < 2 && p.op == OP_ELLIPSE) {
+                    else if (i < 2 && p.op == Op::OP_ELLIPSE) {
                         p_idx++; p_idx++;
                         has_ellipse = true;
                     }
-                    else if (p.op == OP_QUIVER) {
+                    else if (p.op == Op::OP_QUIVER) {
                         double qscale = dataset->quiver_scale * this->quiver_scale;
                         double q_x = old_x + p.x * scale_x * qscale;
                         double q_y = old_y + p.y * scale_y * qscale;
@@ -213,18 +213,18 @@ void GivRenderer::paint()
                                                  false);
                         need_paint = true;
                     }
-                    else if (p.op == OP_TEXT) 
+                    else if (p.op == Op::OP_TEXT) 
                         has_text = true;
 #if 0
                     // When is this ever needed??? Ι need an example
-                    else if (p.op == OP_MOVE
+                    else if (p.op == Op::OP_MOVE
                              && i > 0
                              && (dataset->do_draw_polygon_outline && dataset->do_draw_polygon)
                              && p_idx > 0) {
                         painter.add_line_segment(old_x,old_y,last_move_to_x,last_move_to_y);
                     }
 #endif
-                    else if (p.op == OP_CLOSE_PATH)
+                    else if (p.op == Op::OP_CLOSE_PATH)
                       {
                         double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
                         double margin = line_width * 20;
@@ -275,7 +275,7 @@ void GivRenderer::paint()
             for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
                 point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-                if (p.op == OP_ELLIPSE) {
+                if (p.op == Op::OP_ELLIPSE) {
                     double x = p.x;
                     double y = p.y;
                     p_idx++;
@@ -314,9 +314,9 @@ void GivRenderer::paint()
             for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
               point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-              if (p.op == OP_QUIVER)
+              if (p.op == Op::OP_QUIVER)
                 continue;
-              if (p.op == OP_TEXT)
+              if (p.op == Op::OP_TEXT)
                 {
                   has_text = true;
                 }
@@ -364,7 +364,7 @@ void GivRenderer::paint()
             for (int p_idx=0; p_idx<(int)dataset->points->len; p_idx++) {
                 point_t p = g_array_index(dataset->points, point_t, p_idx);
 
-                if (p.op == OP_TEXT)
+                if (p.op == Op::OP_TEXT)
                   {
                     double m_x = p.x * scale_x - shift_x;
                     double m_y = p.y * scale_y - shift_y;
