@@ -192,6 +192,8 @@ void GivRenderer::paint()
                         
                         m_x = p.x * scale_x - shift_x;
                         m_y = p.y * scale_y - shift_y;
+                        last_move_to_x = m_x;
+                        last_move_to_y = m_y;
   
                         painter.add_curve_segment(old_x, old_y,
                                                   cpx0, cpy0,
@@ -199,6 +201,10 @@ void GivRenderer::paint()
                                                   m_x, m_y,
                                                   i==0);
                         need_paint = true;
+
+                        // Needing for clipping of subsequent lineto
+                        poly.clear();
+                        poly.push_back({m_x,m_y});
                     }
                     else if (i < 2 && p.op == Op::OP_ELLIPSE) {
                         p_idx++; p_idx++;
