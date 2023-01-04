@@ -15,11 +15,14 @@
 #include <filesystem>
 #include "agg_svg_parser.h"
 #include "fast_double_parser.h"
+#include <fmt/core.h>
+
 
 static constexpr double DEG2RAD = 3.1415926535/180;
 
 using namespace plis;
 using namespace std;
+using namespace fmt;
 
 enum
 {
@@ -84,7 +87,7 @@ enum
 
 #define CASE(s) if (!strcmp(s, S_))
 
-static int color_parse(const char *giv_color_name,
+static int color_parse(string giv_color_name,
                        // output
                        GivColor *color);
 
@@ -336,7 +339,7 @@ giv_parser_remove_data_set(GivParser *gp,
                            int dataset_index)
 {
   // Currently ignore empty datasets
-  if (dataset_index < 0 || dataset_index >= gp->giv_datasets->len)
+  if (dataset_index < 0 || dataset_index >= (int)gp->giv_datasets->len)
     return;
 
   g_ptr_array_remove_index(gp->giv_datasets, dataset_index);
@@ -1310,64 +1313,74 @@ giv_parser_set_quiver_scale(GivParser *gp,
     }
 }
 
+static string white_space_strip(const string& s)
+{
+  string ret;
+
+  for (auto c : s)
+    if (!isspace(c))
+      ret += c;
+  return ret;
+}
+
 static
-int color_parse(const char *giv_color_name,
-                 // output
-                 GivColor *color)
+int color_parse(string giv_color_name,
+                // output
+                GivColor *color)
 {
     int ret = 1;
-    const char *slash_pos = strstr(giv_color_name, "/");
+    size_t slash_pos = giv_color_name.find('/');
+    double scale = 1.0*0xffff;  // The giv colors are still 16-bit
+    giv_color_name = white_space_strip(giv_color_name);
 
-    if (slash_pos) {
-        GdkColor gcolor;
-        char *color_name = g_strndup(giv_color_name,
-                                     slash_pos-giv_color_name);
-        const char *alpha_string = slash_pos+1;
-        gdk_color_parse(color_name,
-                        // output
-                        &gcolor);
-        color->red = gcolor.red;
-        color->green = gcolor.green;
-        color->blue = gcolor.blue;
+    if (slash_pos!= string::npos) {
+      GdkRGBA gcolor = {0.0,0.0,0.0,0.0};
+      string color_name = giv_color_name.substr(0,slash_pos);
+      string alpha_string = giv_color_name.substr(slash_pos+1);
+      gdk_rgba_parse(&gcolor,
+                     color_name.c_str());
+      color->red = (int)floor(gcolor.red * scale);
+      color->green = (int)floor(gcolor.green * scale);
+      color->blue = (int)floor(gcolor.blue * scale);
 
-        // The following syntaxes for alpha are recognized
-        // .../0.5
-        // .../0xff
-        // .../0xffff
+      // The following syntaxes for alpha are recognized
+      // .../0.5
+      // .../0xff
+      // .../0xffff
 
-        if (alpha_string[0] == '0'
-            && alpha_string[1] == 'x') {
-            if (strlen(alpha_string) == 4) {
-                color->alpha = 0xff * ((alpha_string[2]<<8) + alpha_string[3]);
-            }
-            else if (strlen(alpha_string) == 6) {
-                color->alpha = (alpha_string[2] << 24)
-                    +(alpha_string[3] << 16)
-                    +(alpha_string[4] << 8)
-                    +(alpha_string[5]);
-            }
-            else
-                color->alpha = 0xffff;
+      if (alpha_string[0] == '0'
+          && alpha_string[1] == 'x') {
+        if (alpha_string.size() == 4) {
+          color->alpha = 0xff * ((alpha_string[2]<<8) + alpha_string[3]);
         }
-        else if (strstr(alpha_string, ".")  != NULL) {
-            color->alpha = (guint16)(0xffff * atof(alpha_string));
+        else if (alpha_string.size() == 6) {
+          color->alpha = (alpha_string[2] << 24)
+            +(alpha_string[3] << 16)
+            +(alpha_string[4] << 8)
+            +(alpha_string[5]);
         }
-        else {
-            color->alpha = 255 * atoi(alpha_string);
-        }
-        g_free(color_name);
+        else
+          color->alpha = 0xffff;
+      }
+      else if (alpha_string.find('.')  != string::npos) {
+        color->alpha = (guint16)(0xffff * atof(alpha_string.c_str()));
+      }
+      else {
+        color->alpha = 255 * atoi(alpha_string.c_str());
+      }
     }
     else {
-        GdkColor gcolor;
-        gdk_color_parse(giv_color_name,
-                        // output
-                        &gcolor);
-        color->red = gcolor.red;
-        color->green = gcolor.green;
-        color->blue = gcolor.blue;
+      GdkRGBA gcolor = {0,0,0,0};
+      if (gdk_rgba_parse(&gcolor,
+                         giv_color_name.c_str()))
+      {
+        color->red = (int)floor(gcolor.red * scale);
+        color->green = (int)floor(gcolor.green * scale);
+        color->blue = (int)floor(gcolor.blue * scale);
         color->alpha = 0xffff;
+      }
     }
-    
+
     return ret;
 }
 

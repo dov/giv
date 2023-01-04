@@ -41,7 +41,8 @@ File ${SYSROOT}\mingw\bin\${LIBGCCDLL}
 File ${SYSROOT}\mingw\bin\libexpat-1.dll
 File ${SYSROOT}\mingw\bin\libstdc++-6.dll
 File ${SYSROOT}\mingw\bin\iconv.dll
-File ${SYSROOT}\mingw\bin\libpcre-2-8-0.dll
+File ${SYSROOT}\mingw\bin\libpcre-1.dll
+File ${SYSROOT}\mingw\bin\libpcre2-8-0.dll
 File ${SYSROOT}\mingw\bin\libintl-8.dll
 File ${SYSROOT}\mingw\bin\libffi-8.dll
 File ${SYSROOT}\mingw\bin\libgdk_pixbuf*.dll
