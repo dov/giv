@@ -78,6 +78,8 @@ int giv_parser_parse_string(GivParser *giv_parser,
 int giv_parser_add_svgfile(GivParser *giv_parser,
                             const char *filename);
 
+void giv_parser_remove_data_set(GivParser *gp,
+                                int dataset_index);
 void giv_parser_giv_style_add_string(GivParser *giv_parser,
                                      const char* style_name,
                                      const char* style_string);

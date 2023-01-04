@@ -124,6 +124,7 @@ static void cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data)
 static void cb_menu_measure_distance_horizontal (GtkAction *action, gpointer data);
 static void cb_menu_measure_distance_vertical (GtkAction *action, gpointer data);
 static void cb_menu_measure_keep (GtkAction *action, gpointer data);
+static void cb_menu_measure_clear (GtkAction *action, gpointer data);
 static void cb_menu_calibrate (GtkAction *action, gpointer data);
 static void cb_menu_quiver_zoom (GtkAction *action, gpointer data);
 static void cb_menu_count_marks (GtkAction *action, gpointer data);
@@ -368,7 +369,13 @@ static GtkActionEntry entries[] =
     NULL,    
     "_Keep the last measurement", NULL,
     "Keep the last measurement",
-    G_CALLBACK (cb_menu_measure_keep)}
+    G_CALLBACK (cb_menu_measure_keep)},
+  { "ToolMeasureClearAction",
+    NULL,    
+    "_Clear kept measurements", NULL,
+    "Clear kept measurements",
+    G_CALLBACK (cb_menu_measure_clear)},
+  
 };
 
 static GtkToggleActionEntry toggle_entries[] =
@@ -600,6 +607,7 @@ class Giv:Win from Gtk:Window
     private GtkActionGroup *toggle_actions = nullptr;
     private gboolean in_menu_measure = FALSE;
     private gchar *last_measure_text = NULL;
+    private GArray *measure_indices = NULL destroy { g_array_free(measure_indices, TRUE); };
 
     public GtkWidget *
     new (int argc, char *argv[])
@@ -1082,6 +1090,7 @@ class Giv:Win from Gtk:Window
         selfp->do_fit_on_load_image = FALSE;
         selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
                                         self);
+        selfp->measure_indices = g_array_new(FALSE, TRUE, sizeof(int));
 #if 0
         giv_win_set_current_file(self,
                                  selfp->filename_list_index);
@@ -2635,14 +2644,19 @@ cb_menu_measure_distance_diagonal (GtkAction *action, gpointer data)
   menu_measure_distance(self, action, MEASURE_TYPE_DIAGONAL);
 }
 
-static int measure_counter = 0;
-
 void
 cb_menu_measure_keep (GtkAction *action, gpointer data)
 {
   GivWin *self = GIV_WIN(data);
   GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
 
+  // Only allow diagonal measurements at the moment
+  if (selfp->measure_type != MEASURE_TYPE_DIAGONAL)
+  {
+    app_error(self,"Sorry! Currently only supports keeping diagonal measurements!");
+    return;
+  }
+  
 #ifdef _WIN32
   // TBD - Figure out how to get a font that matches the caliper height!
   string font_name = "Segoe UI 10";
@@ -2652,21 +2666,21 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
 
   string color_string = format("#{:02x}{:02x}{:02x}/0.5",
                                0xff,0xaa,0);
-  giv_parser_parse_string(giv_parser,
-                          format("$path measure/{}\n"
-                                 "$color {}\n"
-                                 "$line_cap butt\n"
-                                 "$lw 25\n"
-                                 //                                 "$arrow both\n"
-                                 "{} {}\n"
-                                 "{} {}\n\n",
-                                 selfp->measure_counter,
-                                 color_string,
-                                 selfp->measure_x1,
-                                 selfp->measure_y1,
-                                 selfp->measure_x2,
-                                 selfp->measure_y2
-                                 ).c_str());
+  int index = giv_parser_parse_string(giv_parser,
+                                      format("$path measure/{}\n"
+                                             "$color {}\n"
+                                             "$line_cap butt\n"
+                                             "$lw 25\n"
+                                             //                                 "$arrow both\n"
+                                             "{} {}\n"
+                                             "{} {}\n\n",
+                                             selfp->measure_counter,
+                                             color_string,
+                                             selfp->measure_x1,
+                                             selfp->measure_y1,
+                                             selfp->measure_x2,
+                                             selfp->measure_y2
+                                             ).c_str());
 
   double text_angle = atan2(selfp->measure_y2-selfp->measure_y1,
                             selfp->measure_x2-selfp->measure_x1);
@@ -2675,9 +2689,10 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
   string measure_string = format("{:.1f}{}",
                                  dist*selfp->pixelsize,
                                  selfp->pixelsize_unit);
+  g_array_append_val(selfp->measure_indices, index);
 
-  giv_parser_parse_string(giv_parser,
-                          format("$path measure/{}\n"
+  index = giv_parser_parse_string(giv_parser,
+                                  format("$path measure/{}\n"
                                  "$color black\n"
                                  "$text_angle {}\n"
                                  "$text_size 15\n" // Do I need this?
@@ -2691,6 +2706,8 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
                                  0.5*(selfp->measure_y1 + selfp->measure_y2),
                                  measure_string
                                  ).c_str());
+
+  g_array_append_val(selfp->measure_indices, index);
 
 #if 0
   giv_parser_parse_string(giv_parser,
@@ -2710,7 +2727,7 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
 
   selfp->measure_counter++;
 
-  // turn off all mesurements. This should be merged with the
+  // turn off all measurements. This should be merged with the
   // toggle
   struct {
       const char *action_name;
@@ -2730,6 +2747,25 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
           = gtk_action_group_get_action(selfp->toggle_actions,
                                         act.action_name);
       gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), FALSE);
+  }
+  giv_win_redraw(self);
+}
+
+// Remove all the measurements
+void
+cb_menu_measure_clear (GtkAction *action, gpointer data)
+{
+  GivWin *self = GIV_WIN(data);
+  GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
+  vector<int> measure_sets;
+  for (int i=0; i<(int)selfp->measure_indices->len; i++)
+    measure_sets.push_back(g_array_index(selfp->measure_indices, int, i));
+  g_array_remove_range(selfp->measure_indices, 0, selfp->measure_indices->len);
+
+  // Remove from the end to the beginning
+  while (measure_sets.size()) {
+    giv_parser_remove_data_set(giv_parser, measure_sets.back());
+    measure_sets.pop_back();
   }
   giv_win_redraw(self);
 }

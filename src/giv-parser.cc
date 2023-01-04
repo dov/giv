@@ -280,54 +280,66 @@ int
 giv_parser_parse_string(GivParser *gp,
                         const char *giv_string)
 {
-    int ret = 0;
+  int ret = 0;
 
-    giv_dataset_t *marks = NULL;
-    gboolean is_new_set = TRUE;
-    int num_sets = gp->giv_datasets->len;
+  giv_dataset_t *marks = NULL;
+  gboolean is_new_set = TRUE;
+  int num_sets = gp->giv_datasets->len;
 
-    const char *p = giv_string;
-    int giv_string_len = strlen(giv_string);
-    int line_num = 0;
-    while(p < giv_string + giv_string_len) {
-        line_num++;
-        const char *line_start = p;
-        while(*p!= '\n' && p < giv_string + giv_string_len) {
-            p++;
-        }
-        char *S_ = g_strndup(line_start, p-line_start);
-	int len = p-line_start;
-        p++;
+  const char *p = giv_string;
+  int giv_string_len = strlen(giv_string);
+  int line_num = 0;
+  while(p < giv_string + giv_string_len) {
+    line_num++;
+    const char *line_start = p;
+    while(*p!= '\n' && p < giv_string + giv_string_len) {
+      p++;
+    }
+    char *S_ = g_strndup(line_start, p-line_start);
+    int len = p-line_start;
+    p++;
 	
-	if (is_new_set || marks==NULL) {
-	    marks = new_giv_dataset(num_sets);
-	    marks->color = set_colors[num_sets % nmarks_colors];
-	    marks->file_name = g_strdup("string");
-            g_ptr_array_add(gp->giv_datasets, marks);
-            gp->tooltip_num_labels+= 1; 
+    if (is_new_set || marks==NULL) {
+      marks = new_giv_dataset(num_sets);
+      marks->color = set_colors[num_sets % nmarks_colors];
+      marks->file_name = g_strdup("string");
+      g_ptr_array_add(gp->giv_datasets, marks);
+      gp->tooltip_num_labels+= 1; 
 	    
-	    is_new_set = FALSE;
-	    num_sets++;
-	}
+      is_new_set = FALSE;
+      ret = num_sets++;
+    }
 	
-	if (len == 0) {
-          if (marks && (((GArray*)marks->points)->len > 0 || marks->svg))
-              is_new_set++;
-	}
-        else
-            giv_parser_giv_marks_data_add_line(gp, marks, S_, "string", line_num);
-        g_free(S_);
+    if (len == 0) {
+      if (marks && (((GArray*)marks->points)->len > 0 || marks->svg))
+          is_new_set++;
     }
+    else
+        giv_parser_giv_marks_data_add_line(gp, marks, S_, "string", line_num);
+    g_free(S_);
+  }
 
-    /* Get rid of empty data sets */
-    if (marks && (marks->points->len == 0 && !marks->svg)) {
-        g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
-	free_giv_data_set(marks);
-	marks = NULL;
-    }
-    populate_balloons(gp);
+  /* Get rid of empty data sets */
+  if (marks && (marks->points->len == 0 && !marks->svg)) {
+    g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
+    free_giv_data_set(marks);
+    marks = NULL;
+    ret = -1;
+  }
+  populate_balloons(gp);
 
-    return ret;
+  return ret;
+}
+
+void
+giv_parser_remove_data_set(GivParser *gp,
+                           int dataset_index)
+{
+  // Currently ignore empty datasets
+  if (dataset_index < 0 || dataset_index >= gp->giv_datasets->len)
+    return;
+
+  g_ptr_array_remove_index(gp->giv_datasets, dataset_index);
 }
 
 static agg::svg::path_renderer* parse_svg(const char *filename)

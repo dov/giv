@@ -44,6 +44,7 @@
         <menuitem name="MeasureDistanceHorizontal" action="ToolMeasureDistanceHorizontalAction" />
         <menuitem name="MeasureDistanceVertical" action="ToolMeasureDistanceVerticalAction" />
         <menuitem name="MeasureKeep" action="ToolMeasureKeepAction" />
+        <menuitem name="MeasureClear" action="ToolMeasureClearAction" />
       </menu>
       <menuitem name="QuiverZoom" action="ToolQuiverZoomAction" />
       <menuitem name="CountMarks" action="ToolCountMarks" />
