@@ -146,14 +146,22 @@ env.Append(CPPPATH=[],
                ]
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt spdlog")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt")
 
-env.SConscript(['3rdparty/spdlog/SConscript',
-                'src/SConscript',
+if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
+  env.SConscript(['3rdparty/spdlog/SConscript'])
+  env.Append(CPPPATH = ['#/3rdparty/spdlog/include'],
+             )
+else:
+  env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt spdlog")
+  
+
+env.SConscript(['src/SConscript',
                 'doc/SConscript',
                 ],
                exports='env')
 
+  
 env.Alias("install",
           [env.Install('/usr/local/bin',
                        '#/src/giv'),

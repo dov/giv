@@ -18,8 +18,10 @@ requires 2.0.0
 
 %{
 #ifdef _WIN32
+#if 0
 #include <windows.h>
 #include <cairo-win32.h>
+#endif
 #endif
 
 #include <gdk/gdkkeysyms.h>
