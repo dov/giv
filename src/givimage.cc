@@ -10,6 +10,8 @@
 #include "givimage.h"
 #include "givplugin.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include "spdlog/spdlog.h"
+
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
 
@@ -90,13 +92,16 @@ GivImage *giv_image_new_from_file(const char *filename,
     if (extension)
         extension++;
 
+    spdlog::info("GivImage loading file: {}", filename);
     if ((img = giv_plugin_load_image(filename,
                                      error)) != NULL) {
-        return img;
+      spdlog::info("The image was loaded by a plugin\n");
+      return img;
     }
     if (*error) {
-        printf("Got error: %s\n", (*error)->message);
-        return NULL;
+      spdlog::error("Image loading failed: {}", (*error)->message);
+      printf("Got error: %s\n", (*error)->message);
+       return NULL;
     }
     else if (!extension) {
     }
@@ -108,7 +113,8 @@ GivImage *giv_image_new_from_file(const char *filename,
                                   ,
                                   extension,
                                   G_REGEX_CASELESS,
-                                  0)) {
+                                  GRegexMatchFlags(0))) {
+        spdlog::info("Image loading by pixbuf loader");
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename,
                                                      error);
         
@@ -136,6 +142,7 @@ GivImage *giv_image_new_from_file(const char *filename,
             }
         }
 
+        spdlog::info("Got mono status is_mono={}", is_mono);
         if (is_mono) {
             GivImageType img_type = GIVIMAGE_U8;
             img = giv_image_new_full(img_type,
@@ -189,14 +196,15 @@ GivImage *giv_image_new_from_file(const char *filename,
     else if (g_regex_match_simple("ssv",
                                   extension,
                                   G_REGEX_CASELESS,
-                                  0)) {
+                                  GRegexMatchFlags(0))) {
+        spdlog::info("Found a ssv file");
         gchar *ssv_string;
         gsize length;
         
         g_file_get_contents(filename, &ssv_string, &length, error);
         gchar **lines = g_regex_split_simple("\r?\n",
                                              ssv_string,
-                                             0, 0);
+                                             GRegexCompileFlags(0), GRegexMatchFlags(0));
         int num_lines = g_strv_length(lines);
 
         // Count lines while skipping comments
@@ -225,7 +233,7 @@ GivImage *giv_image_new_from_file(const char *filename,
                 p++;
             gchar **fields = g_regex_split_simple("(?:,|;|\\s)\\s*",
                                                   p,
-                                                  0,0);
+                                                  GRegexCompileFlags(0),GRegexMatchFlags(0));
             if (row_idx==0) {
                 width = g_strv_length(fields);
                 img = giv_image_new(GIVIMAGE_FLOAT,
@@ -244,7 +252,8 @@ GivImage *giv_image_new_from_file(const char *filename,
     else if (g_regex_match_simple("npy",
                                   extension,
                                   G_REGEX_CASELESS,
-                                  0)) {
+                                  GRegexMatchFlags(0))) {
+        spdlog::info("GivImage: found a npy file");
         gchar *npy_string;
         gsize length;
         
@@ -262,8 +271,9 @@ GivImage *giv_image_new_from_file(const char *filename,
                                      "'descr':\\s*\\'(.*?)\\'\\s*,\\s*"
                                      "'fortran_order':\\s*(\\w+)\\s*,\\s*"
                                      "'shape':\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\),?\\s*"
-                                     "\\}", 0, 0, error);
+                                     "\\}", GRegexCompileFlags(0), GRegexMatchFlags(0), error);
         if (*error) {
+            spdlog::error("Programming GivRegEx error: {}\n", (*error)->message);
             printf("Programming GivRegEx error: %s\n", (*error)->message);
             exit(-1);
         }
@@ -337,11 +347,15 @@ GivImage *giv_image_new_from_file(const char *filename,
         g_free(npy_string);
     }
     else {
-        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Unknown filetype %s!", extension);
+      spdlog::error("GivImage: Unknown filetype {}!", extension);
+      *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Unknown filetype %s!", extension);
     }
 
     if (!img && !*error)
-        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Failed loading %s!", filename);
+    {
+      spdlog::error("GivImage: Failed loading {}!", filename);
+      *error = g_error_new(GIV_IMAGE_ERROR, -1, "Giv: Failed loading %s!", filename);
+    }
     return img;
 }
 
@@ -699,4 +713,9 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
 void giv_image_set_one_bit(GivImage *img,gboolean one_bit)
 {
   img->one_bit = one_bit;
+}
+
+GivImageType giv_image_get_type(GivImage *img)
+{
+  return img->img_type;
 }

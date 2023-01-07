@@ -53,6 +53,8 @@ requires 2.0.0
 #include "giv-settings-editor.h"
 #include "glib-jsonrpc/glib-jsonrpc-json.h"
 #include "fmt/core.h"
+#include "spdlog/spdlog.h"
+
 
 using namespace std;
 using namespace plis;
@@ -633,7 +635,6 @@ class Giv:Win from Gtk:Window
         GtkWidget *w_vbox, *w_right_box;
         GtkActionGroup *action_group;
         GError *error = NULL;
-        int argp = 1;
         GdkPixbuf *pixbuf_icon;
 
         selfp->do_auto_fit_marks = do_auto_fit_marks;

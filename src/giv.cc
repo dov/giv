@@ -254,22 +254,21 @@ int main(int argc, char **argv)
   rec_mkdir(logdir);
 #endif
 
-  GtkWidget *giv;
-  //    g_thread_init(NULL);
   gtk_init(&argc, &argv);
 
-  giv = giv_win_new(do_auto_fit_marks,
-                    do_join,
-                    width,
-                    height,
-                    scale,
-                    shift_x,
-                    shift_y,
-                    export_filename,
-                    giv_port,
-                    argc,
-                    argv,
-                    argp);
+  GtkWidget *giv = giv_win_new(
+    do_auto_fit_marks,
+    do_join,
+    width,
+    height,
+    scale,
+    shift_x,
+    shift_y,
+    export_filename,
+    giv_port,
+    argc,
+    argv,
+    argp);
 
   gtk_widget_show(giv);
 

@@ -45,6 +45,7 @@ typedef void (*giv_widget_file_reference_callback_t)(const char *filename,
 #include "giv-data.h"
 #include "math.h"
 #include <fmt/core.h>
+#include <spdlog/spdlog.h>
 
 
 using namespace std;
@@ -203,15 +204,17 @@ class Giv:Widget from Gtk:Image:Viewer
     public int add_giv_from_string(self,
                                    const char *giv_string)
     {
-        return giv_parser_parse_string(selfp->giv_parser,
-                                       giv_string);
+      spdlog::info("Loading giv string {}...", string(giv_string).substr(0,20));
+      return giv_parser_parse_string(selfp->giv_parser,
+                                     giv_string);
     }
 
     public int add_giv_from_file(self,
                                  const char *filename)
     {
-        return giv_parser_parse_file(selfp->giv_parser,
-                                     filename);
+      spdlog::info("Loading giv file {}", filename);
+      return giv_parser_parse_file(selfp->giv_parser,
+                                   filename);
     }
 
     public void clear_giv(self)

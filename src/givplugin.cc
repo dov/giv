@@ -7,6 +7,8 @@
 #include "givplugin.h"
 #include <string.h>
 #include <stdlib.h>
+#include "givplugin.h"
+#include <spdlog/spdlog.h>
 
 #define REQ_CHUNK_SIZE 1000
 
@@ -71,9 +73,13 @@ static void rehash_loaders()
             if (module) {
                 givimage_loaders = g_slist_prepend(givimage_loaders,
                                                    module);
+                spdlog::info("Successfully loaded {}", module_path);
             }
-            else
+            else {
                 fprintf(stderr, "Failed loading module %s\n", module_path);
+                spdlog::error("Failed opening {}", module_path);
+            }
+
             g_free(module_path);
             g_free(module_name);
         }
@@ -102,10 +108,11 @@ gboolean giv_plugin_supported_file(const char *filename)
     while(ploaders) {
         SupportsFile sup_file;
         GModule *module = (GModule*)(ploaders->data);
-        g_module_symbol(module, "giv_plugin_supports_file", (gpointer)&sup_file);
+        g_module_symbol(module, "giv_plugin_supports_file", (gpointer*)&sup_file);
         if (sup_file && sup_file(filename,
                                  chunk,
                                  chunk_len)) {
+            spdlog::info("Found plugin match for {}", filename);
             supported = TRUE;
             break;
         }
@@ -138,14 +145,27 @@ GivImage *giv_plugin_load_image(const char *filename,
         SupportsFile sup_file;
         LoadFile load_file;
         GModule *module = (GModule*)(ploaders->data);
-        g_module_symbol(module, "giv_plugin_supports_file", (gpointer)&sup_file);
-        g_module_symbol(module, "giv_plugin_load_file", (gpointer)&load_file);
+        g_module_symbol(module, "giv_plugin_supports_file", (gpointer*)&sup_file);
+        g_module_symbol(module, "giv_plugin_load_file", (gpointer*)&load_file);
         if (sup_file && load_file) {
             if (sup_file(filename,
                          chunk,
                          chunk_len)) {
                 img = load_file(filename,
                                 error);
+                if (*error)
+                {
+                  spdlog::error("Failed loading {} error {}\n",
+                                filename, (*error)->message); 
+                  
+                }
+                spdlog::info("Loaded {} with size width={} height={} rank={} depth={} bit_size={}",
+                             filename,
+                             giv_image_get_width(img),
+                             giv_image_get_height(img),
+                             giv_image_get_rank(img),
+                             giv_image_get_depth(img),
+                             giv_image_type_get_size(giv_image_get_type(img)));
 
                 // TBD - handle plugin errors
                 break;
