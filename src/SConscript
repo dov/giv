@@ -17,9 +17,10 @@ env_command_line.Program('giv-remote-client',
 libpath = ["#/src","#/src/plis",'#/src'] + env['LIBPATH']
 libs = env['LIBS'] 
 cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/","agg"]
-cppdefines = ['PACKAGE_DOC_DIR=\'"${PACKAGE_DOC_DIR}"\'',
-              'PACKAGE_PLUGIN_DIR=\'"${PACKAGE_PLUGIN_DIR}"\'',
+cppdefines = ['-DPACKAGE_DOC_DIR=\'"${PACKAGE_DOC_DIR}"\'',
+              '-DPACKAGE_PLUGIN_DIR=\'"${PACKAGE_PLUGIN_DIR}"\'',
               ]
+env.Append(CPPFLAGS=cppdefines)
 
 def file2c(env, target, source):
     out = open(str(target[0]), "wb")
@@ -82,7 +83,6 @@ src_giv_widget =     ["giv-widget.cc",
 
 env.Library("giv-widget",
             src_giv_widget,
-            CPPDEFINES = cppdefines,
             CPPPATH=cpppath,
             LIBPATH=libpath,
             LIBS=['giv-image']+libs +['plis_local']
@@ -91,7 +91,6 @@ env.Library("giv-widget",
 giv_image_lib = env.SharedLibrary('giv-image',
                                   src_giv_image,
                                   CPPPATH=cpppath,
-                                  CPPDEFINES=cppdefines,
                                   LIBPATH=libpath,
                                   LIBS=env['LIBS']+['plis_local','pcre'])
 
@@ -107,7 +106,6 @@ giv_exe = env.Program("giv",
                               + libs +['plis_local','pcre']
                               ),
                       LIBPATH = libpath,
-                      CPPDEFINES = cppdefines,
                       CPPPATH = cpppath
                       )
 env.Depends(giv_exe,
@@ -129,7 +127,7 @@ for gob in ("giv-win",
                  gob + "-private.h"
                  ],
                 [gob + ".gob"],
-                ["gob2 -o ${SOURCES.dir} --for-cpp $SOURCES"]
+                ["gob2 -o ${SOURCES.dir} --gtk3 --for-cpp $SOURCES"]
                 )
 
 env.Command("menu-top-xml.i",

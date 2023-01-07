@@ -1127,6 +1127,5 @@ static void search_and_replace(std::string& subject,
         pos = subject.find(subject, pos + replace.size());
     }
 }
-
 %}
 

@@ -14,7 +14,6 @@ requires 2.0.0
 #include "plis/plis.h"
 #include "givimage.h"
 #include "glib-jsonrpc/glib-jsonrpc-server.h"
-#include "glib-jsonrpc/glib-jsonrpc-client.h"
 %}
 
 %{
@@ -101,8 +100,6 @@ enum
   MEASURE_TYPE_VERTICAL
 };
   
-const int GIV_DEFAULT_PORT = 8222;
-
 /* Target types for dropping into the file list */
 static const GtkTargetEntry file_list_dest_targets[] = {
     { (gchar*)"text/uri-list", 0, DND_TEXT_URI_LIST }
@@ -492,6 +489,10 @@ static gchar *last_export_image_path = NULL;
 #include "giv-contrast.h"
 #include "giv-settings.h"
 #include "dovtk-lasso.h"
+#include <vector>
+#include <string>
+
+using namespace std;
 %}
 
 class Giv:Win from Gtk:Window
@@ -606,11 +607,25 @@ class Giv:Win from Gtk:Window
     private gdouble margin = 10;
     private GtkActionGroup *toggle_actions = nullptr;
     private gboolean in_menu_measure = FALSE;
-    private gchar *last_measure_text = NULL;
-    private GArray *measure_indices = NULL destroy { g_array_free(measure_indices, TRUE); };
+    private string last_measure_text;
+    private vector<int> measure_indices;
 
     public GtkWidget *
-    new (int argc, char *argv[])
+      new (bool do_auto_fit_marks,
+           bool do_join,
+           int width,
+           int height,
+           double scale,
+           double shift_x,
+           double shift_y,
+           const char* export_filename,
+           int giv_port,
+
+           // Pass the entire command line for the filename list
+           // - this should be improved
+           int argc,
+           char **argv,
+           int argp)
     {
         GivWin *self = GIV_WIN(GET_NEW); 
         GtkWidget *w_vbox, *w_right_box;
@@ -618,20 +633,9 @@ class Giv:Win from Gtk:Window
         GError *error = NULL;
         int argp = 1;
         GdkPixbuf *pixbuf_icon;
-        bool do_join = false;
-        int width = 500;
-        int height = 500;
-        double scale = -1;
-        double shift_x = 0;
-        double shift_y = 0;
-        char *export_filename = NULL;
-        int giv_port = GIV_DEFAULT_PORT;
-        gboolean do_remote = FALSE;
-        const gchar *giv_host = "localhost"; // Currently fixed
-        gchar *remote_string=NULL;
-        gchar *json_method=NULL;
-        gchar *json_params_string=NULL;
 
+        selfp->do_auto_fit_marks = do_auto_fit_marks;
+        
         // Heuristically check monitor size and change the default size
         // it for hdpi displays.
         
@@ -642,128 +646,6 @@ class Giv:Win from Gtk:Window
         if (workarea.width > 3000)
           width = height = 1000;
 
-        // Parse command line
-        while(argp < argc && argv[argp][0] == '-') {
-            char *S_ = argv[argp++];
-
-            CASE("-help") {
-                printf("giv - An image and vector viewer\n"
-                       "\n"
-                       "Syntax:\n"
-                       "    giv [-n] [-join] image [image...]\n"
-                       "\n"
-                       "Options:\n" 
-                       "    -join      Join the display of all files on command line\n"
-                       "    -n         Initially use 1:1 zoom for images.\n"
-                       "    -geometry  Set size of image viewer\n"
-                       "    -zoom scale shift_x shift_y   Zoom the image\n"
-                       "    -export fn                    Export to fn.\n"
-                       "    -port p    Set port for giv remote jsonrpc server. Default is 8222\n"
-                       "    -remote cmd   Run giv remote command cmd. Use \"-remote\n"
-                       "                  help\" to get a list of supported commands.\n"
-
-                       );
-                exit(0);
-            }
-            CASE("-n") {
-                selfp->do_auto_fit_marks = false;
-                continue;
-            }
-            CASE("-join") {
-                do_join = true;
-                continue;
-            }
-            CASE("-geometry") {
-                llip matches;
-                if (slip(argv[argp++]).m("(\\d+)x(\\d+)", matches)) {
-                    width = atoi(matches[1]);
-                    height = atoi(matches[2]);
-                }
-                continue;
-            }
-            CASE("-zoom") {
-                scale = atof(argv[argp++]);
-                shift_x = atof(argv[argp++]);
-                shift_y = atof(argv[argp++]);
-                continue;
-            }
-            CASE("-export")
-              {
-                export_filename = argv[argp++];
-                continue;
-              }
-            CASE("-port")
-              {
-                giv_port = atoi(argv[argp++]);
-                continue;
-              }
-            CASE("-remote")
-              {
-                do_remote = TRUE;
-                remote_string= argv[argp++];
-                continue;
-              }
-            CASE("-json_method")
-              {
-                do_remote = TRUE;
-                json_method = g_strdup(argv[argp++]);
-                continue;
-              }
-            CASE("-json_params")
-              {
-                json_params_string = argv[argp++];
-                continue;
-              }
-
-            printf("Unknown option %s!\n", S_);
-            exit(-1);
-        }
-
-        // Load an image into a remote instance of giv. If this fails,
-        // then normal loading should take place.
-        if (do_remote)
-          {
-            GLibJsonRpcClient *client = glib_jsonrpc_client_new(giv_host,
-                                                                giv_port);
-
-            if (client)
-              {
-                JsonNode *params = NULL;
-                if (!json_method)
-                  {
-                    // Either split remote string as space separated by params
-                    char **json_args = g_strsplit(remote_string," ",-1);
-                    json_method = g_strdup(json_args[0]);
-                    char **json_params = &json_args[1];
-                    params = glib_jsonrpc_json_strv_to_json_array(json_params);
-                    g_strfreev(json_args);
-                  }
-                else if (json_params_string)
-                  params = glib_jsonrpc_json_string_to_json_node(json_params_string);
-
-                JsonNode *response = NULL;
-                glib_jsonrpc_client_call(client,
-                                         json_method,
-                                         params,
-                                         // output
-                                         &response);
-                g_free(json_method);
-                json_node_free(params);
-                if (response)
-                  {
-                    gchar *str = glib_jsonrpc_json_to_string(response);
-                    printf("%s\n",str);
-                    g_free(str);
-                    json_node_free(response);
-                  }
-                exit(0);
-              }
-
-            // Fail!
-            fprintf(stderr, "No giv remote client found!\n");
-            exit(-1);
-          }
-            
         selfp->cursor_plus = gdk_cursor_new_for_display(gdk_display_get_default(),
                                                         GDK_PLUS);
         selfp->cb_names = g_ptr_array_new();
@@ -1023,7 +905,7 @@ class Giv:Win from Gtk:Window
         gtk_image_viewer_set_fill_on_resize(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                             selfp->giv_settings->default_auto_resize);
 
-        // Handle the command line
+        // Handle the filenamelist
         if (argc == argp+1) {
             char *filename = argv[argp++];
             char *basename = g_path_get_basename(filename);
@@ -1090,7 +972,6 @@ class Giv:Win from Gtk:Window
         selfp->do_fit_on_load_image = FALSE;
         selfp->idle_handle = g_idle_add(cb_load_image_when_idle,
                                         self);
-        selfp->measure_indices = g_array_new(FALSE, TRUE, sizeof(int));
 #if 0
         giv_win_set_current_file(self,
                                  selfp->filename_list_index);
@@ -1684,15 +1565,15 @@ class Giv:Win from Gtk:Window
     update_pixelsize_info(self,
                           GString *info_label)
     {
-        char format[128];
+        char precision_format[128];
         int precision = 0;
         if (selfp->do_show_sub_pixel)
             precision = 3;
 
-        sprintf(format, " (%%.%df,%%.%df) dist=%%.3f%%s",
+        sprintf(precision_format, " (%%.%df,%%.%df) dist=%%.3f%%s",
                 precision,precision);
 
-        g_string_printf(info_label, format,
+        g_string_printf(info_label, precision_format,
                          selfp->measure_x2,
                          selfp->measure_y2,
                          selfp->last_measure_distance_in_pixels*selfp->pixelsize,
@@ -1707,10 +1588,8 @@ class Giv:Win from Gtk:Window
                                  selfp->pixelsize_unit);
 
         // Remember the last measure text
-        g_free(selfp->last_measure_text);
         selfp->last_measure_text =
-            g_strdup_printf("%.5f",
-                            selfp->last_measure_distance_in_pixels*selfp->pixelsize);
+            format("{:.5f}", selfp->last_measure_distance_in_pixels*selfp->pixelsize);
     }
 
     private const gchar *get_filetype_for_index(self,
@@ -1891,9 +1770,8 @@ cb_button_release_event (GtkWidget * widget,
                                               selfp->measure_y1,
                                               selfp->measure_x2,
                                               selfp->measure_y2);
-      char label[64];
-      sprintf(label, "%d marks in rectangle", num_marks);
-      gtk_label_set_text(GTK_LABEL(selfp->w_info_label), label);
+      string label = format("{} marks in rectangle", num_marks);
+      gtk_label_set_text(GTK_LABEL(selfp->w_info_label), label.c_str());
     }
     selfp->picking_mode = 0;
     selfp->measure_point_index = 0;
@@ -1918,7 +1796,7 @@ cb_key_press_event (GtkWidget * widget,
                     // Copy the last measurement text
                     GtkClipboard* clipboard = gtk_clipboard_get(GDK_NONE);
                     gtk_clipboard_set_text(clipboard,
-                                           selfp->last_measure_text,
+                                           selfp->last_measure_text.c_str(),
                                            -1);
                 }
                         
@@ -2689,7 +2567,7 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
   string measure_string = format("{:.1f}{}",
                                  dist*selfp->pixelsize,
                                  selfp->pixelsize_unit);
-  g_array_append_val(selfp->measure_indices, index);
+  selfp->measure_indices.push_back(index);
 
   index = giv_parser_parse_string(giv_parser,
                                   format("$path measure/{}\n"
@@ -2707,7 +2585,7 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
                                  measure_string
                                  ).c_str());
 
-  g_array_append_val(selfp->measure_indices, index);
+  selfp->measure_indices.push_back(index);
 
 #if 0
   giv_parser_parse_string(giv_parser,
@@ -2757,15 +2635,11 @@ cb_menu_measure_clear (GtkAction *action, gpointer data)
 {
   GivWin *self = GIV_WIN(data);
   GivParser *giv_parser = giv_widget_get_giv_parser(GIV_WIDGET(selfp->w_imgv));
-  vector<int> measure_sets;
-  for (int i=0; i<(int)selfp->measure_indices->len; i++)
-    measure_sets.push_back(g_array_index(selfp->measure_indices, int, i));
-  g_array_remove_range(selfp->measure_indices, 0, selfp->measure_indices->len);
 
   // Remove from the end to the beginning
-  while (measure_sets.size()) {
-    giv_parser_remove_data_set(giv_parser, measure_sets.back());
-    measure_sets.pop_back();
+  while (selfp->measure_indices.size()) {
+    giv_parser_remove_data_set(giv_parser, selfp->measure_indices.back());
+    selfp->measure_indices.pop_back();
   }
   giv_win_redraw(self);
 }
@@ -2869,7 +2743,15 @@ void
 cb_menu_new_window (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-    GtkWidget *w_new_giv = giv_win_new(0, NULL);
+    GtkWidget *w_new_giv = giv_win_new(selfp->do_auto_fit_marks,
+                                       false,
+                                       500,500,
+                                       -1,0,0,
+                                       NULL,
+                                       -1,
+                                       0,
+                                       NULL,
+                                       0);
     giv_image_ref(selfp->img_org);
     giv_win_set_image(GIV_WIN(w_new_giv),
                       selfp->img_org);

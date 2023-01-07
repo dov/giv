@@ -146,9 +146,10 @@ env.Append(CPPPATH=[],
                ]
            )
 
-env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt")
+env.ParseConfig("${PKGCONFIG} --cflags --libs gtk+-3.0 glib-2.0 gio-2.0 gmodule-2.0 gthread-2.0 expat libzip fmt spdlog")
 
-env.SConscript(['src/SConscript',
+env.SConscript(['3rdparty/spdlog/SConscript',
+                'src/SConscript',
                 'doc/SConscript',
                 ],
                exports='env')
