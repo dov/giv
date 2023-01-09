@@ -10,8 +10,7 @@
 #include "givimage.h"
 #include "givplugin.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include "spdlog/spdlog.h"
-
+#include <spdlog/spdlog.h>
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
 
@@ -719,3 +718,5 @@ GivImageType giv_image_get_type(GivImage *img)
 {
   return img->img_type;
 }
+
+

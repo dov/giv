@@ -10,6 +10,7 @@
 #include <string.h>
 #include "gtk/gtk.h"
 #include "giv-win.h"
+#include "givimagedll.h"
 #include "glib-jsonrpc/glib-jsonrpc-json.h"
 #include "glib-jsonrpc/glib-jsonrpc-client.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -192,6 +193,9 @@ int main(int argc, char **argv)
   spdlog::info("CommitID: {}", GIT_COMMIT_ID);
   spdlog::info("CommitTime: {}", GIT_COMMIT_TIME);
   spdlog::info("Command line: {}", join(args," "));
+
+  spdlog::info("Calling to register logger in givimagedll");
+  registerLogger(logger);
 
   // Load an image into a remote instance of giv. If this fails,
   // then normal loading should take place.

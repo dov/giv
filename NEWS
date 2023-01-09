@@ -1,3 +1,9 @@
+Version 0.9.35:
+
+* Fixed several windows problems with missing plugins etc
+* Giv now contains a -log flag for logging through spdlog. It is recommended to use for diagnostic all failures.
+* There is a rudamentary option to "keep" a measurement and to "clear kept measurements".
+
 Version 0.9.34: 
 
 * Giv now supports the display of Bezier Curves. See the examples/bezier.giv for an example of how to use it.

@@ -53,6 +53,8 @@ File ${SYSROOT}\mingw\bin\libepoxy-0.dll
 File ${SYSROOT}\mingw\bin\libcairo*.dll
 File ${SYSROOT}\mingw\bin\libjasper*.dll
 File ${SYSROOT}\mingw\bin\zlib*.dll
+File ${SYSROOT}\mingw\bin\libzip*.dll
+File ${SYSROOT}\mingw\bin\libwebp*.dll
 File ${SYSROOT}\mingw\bin\libglib*.dll
 File ${SYSROOT}\mingw\bin\libatk*.dll
 File ${SYSROOT}\mingw\bin\libgobject*.dll
@@ -70,7 +72,9 @@ File ${SYSROOT}\mingw\bin\libwinpthread*.dll
 File ${SYSROOT}\mingw\bin\libssp-0.dll
 File ${SYSROOT}\mingw\bin\libfribidi-0.dll
 File ${SYSROOT}\mingw\bin\libharfbuzz-0.dll
+
 #File \usr\local\mingw32\bin\libjson-glib-1.0-0.dll
+File \usr\local\mingw64\bin\libcfitsio.dll
 File ${SYSROOT}\mingw\bin\gdk-pixbuf-query-loaders.exe
 
 # # Not sure that I need this. It doesn't seem to make any difference.

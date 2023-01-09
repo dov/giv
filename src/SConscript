@@ -36,7 +36,8 @@ def file2c(env, target, source):
     out.close()
     inp.close()
 
-src_giv_image = ['givimage.cc',
+src_giv_image = ['givimagedll.cc',
+                 'givimage.cc',
                  'givplugin.cc',
                  ]
 

@@ -18,10 +18,6 @@ requires 2.0.0
 
 %{
 #ifdef _WIN32
-#if 0
-#include <windows.h>
-#include <cairo-win32.h>
-#endif
 #endif
 
 #include <gdk/gdkkeysyms.h>
@@ -3251,20 +3247,6 @@ cb_menu_about(GtkAction *action,
 }
 
 static void
-cb_menu_manual(GtkAction *action,
-               gpointer data)
-{
-#ifdef WIN32
-    // Fix the path
-    ShellExecute(NULL, "open", "file:///c|/Progra~1/giv/doc/giv.html", NULL, NULL, SW_SHOWNORMAL);
-#else
-    // Linux
-    system(slipprintf("xdg-open %s/giv.html",
-                      PACKAGE_DOC_DIR));
-#endif
-}
-
-static void
 cb_menu_copyright(GtkAction *action,
                   gpointer data)
 {
@@ -4640,6 +4622,24 @@ static void create_remote_commands(GivWin *self)
                                        "help",
                                        cmd_help,
                                        self);
+}
+
+#ifdef _WIN32
+#include <shellapi.h>
+#endif
+
+static void
+cb_menu_manual(GtkAction *action,
+               gpointer data)
+{
+#ifdef _WIN32
+    // Fix the path
+    ShellExecute(NULL, "open", "file:///c|/Progra~1/giv/doc/giv.html", NULL, NULL, SW_SHOWNORMAL);
+#else
+    // Linux
+    system(slipprintf("xdg-open %s/giv.html",
+                      PACKAGE_DOC_DIR));
+#endif
 }
 
 %}
