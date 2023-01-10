@@ -28,8 +28,11 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
                                              guchar *start_chunk,
                                              gint start_chunk_len)
 {
-    gboolean is_dicom = g_ascii_strncasecmp ((gchar*)start_chunk+0x80,
-                                             "DICM",4) == 0;
+    gboolean is_dicom = false;
+
+    if (start_chunk && start_chunk_len >= 0x84)
+      is_dicom = g_ascii_strncasecmp ((gchar*)start_chunk+0x80,
+                                      "DICM",4) == 0;
     if (!is_dicom)
         is_dicom = g_ascii_strncasecmp((gchar*)filename+strlen(filename)-4,
                                        ".dcm",4)==0;

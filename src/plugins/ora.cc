@@ -43,26 +43,36 @@ extern "C" giv_plugin_support_t giv_plugin_get_support()
 }
 
 extern "C" gboolean giv_plugin_supports_file(const char *filename,
-                                  guchar *start_chunk,
-                                  gint start_chunk_len)
+                                             guchar *start_chunk,
+                                             gint start_chunk_len)
 {
     // An file is most probably an ora file if it is a zip file
     // and it contains an image/openraster string.
-    static const gchar needle_ora[] = "image/openraster";
-    static const gchar needle_kra[] = "mimetypeapplication/x-krita";
-    return
-      // Is this a zip file?
-      my_memmem(start_chunk,start_chunk_len,
-                (const guchar*)"PK\003\004",4)!=NULL
-      // Does it contain a openraster or kra entry?
-      // Subtract one since the chunk data is not zero terminated
-      && (my_memmem(start_chunk,
-                    start_chunk_len,
-                    (guchar*)needle_ora,sizeof(needle_ora)-1)!=NULL
-          || my_memmem(start_chunk,
-                       start_chunk_len,
-                       (guchar*)needle_kra,sizeof(needle_kra)-1)!=NULL)
-          ;  
+    if (start_chunk and start_chunk_len > 4) {
+        static const gchar needle_ora[] = "image/openraster";
+        static const gchar needle_kra[] = "mimetypeapplication/x-krita";
+        return
+          // Is this a zip file?
+          my_memmem(start_chunk,start_chunk_len,
+                    (const guchar*)"PK\003\004",4)!=NULL
+          // Does it contain a openraster or kra entry?
+          // Subtract one since the chunk data is not zero terminated
+          && (my_memmem(start_chunk,
+                        start_chunk_len,
+                        (guchar*)needle_ora,sizeof(needle_ora)-1)!=NULL
+              || my_memmem(start_chunk,
+                           start_chunk_len,
+                           (guchar*)needle_kra,sizeof(needle_kra)-1)!=NULL)
+              ;
+    }
+    else
+    {
+        char *filename_down = g_utf8_strdown(filename,-1);
+        bool is_ora = (g_str_has_suffix (filename_down, ".kra")
+                       || g_str_has_suffix (filename_down, ".ora"));
+        g_free(filename_down);
+        return is_ora;
+    }
 }
 
 static int GetZipFile(zip *zh, const string&filename,

@@ -86,7 +86,11 @@ make install
 ###  cfitsio
     - Using cmake toolchain
 ```
-mkcd /space3/pub-repos/cfitsio-4.2.0/build_mingw64/
+wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.2.0.tar.gz
+tar xf cfitsio-4.2.0.tar.gz
+cd cfitsio-4.2.0
+mkdir build_mingw64
+cd build_mingw64
 cmake -DCMAKE_TOOLCHAIN_FILE=/home/dov/git/dov-env/cmake/mingw-w64-x86_64.cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mingw64 ..
 ```
    - This fails because of missing zlibrary

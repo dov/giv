@@ -1,5 +1,5 @@
 #! /bin/sh
-# Generated automatically by config.status (giv) 0.9.35
+# Generated automatically by config.status (giv) 0.9.36
 # Libtool was configured on host groovy:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 
@@ -97,7 +97,7 @@ NM="/usr/bin/nm -B"
 LN_S="ln -s"
 
 # What is the maximum length of a command?
-max_cmd_len=1572864
+max_cmd_len=1879296
 
 # Object file suffix (normally "o").
 objext=o
@@ -291,7 +291,7 @@ hardcode_into_libs=yes
 sys_lib_search_path_spec="/usr/lib/gcc/x86_64-redhat-linux/12 /usr/lib64 /lib64 /usr/lib /lib "
 
 # Detected run-time system search path for libraries.
-sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib /usr/lib64/R/lib /usr/lib/gtk-2.0/modules /usr/lib64/gtk-2.0/modules /usr/lib/gtk-3.0/modules /usr/lib64/gtk-3.0/modules /usr/lib64/alliance/lib /usr/lib64/iscsi /usr/lib64/llvm11/lib /usr/lib64/llvm13/lib /usr/local/lib /usr/local/lib64 /usr/lib64/octave/6.4.0 /usr/lib64/pipewire-0.3/jack/ /usr/lib64/qt5-qtwebengine-freeworld /usr/lib64/root /usr/lib64/tcl8.6 "
+sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib /usr/lib64/R/lib /usr/lib/gtk-2.0/modules /usr/lib64/gtk-2.0/modules /usr/lib/gtk-3.0/modules /usr/lib64/gtk-3.0/modules /usr/lib64/alliance/lib /usr/lib64/iscsi /usr/lib64/llvm11/lib /usr/lib64/llvm13/lib /usr/local/lib /usr/local/lib64 /usr/i686-w64-mingw32/lib/ /usr/x86_64-w64-mingw32/lib/ /usr/lib64/octave/7.2.0 /usr/lib64/qt5-qtwebengine-freeworld /usr/lib64/root /usr/lib64/tcl8.6 "
 
 # Explicit LT_SYS_LIBRARY_PATH set during ./configure time.
 configure_time_lt_sys_library_path=""

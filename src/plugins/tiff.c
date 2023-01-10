@@ -32,14 +32,24 @@ gboolean giv_plugin_supports_file(const char *filename,
                                   guchar *start_chunk,
                                   gint start_chunk_len)
 {
-    gboolean is_tiff =  ((start_chunk[0] == 'M'
-                          && start_chunk[1] == 'M'
-                          && start_chunk[2] == 0
-                          && start_chunk[3] == '*')
-                         || (start_chunk[0] == 'I'
-                             && start_chunk[1] == 'I'
-                             && start_chunk[2] == '*'
-                             && start_chunk[3] == 0));
+    if (start_chunk)
+    {
+      gboolean is_tiff =  ((start_chunk[0] == 'M'
+                            && start_chunk[1] == 'M'
+                            && start_chunk[2] == 0
+                            && start_chunk[3] == '*')
+                           || (start_chunk[0] == 'I'
+                               && start_chunk[1] == 'I'
+                               && start_chunk[2] == '*'
+                               && start_chunk[3] == 0));
+      return is_tiff;
+    }
+
+    
+    char *filename_down = g_utf8_strdown(filename,-1);
+    gboolean is_tiff = g_str_has_suffix (filename_down, "tiff") || g_str_has_suffix (filename_down, "tif");
+    g_free(filename_down);
+
     return is_tiff;
 }
 

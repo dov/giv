@@ -95,6 +95,9 @@ gboolean giv_plugin_supported_file(const char *filename)
     if (!giv_image_loaded_loaders)
         rehash_loaders();
 
+    // Currently don't use chunk matching as it seriously slows
+    // down slow networks!!!
+#if 0 
     // Read a chunk from the file
     FILE *fh = fopen(filename, "rb");
     if (!fh)
@@ -103,6 +106,7 @@ gboolean giv_plugin_supported_file(const char *filename)
     chunk = g_new0(guchar, REQ_CHUNK_SIZE);
     chunk_len = fread(chunk, 1, REQ_CHUNK_SIZE, fh);
     fclose(fh);
+#endif
 
     GSList *ploaders = givimage_loaders;
     while(ploaders) {
@@ -118,7 +122,8 @@ gboolean giv_plugin_supported_file(const char *filename)
         }
         ploaders = ploaders->next;
     }
-    g_free(chunk);
+    if (chunk)
+      g_free(chunk);
     
     return supported;
 }
@@ -132,6 +137,7 @@ GivImage *giv_plugin_load_image(const char *filename,
     if (!giv_image_loaded_loaders)
         rehash_loaders();
 
+#if 0
     // Read a chunk from the file
     FILE *fh = fopen(filename, "rb");
     if (!fh)
@@ -139,6 +145,10 @@ GivImage *giv_plugin_load_image(const char *filename,
 
     chunk = g_new0(guchar, REQ_CHUNK_SIZE);
     chunk_len = fread(chunk, 1, REQ_CHUNK_SIZE, fh);
+    
+    fclose(fh);
+
+#endif
 
     GSList *ploaders = givimage_loaders;
     while(ploaders) {
@@ -176,7 +186,6 @@ GivImage *giv_plugin_load_image(const char *filename,
         }
         ploaders = ploaders->next;
     }
-    fclose(fh);
     g_free(chunk);
     
     return img;
