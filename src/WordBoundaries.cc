@@ -65,7 +65,9 @@ double WordBoundaries::GetFloat(int Index)
   const char *p = InspectionString;
   const pair<int,int>& pp = (*this)[Index];
   double x;
-  fast_double_parser::parse_number(p+pp.first, &x);
+  const char *ret = fast_double_parser::parse_number(p+pp.first, &x);
+  if (ret == nullptr)
+    return std::numeric_limits<double>::quiet_NaN();
   return x;
 }
 
