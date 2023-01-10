@@ -7,8 +7,10 @@
 
 #include <math.h>
 #include "SutherlandHodgmanPolygonClipping.h"
+#include <fmt/core.h>
 
 using namespace std;
+using namespace fmt;
 
 namespace sutherland_hodgeman_polygon_clipping {
 
@@ -62,7 +64,37 @@ static bool is_inside_edge(const vec2& q, const vec2pair& edge)
           <=0);
 }
 
-// Sutherland Hodgman Polygon clipping algorithm
+// Check if the  candidate point is colinear with the edge.
+// The "epsilon" is totally heuristic.
+//
+// This works quite well, though there is a chance for a false
+// positive if there is an valid edge on the inside of the polyline
+// that is colinear with the first to last edge.
+static bool contained_by(const vec2pair& candidate, const vec2pair& edge)
+{
+  double c_dx = candidate.p1.x - candidate.p0.x;
+  double c_dy = candidate.p1.y - candidate.p0.y;
+  double e_dx = edge.p1.x - edge.p0.x;
+  double e_dy = edge.p1.y - edge.p0.y;
+
+  // Currently just look for colinearity. This should also look for
+  // "inside"
+  double epsilon = 10;
+  double diff = fabs(c_dx * e_dy - c_dy * e_dx);
+  if (fabs(diff) > epsilon)
+    return false;
+
+  // What other heuristics? Perhaps touches edge?
+  return true;
+}
+
+
+// Sutherland Hodgman Polygon clipping algorithm. The disadvantage
+// of this algorithm is that it does not distinguish between
+// an edge between the last and the first segment of the path
+// vs a real edge. This is hackishly taken care of in an
+// additional sweep that rotates the path so that it the
+// last to the first point occur at the end of the clipped path.  
 Polygon poly_clip(const Polygon& path,
                   const Polygon& rect_clip_path)
 {
@@ -92,6 +124,25 @@ Polygon poly_clip(const Polygon& path,
       else if (is_inside_edge(prev_point, clip_edge))
         out_list.push_back(compute_intersection(
                              {prev_point, current_point}, clip_edge));
+    }
+  }
+
+  // Sweep through list looking for a pair that is contained by
+  // the first to last point, and rotate the list to put
+  // it at the end.
+  vec2pair first_last {path.back(), path[0]};
+  int n = (int)out_list.size();
+  for (int i=0; i<(int)out_list.size(); i++)
+  {
+    if (contained_by(first_last, {out_list[(i-1+n)%n], out_list[i]}))
+    {
+      // Rotate the output list so that it starts at the same point
+      // as the path.
+      Polygon new_list;
+      for (int j=0; j<(int)out_list.size(); j++)
+        new_list.push_back(out_list[(i+j)%n]);
+      out_list = new_list;
+      break;
     }
   }
 
