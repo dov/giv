@@ -8,6 +8,7 @@
 #include <math.h>
 #include "SutherlandHodgmanPolygonClipping.h"
 #include <fmt/core.h>
+#include <fstream>
 
 using namespace std;
 using namespace fmt;
@@ -64,6 +65,11 @@ static bool is_inside_edge(const vec2& q, const vec2pair& edge)
           <=0);
 }
 
+#if 0
+
+// This is not needed after fixing the poly_clip to exclude
+// the last to first point (and thus work with polylines)
+//  
 // Check if the  candidate point is colinear with the edge.
 // The "epsilon" is totally heuristic.
 //
@@ -87,17 +93,68 @@ static bool contained_by(const vec2pair& candidate, const vec2pair& edge)
   // What other heuristics? Perhaps touches edge?
   return true;
 }
+#endif
 
-
-// Sutherland Hodgman Polygon clipping algorithm. The disadvantage
-// of this algorithm is that it does not distinguish between
-// an edge between the last and the first segment of the path
-// vs a real edge. This is hackishly taken care of in an
-// additional sweep that rotates the path so that it the
-// last to the first point occur at the end of the clipped path.  
-Polygon poly_clip(const Polygon& path,
-                  const Polygon& rect_clip_path)
+#if 0  
+// For debugging the clipping algo
+int Counter = 0;
+void save_algo_snapshot(const Polygon& path,
+                        const Polygon& rect_clip_path,
+                        const Polygon& in_list,
+                        const Polygon& out_list,
+                        const vec2pair& clip_edge
+                        )
 {
+    auto filename = format("/tmp/shpc-{:03d}.giv", Counter++);
+    print("Saving to {}\n", filename);
+    ofstream fh(filename);
+    fh << format("$path path\n"
+                 "$color pink\n");
+    for (const auto& p: path)
+        fh << format("{} {}\n", p.x, p.y);
+
+    fh << format("\n$path clip_edge\n"
+                 "$color red\n"
+                 "$lw 2\n"
+                 );
+    fh << format("{} {}\n", clip_edge.p0.x, clip_edge.p0.y);
+    fh << format("{} {}\n", clip_edge.p1.x, clip_edge.p1.y);
+
+
+
+    fh << format("\n"
+                 "$path rect_clip\n"
+                 "$color green\n");
+    for (const auto& p: rect_clip_path)
+        fh << format("{} {}\n", p.x, p.y);
+    fh << "z\n";
+
+    fh << format("\n"
+                 "$path in_list\n"
+                 "$color purple\n");
+    for (const auto& p: in_list)
+        fh << format("{} {}\n", p.x, p.y);
+
+    fh << format("\n"
+                 "$path out_list\n"
+                 "$color blue\n");
+    for (const auto& p: out_list)
+        fh << format("{} {}\n", p.x, p.y);
+    
+}
+#endif                
+
+// Sutherland Hodgman Polygon clipping algorithm modified to
+// work with either polylines or polygons depending on the
+// is_closed parameter.
+Polygon poly_clip(const Polygon& path,
+                  const Polygon& rect_clip_path,
+                  bool is_closed)
+{
+#if 0
+  print("-----\n");
+  Counter = 0;
+#endif
   Polygon out_list = path;
 
   int m = (int)rect_clip_path.size();
@@ -111,25 +168,39 @@ Polygon poly_clip(const Polygon& path,
 
     for (int j=0; j<n; j++)
     {
+      // The previous point needs to be drawn if either
+      //
+      //   1. We are drawing a closed polygon
+      //   2. We are not drawing the first point in the list
+      bool draw_prev = is_closed || j>0;
       const vec2& prev_point = in_list[(j + n - 1) % n];
       const vec2& current_point = in_list[j];
 
       if (is_inside_edge(current_point, clip_edge))
       {
-        if (!is_inside_edge(prev_point, clip_edge))
+        if (!is_inside_edge(prev_point, clip_edge)
+            && draw_prev
+            )
           out_list.push_back(compute_intersection(
                                {prev_point, current_point}, clip_edge));
         out_list.push_back(current_point);
       }
-      else if (is_inside_edge(prev_point, clip_edge))
+      else if (is_inside_edge(prev_point, clip_edge)
+               && draw_prev
+               )
         out_list.push_back(compute_intersection(
                              {prev_point, current_point}, clip_edge));
     }
+    //    save_algo_snapshot(path, rect_clip_path, in_list, out_list, clip_edge);
   }
 
+#if 0
   // Sweep through list looking for a pair that is contained by
   // the first to last point, and rotate the list to put
   // it at the end.
+  //
+  // This was done before I realized that I can get the same result
+  // much faster by using draw_prev
   vec2pair first_last {path.back(), path[0]};
   int n = (int)out_list.size();
   for (int i=0; i<(int)out_list.size(); i++)
@@ -145,6 +216,7 @@ Polygon poly_clip(const Polygon& path,
       break;
     }
   }
+#endif
 
   return out_list;
 }

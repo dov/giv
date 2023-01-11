@@ -51,13 +51,14 @@ static void print_polygon(const Polygon& poly)
     print("}}\n");
 }
 // Apply the clipping algorithm and add the given polygon
-void GivRenderer::add_clipped_poly(const Polygon& poly)
+void GivRenderer::add_clipped_poly(const Polygon& poly,
+                                   bool is_closed)
 {
     int n = (int)poly.size();
     if (n<2)
         return;
 
-    Polygon clip = poly_clip(poly, clip_rect);
+    Polygon clip = poly_clip(poly, clip_rect, is_closed);
 #if 0
     print("input_poly: "); print_polygon(poly);
     print("clip_poly: "); print_polygon(clip_rect);
@@ -167,7 +168,7 @@ void GivRenderer::paint()
                         last_move_to_y = m_y;
 
                         if (i<2 && p.op == Op::OP_MOVE) {
-                            add_clipped_poly(poly);
+                            add_clipped_poly(poly, false);
                             poly.clear();
                             painter.new_path();
                             poly.push_back({m_x,m_y});
@@ -236,7 +237,7 @@ void GivRenderer::paint()
                         double margin = line_width * 20;
                         build_clip_rect(margin);
 
-                        add_clipped_poly(poly);
+                        add_clipped_poly(poly, true);
                         painter.close_path();
                         poly.clear();
                       }
@@ -245,7 +246,7 @@ void GivRenderer::paint()
                 }
 
                 if (i<2) { // draw polygon
-                    add_clipped_poly(poly);
+                    add_clipped_poly(poly, true);
                     if (i==0)
                         painter.fill();
                 }

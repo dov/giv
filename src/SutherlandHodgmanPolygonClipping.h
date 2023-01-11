@@ -25,7 +25,8 @@ struct vec2pair {
 using Polygon = std::vector<vec2>;
 
 Polygon poly_clip(const Polygon& path,
-                  const Polygon& rect_clip_path);
+                  const Polygon& rect_clip_path,
+                  bool is_closed);
 }
 
 #endif
