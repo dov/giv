@@ -15,6 +15,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define GIV_IMAGE_ERROR g_spawn_error_quark ()
+
 /** 
  * This enum defines the types supported by GivImage
  * 
@@ -25,6 +27,7 @@ typedef enum {
     GIVIMAGE_U16,
     GIVIMAGE_I16,
     GIVIMAGE_I32,
+    GIVIMAGE_U32,
     GIVIMAGE_FLOAT,
     GIVIMAGE_DOUBLE,
     GIVIMAGE_RGB_U8,

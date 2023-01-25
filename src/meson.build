@@ -45,6 +45,7 @@ incgtkimageviewer = include_directories('agg')
 
 gtk_dep = dependency('gtk+-3.0')
 fmt_dep = dependency('fmt')
+spdlog_dep = dependency('spdlog')
 gmodule_dep = dependency('gmodule-2.0')
 libgivwidget = shared_library(
   'giv-widget',
@@ -62,15 +63,19 @@ libgivwidget = shared_library(
   install : true,
 )
 
-libgiv_image_src = ['givimage.c',
-                    'givplugin.c']
+libgiv_image_src = ['givimage.cc',
+                    'givplugin.cc',
+                    'givimagedll.cc'
+                   ]
 
 libgiv_image = shared_library(
   'giv-image',
   libgiv_image_src,
   dependencies : [
     gtk_dep,
-    gmodule_dep],
+    gmodule_dep,
+    fmt_dep,
+    spdlog_dep],
   install : true
 )
 
@@ -117,7 +122,7 @@ giv = executable('giv',
                    libgiv_color,
                  ],
                  include_directories : incglibjsonrpc,
-                 dependencies : [gtk_dep, fmt_dep],
+                 dependencies : [gtk_dep, fmt_dep, spdlog_dep],
                 )
 
 giv_remote_client = executable('giv-remote-client',

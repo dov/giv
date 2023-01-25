@@ -169,13 +169,16 @@ GivImage *giv_plugin_load_image(const char *filename,
                                 filename, (*error)->message); 
                   
                 }
-                spdlog::info("Loaded {} with size width={} height={} rank={} depth={} bit_size={}",
-                             filename,
-                             giv_image_get_width(img),
-                             giv_image_get_height(img),
-                             giv_image_get_rank(img),
-                             giv_image_get_depth(img),
-                             giv_image_type_get_size(giv_image_get_type(img)));
+                else if (!img)
+                  spdlog::error("Oops! Programming error! Did not find an image in {}, but no error was given!\n", filename); 
+                else
+                  spdlog::info("Loaded {} with size width={} height={} rank={} depth={} bit_size={}",
+                               filename,
+                               giv_image_get_width(img),
+                               giv_image_get_height(img),
+                               giv_image_get_rank(img),
+                               giv_image_get_depth(img),
+                               giv_image_type_get_size(giv_image_get_type(img)));
 
                 // TBD - handle plugin errors
                 break;

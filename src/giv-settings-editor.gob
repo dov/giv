@@ -136,7 +136,7 @@ class Giv:Settings:Editor from Gtk:Dialog
         selfp->w_button_default_auto_contrast = check_button_new_from_bool(giv_settings->default_auto_contrast);
         g_object_set(selfp->w_button_default_auto_contrast,
                      "tooltip-markup",
-                     "Whether to do auto resize by default",
+                     "Whether to do auto contrast by default",
                      NULL);
 
         gtk_table_attach(GTK_TABLE(w_table),

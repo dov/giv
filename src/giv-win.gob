@@ -1118,7 +1118,7 @@ class Giv:Win from Gtk:Window
         }
         if (!new_img)
             ;
-        else if (new_img->img_type <= GIVIMAGE_I32)
+        else if (new_img->img_type <= GIVIMAGE_U32)
             selfp->format = g_strdup("%.0f");
         else if (max-min > 1e-3 && max-min <= 1e-2) 
             selfp->format = g_strdup("%.5f");

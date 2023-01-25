@@ -89,6 +89,8 @@ GivImage *giv_plugin_load_file(const char *filename,
             image_type = GIVIMAGE_FLOAT;
         else if (strcmp(match_string, "<i4")==0) 
             image_type = GIVIMAGE_I32;
+        else if (strcmp(match_string, "<u4")==0) 
+            image_type = GIVIMAGE_U32;
         else if (strcmp(match_string, "<i2")==0) 
             image_type = GIVIMAGE_I16;
         else if (strcmp(match_string, "<u2")==0) 
@@ -127,7 +129,7 @@ GivImage *giv_plugin_load_file(const char *filename,
          || !is_supported_type
          || is_fortran_type
          ) {
-        //        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Invalid npy file!");
+        *error = g_error_new(GIV_IMAGE_ERROR, -1, "Invalid npy file!");
         g_free(npy_string);
         return NULL;
     }

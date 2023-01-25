@@ -12,8 +12,6 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <spdlog/spdlog.h>
 
-#define GIV_IMAGE_ERROR g_spawn_error_quark ()
-
 static guint8 clip_u8(double f)
 {
     if (f < 0)
@@ -99,8 +97,7 @@ GivImage *giv_image_new_from_file(const char *filename,
     }
     if (*error) {
       spdlog::error("Image loading failed: {}", (*error)->message);
-      printf("Got error: %s\n", (*error)->message);
-       return NULL;
+      return NULL;
     }
     else if (!extension) {
     }
@@ -297,6 +294,8 @@ GivImage *giv_image_new_from_file(const char *filename,
                 image_type = GIVIMAGE_FLOAT;
             else if (strcmp(match_string, "<i4")==0) 
                 image_type = GIVIMAGE_I32;
+            else if (strcmp(match_string, "<u4")==0) 
+                image_type = GIVIMAGE_U32;
             else if (strcmp(match_string, "<i2")==0) 
                 image_type = GIVIMAGE_I16;
             else if (strcmp(match_string, "<u2")==0) 
@@ -385,6 +384,8 @@ int giv_image_type_get_size(GivImageType img_type)
         return 16;
     case GIVIMAGE_I32:
         return 32;
+    case GIVIMAGE_U32:
+        return 32;
     case GIVIMAGE_FLOAT:
         return 32;
     case GIVIMAGE_DOUBLE:
@@ -452,6 +453,8 @@ double giv_image_get_value(GivImage *img,
         return ((gint16*)row_start)[x_idx];
     case GIVIMAGE_I32:
         return ((gint*)row_start)[x_idx];
+    case GIVIMAGE_U32:
+        return ((uint32_t*)row_start)[x_idx];
     case GIVIMAGE_FLOAT:
         return ((gfloat*)row_start)[x_idx];
     case GIVIMAGE_DOUBLE:

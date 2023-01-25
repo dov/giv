@@ -2,6 +2,10 @@
 project('giv', ['c','cpp','vala'],
   version : '0.1.0',
   license: 'LGPLv3+')
+
+add_project_arguments('-DSPDLOG_FMT_EXTERNAL=',
+                      language : 'cpp')
+
 gnome = import('gnome')
 pkgconfig = import('pkgconfig')
 
