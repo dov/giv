@@ -1,0 +1,15 @@
+# An example of a quadratic bezier
+# Note use of R for quadratic bezier as Q was already taken
+
+$marks fcircle
+$noline
+$color red
+0 100
+100 0
+200 100
+
+$color green
+0 100
+R 100 0 200 100
+
+

@@ -16,6 +16,7 @@
 #include "agg_svg_parser.h"
 #include "fast_double_parser.h"
 #include <fmt/core.h>
+#include <glm/vec2.hpp>
 
 
 static constexpr double DEG2RAD = 3.1415926535/180;
@@ -29,6 +30,7 @@ enum
   STRING_NOP,
   STRING_DRAW,
   STRING_ELLIPSE,
+  STRING_QUADRATIC_BEZIER,
   STRING_CUBIC_BEZIER,
   STRING_COMMENT,
   STRING_MOVE,
@@ -197,84 +199,88 @@ void populate_balloons(GivParser *gp)
     }
 }
 
-int
-giv_parser_parse_file(GivParser *gp,
-                      const char *filename)
+int giv_parser_parse_file(GivParser *gp,
+                          const char *filename)
 {
-    int ret = 0;
+  int ret = 0;
 
-    if (g_str_has_suffix(filename, ".svg")) 
-      giv_parser_add_svgfile(gp,filename);
-    else {
-        giv_dataset_t *marks = NULL;
-        gboolean is_new_set;
-        int num_sets = gp->giv_datasets->len;
-        int linenum = 0;
+  if (g_str_has_suffix(filename, ".svg")) 
+    giv_parser_add_svgfile(gp,filename);
+  else
+    {
+      giv_dataset_t *marks = NULL;
+      gboolean is_new_set;
+      int num_sets = gp->giv_datasets->len;
+      int linenum = 0;
         
-        FILE *GIV;
+      FILE *GIV;
     
-        GIV = fopen(filename, "rb");
-        if (!GIV)
-    	return -1;
+      GIV = fopen(filename, "rb");
+      if (!GIV)
+        return -1;
     
-        is_new_set = TRUE;
-        gboolean empty_line = false;
-        while(!empty_line) {
-    	char S_[256];
+      is_new_set = TRUE;
+      gboolean empty_line = false;
+      while(!empty_line)
+        {
+          char S_[256];
     	
-    	linenum++;
-    	fgets(S_, sizeof(S_), GIV);
-    	int len = strlen(S_);
+          linenum++;
+          fgets(S_, sizeof(S_), GIV);
+          int len = strlen(S_);
     
-            // Skip damaged sections with all NULLS
-            if (len==0)
-                empty_line = true;
+          // Skip damaged sections with all NULLS
+          if (len==0)
+            empty_line = true;
     
-    	// Get rid of CR and LF at end of line
-            int org_len = len;
-    	while (len>0 && (S_[len-1] == '\r' || S_[len-1] == '\n')) {
-    	    S_[len-1] = 0;
-    	    len--;
-    	}
+          // Get rid of CR and LF at end of line
+          int org_len = len;
+          while (len>0 && (S_[len-1] == '\r' || S_[len-1] == '\n'))
+            {
+              S_[len-1] = 0;
+              len--;
+            }
     
-            // Get out if we didn't get a \r or \n at the end of the line!
-            if (org_len == len)
-                break;
+          // Get out if we didn't get a \r or \n at the end of the line!
+          if (org_len == len)
+            break;
     	
-    	if (is_new_set || marks==NULL) {
-    	    marks = new_giv_dataset(num_sets);
-    	    marks->color = set_colors[num_sets % nmarks_colors];
-    	    marks->file_name = g_strdup(filename);
-                g_ptr_array_add(gp->giv_datasets, marks);
-                gp->tooltip_num_labels+= 1; // TBD count number of titles in the svg
+          if (is_new_set || marks==NULL)
+            {
+              marks = new_giv_dataset(num_sets);
+              marks->color = set_colors[num_sets % nmarks_colors];
+              marks->file_name = g_strdup(filename);
+              g_ptr_array_add(gp->giv_datasets, marks);
+              gp->tooltip_num_labels+= 1; // TBD count number of titles in the svg
     	    
-    	    is_new_set = FALSE;
-    	    num_sets++;
-    	}
+              is_new_set = FALSE;
+              num_sets++;
+            }
     	
-    	if (len == 0) {
-    	    if (marks && ((GArray*)marks->points)->len > 0)
-    		is_new_set++;
-    	    continue;
-    	}
+          if (len == 0)
+            {
+              if (marks && ((GArray*)marks->points)->len > 0)
+                is_new_set++;
+              continue;
+            }
     
-            giv_parser_giv_marks_data_add_line(gp, marks, S_, filename, linenum);
+          giv_parser_giv_marks_data_add_line(gp, marks, S_, filename, linenum);
     
-            if (feof(GIV))
-                break;
+          if (feof(GIV))
+            break;
         }
-        fclose(GIV);
+      fclose(GIV);
     
-        /* Get rid of empty data sets */
-        if (marks && (marks->points->len == 0 && !marks->svg)) {
-            g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
-    	free_giv_data_set(marks);
-    	marks = NULL;
-        }
+      /* Get rid of empty data sets */
+      if (marks && (marks->points->len == 0 && !marks->svg)) {
+        g_ptr_array_remove_index(gp->giv_datasets, gp->giv_datasets->len-1);
+        free_giv_data_set(marks);
+        marks = NULL;
+      }
     }
-    populate_balloons(gp);
+  populate_balloons(gp);
 
-    return ret;
+  return ret;
 }
 
 // Parse a string - should return the index of the first dataset in the
@@ -589,6 +595,11 @@ parse_string (const WordBoundaries& wb,
     {
       type = STRING_CUBIC_BEZIER;
     }
+  // Ooops! "Q" was already taken by quiver!!
+  else if (first_char == 'R' || first_char == 'R')
+    {
+      type = STRING_QUADRATIC_BEZIER;
+    }
   else if (first_char == 'Q' || first_char == 'q')
       type = STRING_QUIVER;
   else if (first_char == 'T' || first_char == 't')
@@ -684,6 +695,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
   case STRING_MOVE:
   case STRING_ELLIPSE:
   case STRING_CUBIC_BEZIER:
+  case STRING_QUADRATIC_BEZIER:
   case STRING_QUIVER:
     if (type == STRING_DRAW) {
       if (wb.size()==2) {
@@ -693,6 +705,41 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
           p.op = Op::OP_MOVE;
         else
           p.op = Op::OP_DRAW;
+      }
+    }
+    else if (type == STRING_QUADRATIC_BEZIER) {
+      // tbd
+      if (wb.size()==5) {
+        // Convert to a cubic bezier
+        glm::dvec2 p0(0,0);
+
+        int n = ((GArray*)marks->points)->len;
+        if (n > 0) {
+          point_t p = g_array_index(marks->points, point_t, n-1);
+          p0 = glm::vec2(p.x, p.y);
+        }
+        glm::dvec2 p1 = glm::vec2(wb.GetFloat(1), wb.GetFloat(2));
+        glm::dvec2 p2 = glm::vec2(wb.GetFloat(3), wb.GetFloat(4));
+
+        // Convert to cubiq
+        glm::dvec2 q1 = p0 + (p1-p0)*2.0/3.0;
+        glm::dvec2 q2 = p2 + (p1-p2)*2.0/3.0;
+
+        // Insert as cubic
+        p.x = q1.x;
+        p.y = q1.y;
+        p.op = Op::OP_CURVE;
+        update_bbox(gp,ms2,p);
+        g_array_append_val(marks->points, p);
+        p.op = Op::OP_CONT;
+        p.x = q2.x;
+        p.y = q2.y;
+        update_bbox(gp,ms2,p);
+        g_array_append_val(marks->points, p);
+        p.op = Op::OP_CONT;
+        p.x = p2.x;
+        p.y = p2.y;
+        update_bbox(gp,ms2,p);
       }
     }
     else if (type == STRING_CUBIC_BEZIER) {
