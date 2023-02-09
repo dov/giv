@@ -93,13 +93,13 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.33</font><br>
+    <font size=+2>Version 0.9.36</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2022-04-05 Tue</font>
+    <font size=-1>Last modified: 2023-02-09 Thu</font>
 </h2>
 
 <: section("Description") :>
@@ -289,6 +289,38 @@ sub code_snippet {   # usage: code_snippet($filename, title)
   
 </blockquote>
 
+<: subsection("Lines and Bezier Curves") :>
+<blockquote>
+After the header of the dataset, follows its data points.
+
+giv follows the SVG model of drawing curves. A line is composed of a letter followed by the coordinates. By default the action is lineto, but the following are also supported:
+
+<table>
+    <: TR() :><th bgcolor=#eeeeff>Letter
+	<th bgcolor=#eeeeff>Meaning
+	<th bgcolor=#eeeeff>Number parameters
+	<th bgcolor=#eeeeff>Comment
+    <:TR():><: td() :>M
+        <: td() :>move to 
+	<: td() :>2
+	<: td() :>Implicit for first point
+    <:TR():><: td() :>L
+        <: td() :>line to
+	<: td() :>2
+	<: td() :>Optional
+    <:TR():><: td() :>Z
+        <: td() :>line to
+	<: td() :>2
+	<: td() :>Close path
+    <:TR():><: td() :>C
+        <: td() :>curve to
+	<: td() :>6
+	<: td() :>A cubic Bezier
+</table>
+
+</blockquote>
+
+
 <: subsection("Text annotations") :>
 <blockquote>
 Text is drawn by adding the letter "T" in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left. To write multiline text add string "\n".
@@ -350,6 +382,13 @@ giv. The result is shown in the screenshow below.
 	    
   <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations are the physical memory and the speed of the CPU.
 </blockquote>
+
+<: subsection("Balloons and paths") :>
+One of the features of giv is that each dataset may have a tooltip popup attached to it. These popups are knows as "balloons". This allows adding auxilliary information to the display that is revealed only when the cursor hovers above the dataset.
+
+In addition, a dataset may be given a hiearchical path. This path is referenced in the marks viewer, and may be used to toggle on and off datasets. If no balloon was explicitely set for a dataset, then the dataset name is used for the balloon.
+
+Balloons are toggled by the "b" popup.
 
 <: section("Interaction") :>
 <blockquote>
@@ -459,10 +498,14 @@ giv. The result is shown in the screenshow below.
     <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
         <td align=center><img src="alpha-example.jpg">
     </tr>
-    <tr><td align=center><img src="svg-marks-example.png">
+    <tr><td align=center valign=top>Pseudo color
+         <td align=center width=25%>A gray level image with transparent overlay
+    </tr>
+
+    <tr><td align=center><img width="40%" src="svg-marks-example.png">
     </tr>
     <tr>
-      <td align=center valign=top>Example use of <tt>svgmarks</tt> where the markers are read from an external svg file.
+      <td align=center valign=top>Example use of <tt>svgmarks</tt> <br/>where the markers are read from an <br/>external svg file.
     </tr>
 
     <!----->

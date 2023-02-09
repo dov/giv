@@ -17,13 +17,13 @@
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.33</font><br>
+    <font size=+2>Version 0.9.36</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2022-04-05 Tue</font>
+    <font size=-1>Last modified: 2023-02-09 Thu</font>
 </h2>
 
 <h2><a name="SEC1">1. Description</a></h2>
@@ -207,7 +207,40 @@
   
 </blockquote>
 
-<h3><a name="SEC1.3">1.3. Text annotations</a></h3>
+<h3><a name="SEC1.3">1.3. Lines and Bezier Curves</a></h3>
+
+<blockquote>
+After the header of the dataset, follows its data points.
+
+giv follows the SVG model of drawing curves. A line is composed of a letter followed by the coordinates. By default the action is lineto, but the following are also supported:
+
+<table>
+    <tr><th bgcolor=#eeeeff>Letter
+	<th bgcolor=#eeeeff>Meaning
+	<th bgcolor=#eeeeff>Number parameters
+	<th bgcolor=#eeeeff>Comment
+    <tr><td bgcolor=#ffeeee valign=top>M
+        <td bgcolor=#ffeeee valign=top>move to 
+	<td bgcolor=#ffeeee valign=top>2
+	<td bgcolor=#ffeeee valign=top>Implicit for first point
+    <tr><td bgcolor=#fbf2ee valign=top>L
+        <td bgcolor=#fbf2ee valign=top>line to
+	<td bgcolor=#fbf2ee valign=top>2
+	<td bgcolor=#fbf2ee valign=top>Optional
+    <tr><td bgcolor=#ffeeee valign=top>Z
+        <td bgcolor=#ffeeee valign=top>line to
+	<td bgcolor=#ffeeee valign=top>2
+	<td bgcolor=#ffeeee valign=top>Close path
+    <tr><td bgcolor=#fbf2ee valign=top>C
+        <td bgcolor=#fbf2ee valign=top>curve to
+	<td bgcolor=#fbf2ee valign=top>6
+	<td bgcolor=#fbf2ee valign=top>A cubic Bezier
+</table>
+
+</blockquote>
+
+
+<h3><a name="SEC1.4">1.4. Text annotations</a></h3>
 
 <blockquote>
 Text is drawn by adding the letter "T" in front of a line. The "T" may have a number 1-9 appended describing the anchoring of the text. This numbers corresponds to their position on the numerical keyboard. The default alignment is 1, i.e. lower left. To write multiline text add string "\n".
@@ -253,7 +286,7 @@ The encoding of giv files is always utf8. Bidi is supported through pango.
 The backslash character is used as an escape character, so to get a literal backslash two slashes must be used. "\n" is used to indicate aline break.
 </blockquote>
 
-<h3><a name="SEC1.4">1.4. Colors</a></h3>
+<h3><a name="SEC1.5">1.5. Colors</a></h3>
 
 <blockquote>
 For all the properties that take colors as arguments the color may be given in several ways:
@@ -269,7 +302,7 @@ Here are some valid color names:
 </ul>
 </blockquote>
 
-<h3><a name="SEC1.5">1.5. Styles</a></h3>
+<h3><a name="SEC1.6">1.6. Styles</a></h3>
 
 <blockquote>
 Instead of explicitly listing all properties for a dataset, this may be done inderectly by the creation of a style. A style is created and has properties added to it through the <tt>$def_style</tt> keyword. Each use of <tt>$def_style</tt> adds one property to the style. A style is then referenced in the beginning of a dataset with the <tt>$style</tt> keyword followed by the style name.
@@ -295,7 +328,7 @@ Instead of explicitly listing all properties for a dataset, this may be done ind
 <font size=-1 color=red> 20:  </font>200 150 </pre></table>
 </blockquote>
 
-<h3><a name="SEC1.6">1.6. Giv file example</a></h3>
+<h3><a name="SEC1.7">1.7. Giv file example</a></h3>
 
 <blockquote>
 Here is an extensive giv file example showing off the various features of
@@ -450,6 +483,14 @@ giv. The result is shown in the screenshow below.
   <b>Note:</b> The example above contains just a few points. Giv very easily supports several hundred thousand points. The only limitations are the physical memory and the speed of the CPU.
 </blockquote>
 
+<h3><a name="SEC1.8">1.8. Balloons and paths</a></h3>
+
+One of the features of giv is that each dataset may have a tooltip popup attached to it. These popups are knows as "balloons". This allows adding auxilliary information to the display that is revealed only when the cursor hovers above the dataset.
+
+In addition, a dataset may be given a hiearchical path. This path is referenced in the marks viewer, and may be used to toggle on and off datasets. If no balloon was explicitely set for a dataset, then the dataset name is used for the balloon.
+
+Balloons are toggled by the "b" popup.
+
 <h2><a name="SEC2">2. Interaction</a></h2>
 
 <blockquote>
@@ -457,76 +498,76 @@ giv. The result is shown in the screenshow below.
     <tr><th bgcolor=#eeeeff>Option
 	<th bgcolor=#eeeeff>Description
   
-<tr><td bgcolor=#ffeeee valign=top>1
-	  <td bgcolor=#ffeeee valign=top>Sets one image pixel equal to one screen pixel.
-<tr><td bgcolor=#fbf2ee valign=top>a
-	  <td bgcolor=#fbf2ee valign=top>Toggle anti aliasing
-<tr><td bgcolor=#ffeeee valign=top>b
-	  <td bgcolor=#ffeeee valign=top>Toggle the balloon popup.
-<tr><td bgcolor=#fbf2ee valign=top>c
-	  <td bgcolor=#fbf2ee valign=top>Reduce contrast. Useful for viewing overlay on binary images.
-<tr><td bgcolor=#ffeeee valign=top>i
-	  <td bgcolor=#ffeeee valign=top>Show information window
-<tr><td bgcolor=#fbf2ee valign=top>f
-	  <td bgcolor=#fbf2ee valign=top>Fill data to window
-<tr><td bgcolor=#ffeeee valign=top>g
-	  <td bgcolor=#ffeeee valign=top>Toggle the pixel grid. (Only shown at high zoom ratios).
-<tr><td bgcolor=#fbf2ee valign=top>h
-	  <td bgcolor=#fbf2ee valign=top>Horizontal flip
-<tr><td bgcolor=#ffeeee valign=top>m
-	  <td bgcolor=#ffeeee valign=top>Toggle overlay.
-<tr><td bgcolor=#fbf2ee valign=top>o
-	  <td bgcolor=#fbf2ee valign=top>Popup dataset browser.
-<tr><td bgcolor=#ffeeee valign=top>q
-	  <td bgcolor=#ffeeee valign=top>Quit
-<tr><td bgcolor=#fbf2ee valign=top>s
-	  <td bgcolor=#fbf2ee valign=top>Shrink wrap
-<tr><td bgcolor=#ffeeee valign=top>v
-	  <td bgcolor=#ffeeee valign=top>Vertical flip
-<tr><td bgcolor=#fbf2ee valign=top>Shift-V
-	  <td bgcolor=#fbf2ee valign=top>Toggle vertical zoom locking.
-<tr><td bgcolor=#ffeeee valign=top>Control+c
-	  <td bgcolor=#ffeeee valign=top>Copy contents of balloon text to clip board
-<tr><td bgcolor=#fbf2ee valign=top>Control+d
-	  <td bgcolor=#fbf2ee valign=top>Copy contents of the last measurement to the clipboard.
-<tr><td bgcolor=#ffeeee valign=top>Control+x
-	  <td bgcolor=#ffeeee valign=top>Copy XY coordinate to the to clip board
-<tr><td bgcolor=#fbf2ee valign=top>Esc
-	  <td bgcolor=#fbf2ee valign=top>Abort remote command pick points
-<tr><td bgcolor=#ffeeee valign=top>=<br>Ctrl-B1
-	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 2
-<tr><td bgcolor=#fbf2ee valign=top>-<br>Ctrl-B3
-	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 2
-<tr><td bgcolor=#ffeeee valign=top>Scroll wheel up
-	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 1.4
-<tr><td bgcolor=#fbf2ee valign=top>Scroll wheel down
-	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 1.4
-<tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel up
-	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 1.1
-<tr><td bgcolor=#fbf2ee valign=top>Shift+Scroll wheel down
-	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 1.1
-<tr><td bgcolor=#ffeeee valign=top>Control+Scroll wheel up
-	  <td bgcolor=#ffeeee valign=top>Zoom in by a factor of 2
-<tr><td bgcolor=#fbf2ee valign=top>Control+Scroll wheel down
-	  <td bgcolor=#fbf2ee valign=top>Zoom out by a factor of 2
-<tr><td bgcolor=#ffeeee valign=top>Alt + Scroll wheel up
-	  <td bgcolor=#ffeeee valign=top>Zoom in of quiver vectors by a factor of 1.2
-<tr><td bgcolor=#fbf2ee valign=top>Alt + Scroll wheel down
-	  <td bgcolor=#fbf2ee valign=top>Zoom out of quiver vectors by a factor of 1.2
-<tr><td bgcolor=#ffeeee valign=top>B3
-	  <td bgcolor=#ffeeee valign=top>Popup options menu.
+<tr><td bgcolor=#fbf2ee valign=top>1
+	  <td bgcolor=#fbf2ee valign=top>Sets one image pixel equal to one screen pixel.
+<tr><td bgcolor=#ffeeee valign=top>a
+	  <td bgcolor=#ffeeee valign=top>Toggle anti aliasing
+<tr><td bgcolor=#fbf2ee valign=top>b
+	  <td bgcolor=#fbf2ee valign=top>Toggle the balloon popup.
+<tr><td bgcolor=#ffeeee valign=top>c
+	  <td bgcolor=#ffeeee valign=top>Reduce contrast. Useful for viewing overlay on binary images.
+<tr><td bgcolor=#fbf2ee valign=top>i
+	  <td bgcolor=#fbf2ee valign=top>Show information window
+<tr><td bgcolor=#ffeeee valign=top>f
+	  <td bgcolor=#ffeeee valign=top>Fill data to window
+<tr><td bgcolor=#fbf2ee valign=top>g
+	  <td bgcolor=#fbf2ee valign=top>Toggle the pixel grid. (Only shown at high zoom ratios).
+<tr><td bgcolor=#ffeeee valign=top>h
+	  <td bgcolor=#ffeeee valign=top>Horizontal flip
+<tr><td bgcolor=#fbf2ee valign=top>m
+	  <td bgcolor=#fbf2ee valign=top>Toggle overlay.
+<tr><td bgcolor=#ffeeee valign=top>o
+	  <td bgcolor=#ffeeee valign=top>Popup dataset browser.
+<tr><td bgcolor=#fbf2ee valign=top>q
+	  <td bgcolor=#fbf2ee valign=top>Quit
+<tr><td bgcolor=#ffeeee valign=top>s
+	  <td bgcolor=#ffeeee valign=top>Shrink wrap
+<tr><td bgcolor=#fbf2ee valign=top>v
+	  <td bgcolor=#fbf2ee valign=top>Vertical flip
+<tr><td bgcolor=#ffeeee valign=top>Shift-V
+	  <td bgcolor=#ffeeee valign=top>Toggle vertical zoom locking.
+<tr><td bgcolor=#fbf2ee valign=top>Control+c
+	  <td bgcolor=#fbf2ee valign=top>Copy contents of balloon text to clip board
+<tr><td bgcolor=#ffeeee valign=top>Control+d
+	  <td bgcolor=#ffeeee valign=top>Copy contents of the last measurement to the clipboard.
+<tr><td bgcolor=#fbf2ee valign=top>Control+x
+	  <td bgcolor=#fbf2ee valign=top>Copy XY coordinate to the to clip board
+<tr><td bgcolor=#ffeeee valign=top>Esc
+	  <td bgcolor=#ffeeee valign=top>Abort remote command pick points
+<tr><td bgcolor=#fbf2ee valign=top>=<br>Ctrl-B1
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 2
+<tr><td bgcolor=#ffeeee valign=top>-<br>Ctrl-B3
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 2
+<tr><td bgcolor=#fbf2ee valign=top>Scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.4
+<tr><td bgcolor=#ffeeee valign=top>Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.4
+<tr><td bgcolor=#fbf2ee valign=top>Shift+Scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 1.1
+<tr><td bgcolor=#ffeeee valign=top>Shift+Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 1.1
+<tr><td bgcolor=#fbf2ee valign=top>Control+Scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in by a factor of 2
+<tr><td bgcolor=#ffeeee valign=top>Control+Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out by a factor of 2
+<tr><td bgcolor=#fbf2ee valign=top>Alt + Scroll wheel up
+	  <td bgcolor=#fbf2ee valign=top>Zoom in of quiver vectors by a factor of 1.2
+<tr><td bgcolor=#ffeeee valign=top>Alt + Scroll wheel down
+	  <td bgcolor=#ffeeee valign=top>Zoom out of quiver vectors by a factor of 1.2
+<tr><td bgcolor=#fbf2ee valign=top>B3
+	  <td bgcolor=#fbf2ee valign=top>Popup options menu.
 <!--
-<tr><td bgcolor=#fbf2ee valign=top>c
-	  <td bgcolor=#fbf2ee valign=top>Toggle cross hair.
+<tr><td bgcolor=#ffeeee valign=top>c
+	  <td bgcolor=#ffeeee valign=top>Toggle cross hair.
 -->
-<tr><td bgcolor=#ffeeee valign=top>Left/Space
-	  <td bgcolor=#ffeeee valign=top>Show next image in directory.
-<tr><td bgcolor=#fbf2ee valign=top>Right/BackSpace
-	  <td bgcolor=#fbf2ee valign=top>Show previous image in directory.
-<tr><td bgcolor=#ffeeee valign=top>Shift-Down
-	  <td bgcolor=#ffeeee valign=top>Choose next image when several $image references are given or next image for multi depth images.
-<tr><td bgcolor=#fbf2ee valign=top>Shift-Up
-	  <td bgcolor=#fbf2ee valign=top>Choose previous $image image
+<tr><td bgcolor=#fbf2ee valign=top>Left/Space
+	  <td bgcolor=#fbf2ee valign=top>Show next image in directory.
+<tr><td bgcolor=#ffeeee valign=top>Right/BackSpace
+	  <td bgcolor=#ffeeee valign=top>Show previous image in directory.
+<tr><td bgcolor=#fbf2ee valign=top>Shift-Down
+	  <td bgcolor=#fbf2ee valign=top>Choose next image when several $image references are given or next image for multi depth images.
+<tr><td bgcolor=#ffeeee valign=top>Shift-Up
+	  <td bgcolor=#ffeeee valign=top>Choose previous $image image
 </table>
 </blockquote>
 
@@ -560,10 +601,14 @@ giv. The result is shown in the screenshow below.
     <tr><td align=center><img src="gallery-cat-pseudo-color.jpg">
         <td align=center><img src="alpha-example.jpg">
     </tr>
-    <tr><td align=center><img src="svg-marks-example.png">
+    <tr><td align=center valign=top>Pseudo color
+         <td align=center width=25%>A gray level image with transparent overlay
+    </tr>
+
+    <tr><td align=center><img width="40%" src="svg-marks-example.png">
     </tr>
     <tr>
-      <td align=center valign=top>Example use of <tt>svgmarks</tt> where the markers are read from an external svg file.
+      <td align=center valign=top>Example use of <tt>svgmarks</tt> <br/>where the markers are read from an <br/>external svg file.
     </tr>
 
     <!----->
