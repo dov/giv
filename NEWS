@@ -1,3 +1,8 @@
+Verison 0.9.36:
+
+* Fixed clipping bug of polygons
+* Added logging option for better error reports
+
 Version 0.9.35:
 
 * Fixed several windows problems with missing plugins etc

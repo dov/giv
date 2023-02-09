@@ -66,7 +66,7 @@ sudo dnf -y install mingw64-libwebp
 
 The following libraries are not available as binary downloads and may be installed from source as follows described below:
 
-## Prerequisites
+## Building Prerequisites
 
 ### libplis
 
