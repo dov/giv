@@ -16,6 +16,7 @@
       <menuitem name="VerticalFlip" action="ViewVerticalFlip" />
       <menuitem name="VerticalLock" action="ViewVerticalZoomLock" />
       <menuitem name="PixelGrid" action="ViewPixelGrid" />
+      <menuitem name="Image" action="ViewImage" />
       <menuitem name="ColorMapBar" action="ViewColorMap" />
       <menuitem name="AutoResize" action="AutoResize" />
       <menuitem name="AutoContrast" action="AutoContrast" />

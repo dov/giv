@@ -114,6 +114,7 @@ static void cb_view_vflip (GtkAction *action, gpointer data);
 static void cb_view_vertical_zoom_lock (GtkAction *action, gpointer data);
 static void cb_view_colormap (GtkAction *action, gpointer data);
 static void cb_view_pixel_grid (GtkAction *action, gpointer data);
+static void cb_menu_show_image (GtkAction *action, gpointer data);
 static void cb_view_auto_resize (GtkAction *action, gpointer data);
 static void cb_view_auto_contrast (GtkAction *action, gpointer data);
 static void cb_view_auto_reload (GtkAction *action, gpointer data);
@@ -422,6 +423,11 @@ static GtkToggleActionEntry toggle_entries[] =
     "View Pixel Grid", NULL,    
     "View Pixel Grid",
     G_CALLBACK (cb_view_pixel_grid), FALSE },
+  { "ViewImage",
+    NULL,
+    "View Image", NULL,    
+    "View Image",
+    G_CALLBACK (cb_menu_show_image), FALSE },
   { "AutoResize",
     NULL,
     "_Auto Resize", NULL,    
@@ -541,6 +547,7 @@ class Giv:Win from Gtk:Window
     private bool do_show_sub_pixel = false;
     private bool do_square_aspect_ratio = true;
     private bool do_auto_fit_marks = TRUE;
+    private bool do_show_image = TRUE;
     private bool do_auto_reload = FALSE;
     private bool do_draw_pixel_grid = TRUE;
     // If the image is triggered to be loaded by auto reload then the
@@ -1819,6 +1826,8 @@ cb_key_press_event (GtkWidget * widget,
         cb_menu_contrast_view(NULL, self);
     if (k== 'i')
         cb_menu_info_dialog(NULL, self);
+    if (k== 'I')
+        cb_menu_show_image(NULL, self);
     if (k == 'f') {
         fit_marks_in_window(self);
         return 1;
@@ -2204,6 +2213,19 @@ static void cb_view_pixel_grid (GtkAction *action, gpointer data)
     gboolean show_pixel_grid = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
     giv_widget_set_show_grid(GIV_WIDGET(selfp->w_imgv), show_pixel_grid);
     //    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menu_widget), !old_val);
+
+    giv_win_redraw(self);
+}
+
+static void cb_menu_show_image (GtkAction *action, gpointer data)
+{
+    GivWin *self = GIV_WIN(data);
+    GtkWidget *menu_widget = gtk_ui_manager_get_widget(selfp->menu_manager,
+                                                       "/menubar/ViewMenu/Image");
+
+    selfp->do_show_image = !selfp->do_show_image;
+    gtk_image_viewer_set_show_image(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                    selfp->do_show_image);
 
     giv_win_redraw(self);
 }

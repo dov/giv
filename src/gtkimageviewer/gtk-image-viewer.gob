@@ -150,6 +150,7 @@ class Gtk:Image:Viewer from Gtk:Widget
   private gdouble cache_height = -1;
   private gboolean frozen = FALSE;
   private gboolean is_insensitive = FALSE;
+  private gboolean do_show_image = TRUE;
   private gint timeout_id = 0;
   
   init(self)
@@ -782,7 +783,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                          background_color.red,
                          background_color.green,
                          background_color.blue);
-    if (selfp->image)
+    if (selfp->image && selfp->do_show_image)
       {
   				/* Canvas size */
         int img_w, img_h;		/* Image's size (pixels) */
@@ -1131,9 +1132,7 @@ class Gtk:Image:Viewer from Gtk:Widget
                       }
                   }
               }
-
-
-  	}
+          }
       }
 
     // If we are working without a background image then create one
@@ -1790,6 +1789,14 @@ class Gtk:Image:Viewer from Gtk:Widget
     *do_flip_horizontal = selfp->do_flip_horizontal;
     *do_flip_vertical = selfp->do_flip_vertical;
   }
+
+  public void
+  set_show_image(self, gboolean do_show_image)
+  {
+    selfp->do_show_image = do_show_image;
+    gtk_image_viewer_redraw(self, TRUE);
+  }
+
 
   public void
   set_flip(self,

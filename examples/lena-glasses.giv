@@ -1,4 +1,4 @@
-#$image lena.pgm
+$image lena.pgm
 
 $marks circle
 $color red/0.3

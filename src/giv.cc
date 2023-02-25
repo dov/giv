@@ -194,8 +194,12 @@ int main(int argc, char **argv)
   spdlog::info("CommitTime: {}", GIT_COMMIT_TIME);
   spdlog::info("Command line: {}", join(args," "));
 
+  // This is needed only under windows because of the difference
+  // in dll conventions
+#ifdef _WIN32
   spdlog::info("Calling to register logger in givimagedll");
   registerLogger(logger);
+#endif
 
   // Load an image into a remote instance of giv. If this fails,
   // then normal loading should take place.
