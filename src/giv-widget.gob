@@ -1127,7 +1127,7 @@ static void search_and_replace(std::string& subject,
     while( pos != string::npos)
     {
         subject.replace(pos, needle.size(), replace);
-        pos = subject.find(subject, pos + replace.size());
+        pos = subject.find(needle, pos + replace.size());
     }
 }
 %}

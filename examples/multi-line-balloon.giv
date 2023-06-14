@@ -1,0 +1,13 @@
+$balloon “What do you want a balloon for?” you said. \nWinnie-the-Pooh looked round to see \nthat nobody was listening, put his paw to his mouth, \nand said in a deep whisper: \n“Honey!”\n“But you don't get honey with <b>balloons</b>!”
+$outline_color red
+$color red/0.5
+$polygon
+M 63.9168 159.695
+C 63.9168 159.695 67.6488 155.584 67.6708 153.979
+C 67.3125 153.066 52.5546 148.301 47.8731 126.791
+C 43.1916 105.281 57.0328 94.9816 68.4214 93.0036
+C 79.81 91.0256 92.8191 101.132 96.5535 119.831
+C 100.288 138.53 75.9913 154.786 75.9913 154.786
+C 75.8862 156.221 79.217 160.513 79.217 160.513
+Z
+
