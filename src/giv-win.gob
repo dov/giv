@@ -371,7 +371,7 @@ static GtkToggleActionEntry toggle_entries[] =
 {
   { "ViewMenuBarAction",
     NULL,
-    "View Menu", "<control>V",    
+    "View Menu", NULL,    
     "View Menu",
     G_CALLBACK (cb_view_menu_bar), TRUE },
   { "ViewMarksAction",
