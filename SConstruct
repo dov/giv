@@ -30,14 +30,14 @@ inp = open("configure.ac")
 for line in inp.readlines():
     m = re.search(r"AM_INIT_AUTOMAKE\(.*,\s*\"?(.*?)\"?\)", line)
     if m:
-        env['VER'] = m.group(1)
+        env['VERSION'] = m.group(1)
         break
 
 # All purpose template filling routine
 def create_dist(env, target, source):
     # Skip if this is not a git repo
     if os.path.exists(".git"):
-        vdir = "giv-%s"%env['VER']
+        vdir = "giv-%s"%env['VERSION']
         os.mkdir(vdir, 0o755)
         os.system("tar -cf - `git ls-files` | (cd %s; tar -xf -); "%vdir)
         os.system("tar -zcf %s.tar.gz %s"%(vdir,vdir))
@@ -62,20 +62,20 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
                 "COPYING",
                 ["unix2dos < COPYING > COPYING.dos"])
     
-    env.Command("InstallGiv${VER}-${HOST}.exe",
+    env.Command("InstallGiv${VERSION}-${HOST}.exe",
                 ["src/giv.exe",
                  "src/giv-image.dll",
                  "src/giv-remote-client.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["makensis -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+                ["makensis -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
     env.Command("Giv.zip",
                 ["src/giv.exe",
                  "src/giv-image.dll",
                  "src/giv-remote-client.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["./nsistozip -DHOSTBITS=${HOSTBITS} -DVER=${VER} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+                ["./nsistozip -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
                 
     env.Append(LINKFLAGS=['-mwindows'])
 
@@ -175,7 +175,7 @@ env.Alias("install",
 
 
 env.Alias("dist",
-          env.Command("giv-${VER}.tar.gz",
+          env.Command("giv-${VERSION}.tar.gz",
                       [],
                       create_dist))
 

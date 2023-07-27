@@ -1,6 +1,6 @@
 # Work in progress
 project('giv', ['c','cpp','vala'],
-  version : '0.9.36',
+  version : '0.9.37',
   license: 'LGPLv3+')
 
 add_global_arguments('-DSPDLOG_FMT_EXTERNAL',

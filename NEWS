@@ -1,4 +1,10 @@
-Verison 0.9.36:
+Version 0.9.37:
+
+* Added interactive option "I" for toggling image display
+* Added option for showing ballons by default
+* Added support for Quadratic bezier curves
+
+Version 0.9.36:
 
 * Fixed clipping bug of polygons
 * Added logging option for better error reports

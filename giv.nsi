@@ -1,5 +1,5 @@
 Name "Giv"
-OutFile "InstallGiv-${VER}-${HOST}-${COMMITIDSHORT}.exe"
+OutFile "InstallGiv-${VERSION}-${HOST}-${COMMITIDSHORT}.exe"
 Icon "giv-logo.ico"
 UninstallIcon "giv-logo-install.ico"
 
