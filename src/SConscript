@@ -19,6 +19,10 @@ libs = env['LIBS']
 cpppath = ["gtkimageviewer"] + env['CPPPATH'] + ["glib-jsonrpc/","agg"]
 cppdefines = ['-DPACKAGE_DOC_DIR=\'"${PACKAGE_DOC_DIR}"\'',
               '-DPACKAGE_PLUGIN_DIR=\'"${PACKAGE_PLUGIN_DIR}"\'',
+              '-DVERSION=\'"${VERSION}\"\'',
+              '-DARCH=\'"${ARCH}\"\'',
+              '-DGIT_COMMIT_ID=\'"${GIT_COMMIT_ID}\"\'',
+              '-DGIT_COMMIT_TIME=\'"${GIT_COMMIT_TIME}\"\'',
               ]
 env.Append(CPPFLAGS=cppdefines)
 

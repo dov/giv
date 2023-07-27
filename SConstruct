@@ -22,6 +22,8 @@ env['SBOX'] = False
 env['COMMITIDSHORT'] = commit_id[0:6]
 commit_id = os.popen('git rev-parse HEAD').read().replace('\n','')
 commit_time = os.popen('git log --pretty=\'%ci\' -n1').read().replace('\n','')
+env['GIT_COMMIT_ID'] = commit_id
+env['GIT_COMMIT_TIME'] = commit_time
 
 # Get version from configure.in
 inp = open("configure.ac")
@@ -32,14 +34,6 @@ for line in inp.readlines():
         break
 
 # All purpose template filling routine
-def create_version(env, target, source):
-    out = open(str(target[0]), "wb")
-    out.write(("#define VERSION \"" + env['VER'] + "\"\n"
-               '#define GIT_COMMIT_ID \"' + commit_id + '"\n'
-               '#define GIT_COMMIT_TIME \"' + commit_time + '"\n'
-               '#define ARCH \"' + env['ARCH'] + '"\n').encode('utf8'))
-    out.close()
-
 def create_dist(env, target, source):
     # Skip if this is not a git repo
     if os.path.exists(".git"):
@@ -124,11 +118,6 @@ else:
 
 env['VARIANT'] = variant
 
-# Since we don't run configure when doing scons
-config_target = env.Command("config.h",
-                            [],
-                            create_version)
-env.AlwaysBuild(config_target)
 env.Append(CPPPATH=[],
            # Needed for our internal PCRE
            CPPDEFINES=['PCRE_STATIC'],
