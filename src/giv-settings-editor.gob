@@ -30,6 +30,7 @@ class Giv:Settings:Editor from Gtk:Dialog
     private GtkWidget *w_button_default_show_subpixel = NULL;
     private GtkWidget *w_button_default_auto_resize = NULL;
     private GtkWidget *w_button_default_auto_contrast = NULL;
+    private GtkWidget *w_button_default_show_balloons = NULL;
 
     public GtkWidget*
     new (GivSettings *giv_settings)
@@ -146,6 +147,31 @@ class Giv:Settings:Editor from Gtk:Dialog
                          0,0);
 
 
+        // Default show balloons
+        row++;
+        gtk_table_attach(GTK_TABLE(w_table),
+                         label_left_new("Default show-balloons"),
+                         1, 2,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+        
+        selfp->w_button_default_show_balloons = check_button_new_from_bool(giv_settings->default_show_balloons);
+        g_object_set(selfp->w_button_default_show_balloons,
+                     "tooltip-markup",
+                     "Whether to do show balloons by default",
+                     NULL);
+
+        gtk_table_attach(GTK_TABLE(w_table),
+                         selfp->w_button_default_show_balloons,
+                         2, 3,
+                         row, row+1,
+                         GtkAttachOptions(GTK_FILL|GTK_EXPAND),
+                         GtkAttachOptions(0),
+                         0,0);
+
+
         // Buttons
         gtk_dialog_add_button(GTK_DIALOG(self),
                               GTK_STOCK_APPLY,
@@ -180,6 +206,8 @@ class Giv:Settings:Editor from Gtk:Dialog
             = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_auto_resize));
         GIV_SETTINGS(selfp->giv_settings)->default_auto_contrast
             = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_auto_contrast));
+        GIV_SETTINGS(selfp->giv_settings)->default_show_balloons
+            = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(selfp->w_button_default_show_balloons));
     }
 
 }

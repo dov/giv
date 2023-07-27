@@ -20,6 +20,7 @@ class Giv:Settings from G:Object {
     public gboolean default_show_subpixel = FALSE;
     public gboolean default_auto_resize = TRUE;
     public gboolean default_auto_contrast = FALSE;
+    public gboolean default_show_balloons = FALSE;
     private char *keyfile_path = NULL destroy { g_free(keyfile_path); };
 
     public GObject *
@@ -53,6 +54,11 @@ class Giv:Settings from G:Object {
                                                                  "settings",
                                                                  "default_auto_contrast",
                                                                  NULL);
+            self->default_show_balloons = g_key_file_get_boolean(
+              keyfile,
+              "settings",
+              "default_show_balloons",
+              NULL);
         }
         else
             g_error_free(error);
@@ -83,6 +89,10 @@ class Giv:Settings from G:Object {
                                "settings",
                                "default_auto_resize",
                                self->default_auto_resize);
+        g_key_file_set_boolean(keyfile,
+                               "settings",
+                               "default_show_balloons",
+                               self->default_show_balloons);
 
         gchar *data = g_key_file_to_data(keyfile,NULL, NULL);
         gchar *dirname = g_path_get_dirname(selfp->keyfile_path);

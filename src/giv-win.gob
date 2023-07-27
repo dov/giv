@@ -901,6 +901,11 @@ class Giv:Win from Gtk:Window
           selfp->giv_settings->default_auto_contrast);
         gtk_image_viewer_set_fill_on_resize(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                             selfp->giv_settings->default_auto_resize);
+        gtk_check_menu_item_set_active(
+          GTK_CHECK_MENU_ITEM(
+            gtk_ui_manager_get_widget(selfp->menu_manager,
+                                      "/menubar/ViewMenu/Balloons")),
+          selfp->giv_settings->default_show_balloons);
 
         // Handle the filenamelist
         if (argc == argp+1) {
