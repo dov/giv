@@ -63,12 +63,12 @@ GivImage *giv_plugin_load_file(const char *filename,
     GivImageType image_type;
 
     if (tif) {
-        uint32 w, h, config=9999, bps=1, spp=1, sample_format=9999;
-	uint8* raster;
+        uint32_t w, h, config=9999, bps=1, spp=1, sample_format=9999;
+	uint8_t* raster;
         gboolean has_colormap = FALSE;
-        uint16 *rmap, *gmap, *bmap;
-        uint16 pn=0, num_pages=0;
-        uint16 photometric;
+        uint16_t *rmap, *gmap, *bmap;
+        uint16_t pn=0, num_pages=0;
+        uint16_t photometric;
         gboolean do_invert = TRUE;
         gboolean one_bit = FALSE;
 
@@ -91,7 +91,7 @@ GivImage *giv_plugin_load_file(const char *filename,
         printf("pn num_pages = %d %d\n", pn, num_pages);
 #endif
 
-	raster = (uint8*) _TIFFmalloc(TIFFScanlineSize(tif));
+	raster = (uint8_t*) _TIFFmalloc(TIFFScanlineSize(tif));
         if (config == PLANARCONFIG_CONTIG) {
         }
         else if (config == PLANARCONFIG_SEPARATE) {

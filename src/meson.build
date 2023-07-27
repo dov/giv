@@ -30,7 +30,6 @@ giv_widget_sources = [
   'giv-markup.cc',
   'giv_agg_arrowhead.cc',
   'giv-settings.cc',
-  'giv-settings-editor.cc',
   'clipper.cpp',
   'SutherlandHodgmanPolygonClipping.cc'
 ]
@@ -61,6 +60,10 @@ libgivwidget = shared_library(
   ],
   dependencies : [gtk_dep,fmt_dep],
   install : true,
+  cpp_args : [
+    '-Wno-deprecated-declarations'
+  ]
+    
 )
 
 libgiv_image_src = ['givimage.cc',
@@ -89,16 +92,18 @@ libgiv_color = static_library(
 giv_src = ['giv.cc',
            'dovtk-lasso.c']
 
-foreach basename : ['giv-win',
-            'giv-mark-tree-dialog',
-            'giv-info',
-            'giv-contrast',
-            'giv-histo',
-            'giv-calibrate-dialog',
-            'giv-settings',
-            'giv-settings-editor',
-            ] 
-  giv_src += custom_target(basename + '-output',
+foreach basename : [
+  'giv-win',
+  'giv-mark-tree-dialog',
+  'giv-info',
+  'giv-contrast',
+  'giv-histo',
+  'giv-calibrate-dialog',
+  'giv-settings',
+  'giv-settings-editor',
+  ] 
+  giv_src += custom_target(
+    basename + '.cc',
     output : [basename + '.h',basename + '-private.h',basename + '.cc'],
     input : basename +'.gob',
     command : [gob2, '-o', '@OUTDIR@', '--for-cpp', '@INPUT@'],
@@ -123,6 +128,9 @@ giv = executable('giv',
                  ],
                  include_directories : incglibjsonrpc,
                  dependencies : [gtk_dep, fmt_dep, spdlog_dep],
+                 cpp_args : [
+                   '-Wno-deprecated-declarations'
+                 ]
                 )
 
 giv_remote_client = executable('giv-remote-client',

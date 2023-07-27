@@ -14,7 +14,6 @@
 
 static gboolean giv_image_loaded_loaders = FALSE;
 static GSList *givimage_loaders = NULL;
-static GSList *givimage_recognizers = NULL;
 
 typedef gboolean (* SupportsFile) (const char *filename,
                                    guchar *start_chunk,

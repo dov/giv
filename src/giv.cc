@@ -54,6 +54,7 @@ void rm_from_args(int& argc, char **argv, int argp)
   argc--;
 }
 
+#if 0
 static void rec_mkdir(std::string path)
 {
   size_t pos = 0;
@@ -68,6 +69,7 @@ static void rec_mkdir(std::string path)
   while((pos = path.find_first_of('/', pos+1)) != std::string::npos)
     g_mkdir(path.substr(0, pos).c_str(), mode);
 }
+#endif
 
 int main(int argc, char **argv)
 {

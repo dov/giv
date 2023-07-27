@@ -39,6 +39,7 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
 {
 }
 
+#if 0
 static void print_polygon(const Polygon& poly)
 {
     print("{{");
@@ -50,6 +51,8 @@ static void print_polygon(const Polygon& poly)
     }
     print("}}\n");
 }
+#endif
+
 // Apply the clipping algorithm and add the given polygon
 void GivRenderer::add_clipped_poly(const Polygon& poly,
                                    bool is_closed)
@@ -123,7 +126,7 @@ void GivRenderer::paint()
         GivArrowType arrow = dataset->arrow_type;
         painter.set_arrow(arrow & ARROW_TYPE_START,
                           arrow & ARROW_TYPE_END);
-        double old_x=-9e9, old_y=-9e9, old_clip_x=-9e9, old_clip_y=-9e9;
+        double old_x=-9e9, old_y=-9e9;
         bool need_paint = false;
         bool has_text = false; // Assume by default we don't have text
 
@@ -136,7 +139,6 @@ void GivRenderer::paint()
         //    It 1: Draw contours of polygons and other line graphs
         //    It 2: Draw quiver
         bool has_ellipse = false;
-        double last_move_to_x=500, last_move_to_y=500;
         for (int i=0; i<3; i++) {
             Polygon poly;
 
@@ -156,7 +158,6 @@ void GivRenderer::paint()
                 int n = (int)dataset->points->len;
                 if (!n)
                     continue;
-                bool newpath = false;
                 for (int p_idx=0; p_idx<n+1; p_idx++) {
                     point_t p = g_array_index(dataset->points, point_t, p_idx%n);
 
@@ -164,9 +165,6 @@ void GivRenderer::paint()
                     double m_y = p.y * scale_y - shift_y;
 
                     if (p_idx==0 || p.op == Op::OP_MOVE) {
-                        last_move_to_x = m_x;
-                        last_move_to_y = m_y;
-
                         if (i<2 && p.op == Op::OP_MOVE) {
                             add_clipped_poly(poly, false);
                             poly.clear();
@@ -176,7 +174,6 @@ void GivRenderer::paint()
                     }
 
                     if (i < 2 && p.op == Op::OP_DRAW && (p_idx<n || dataset->do_draw_polygon)) {
-                        double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
                         double margin = line_width * 20;
                         build_clip_rect(margin);
 
@@ -193,8 +190,6 @@ void GivRenderer::paint()
                         
                         m_x = p.x * scale_x - shift_x;
                         m_y = p.y * scale_y - shift_y;
-                        last_move_to_x = m_x;
-                        last_move_to_y = m_y;
   
                         painter.add_curve_segment(old_x, old_y,
                                                   cpx0, cpy0,
@@ -233,7 +228,6 @@ void GivRenderer::paint()
 #endif
                     else if (p.op == Op::OP_CLOSE_PATH)
                       {
-                        double cx0=old_x, cy0=old_y, cx1=m_x, cy1=m_y;
                         double margin = line_width * 20;
                         build_clip_rect(margin);
 

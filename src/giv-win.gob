@@ -255,15 +255,6 @@ export_to_file(GivWin *self,
                const char *filename);
 static gboolean auto_reload_function(gpointer data);
 static void
-cb_image_annotate(GivWidget *imgv,
-                  GdkPixbuf *pixbuf,
-                  gint shift_x,
-                  gint shift_y,
-                  gdouble scale_x,
-                  gdouble scale_y,
-                  gpointer user_data
-                  );
-static void
 my_lasso_draw(cairo_t *cr,
               DovtkLassoContext context,
               gpointer user_data);
@@ -2220,8 +2211,6 @@ static void cb_view_pixel_grid (GtkAction *action, gpointer data)
 static void cb_menu_show_image (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
-    GtkWidget *menu_widget = gtk_ui_manager_get_widget(selfp->menu_manager,
-                                                       "/menubar/ViewMenu/Image");
 
     selfp->do_show_image = !selfp->do_show_image;
     gtk_image_viewer_set_show_image(GTK_IMAGE_VIEWER(selfp->w_imgv),

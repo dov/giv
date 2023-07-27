@@ -18,8 +18,7 @@ static gboolean default_draw_lines = TRUE;
 static gboolean default_draw_marks = FALSE;
 static gboolean default_scale_marks = FALSE;
 static gint default_mark_type = 1;
-static gint default_render_type = -1;
-static gdouble default_line_width = 0;
+static gdouble default_line_width = 1;
 static gdouble default_mark_size = 7;
 
 giv_dataset_t *new_giv_dataset(int num_datasets)
@@ -28,8 +27,8 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     GivColor color_of_black = { 0,0,0,0xffff};
 
     dataset_p->points = g_array_new (FALSE, FALSE, sizeof (point_t));
-    dataset_p->do_draw_marks = FALSE;
-    dataset_p->do_draw_lines = TRUE;
+    dataset_p->do_draw_marks = default_draw_marks;
+    dataset_p->do_draw_lines = default_draw_lines;
     dataset_p->do_draw_polygon = FALSE;
     dataset_p->quiver_head = TRUE;
     dataset_p->do_draw_polygon_outline = FALSE;
@@ -38,7 +37,7 @@ giv_dataset_t *new_giv_dataset(int num_datasets)
     dataset_p->mark_type = default_mark_type;
     dataset_p->mark_size = default_mark_size;
     dataset_p->line_style = 0;
-    dataset_p->line_width = 1;
+    dataset_p->line_width = default_line_width;
     dataset_p->text_size = -1;
     dataset_p->text_angle = 0;
     dataset_p->do_scale_fonts = FALSE;

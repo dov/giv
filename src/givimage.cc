@@ -257,8 +257,6 @@ GivImage *giv_image_new_from_file(const char *filename,
 
         // Various checks that it is format we support
         gboolean header_ok = (g_strstr_len(npy_string, 6, "\223NUMPY") == npy_string );
-        gboolean ver_ok = (npy_string[6] == 1
-                           && npy_string[7] == 0);
         gint header_len = *((guint16*)(npy_string+8));
 
         // Use regex to parse the header. Should update this to allow

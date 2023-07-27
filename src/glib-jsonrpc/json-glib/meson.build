@@ -21,8 +21,11 @@ inc = include_directories('..')
 
 libjsonglib = static_library('jsonglib',
                       jsonglib_sources,
-                      c_args: '-DJSON_COMPILATION',
+                      c_args: [
+                        '-DJSON_COMPILATION',
+                        '-Wno-deprecated-declarations'
+                      ],
                       include_directories: inc,
-                      dependencies : [glib_dep],
+                      dependencies : [glib_dep]
                      )
 

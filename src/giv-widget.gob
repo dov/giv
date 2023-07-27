@@ -75,7 +75,6 @@ static void cb_set_pixelsize(double pixelsize,
                              gpointer user_data);
 static void cb_set_vlock(gboolean vlock,
                          gpointer user_data);
-static bool contains(const std::string& haystack, const std::string& needle);
 static void search_and_replace(std::string& subject,
                                const std::string& needle,
                                const std::string& replace);
@@ -244,7 +243,6 @@ class Giv:Widget from Gtk:Image:Viewer
 
         // TBD: Move this to the GivPainterAgg class
         int label = rgb[2]+256*rgb[1]+256*256*rgb[0]-1;
-        GPtrArray *datasets = (GPtrArray*)giv_parser_get_giv_datasets(selfp->giv_parser);
         if (label>=0 && label < selfp->giv_parser->tooltip_num_labels) {
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(self));
             GdkScreen *pointer_screen;
@@ -1111,11 +1109,6 @@ static void cb_set_vlock(gboolean vlock,
     gtk_image_viewer_set_vertical_lock(GTK_IMAGE_VIEWER(self),
                                        vlock);
 }       
-
-static bool contains(const std::string& haystack, const std::string& needle)
-{
-    return haystack.find(needle) != std::string::npos;
-}
 
 static void search_and_replace(std::string& subject,
                                const std::string& needle,

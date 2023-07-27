@@ -15,8 +15,6 @@ requires 2.0.0
 
 %{
 static GtkWidget *hig_like_frame_new(const gchar *label);
-static GtkWidget *entry_new_from_double(double init_val);
-static GtkWidget *entry_new_from_string(const gchar *text);
 static GtkWidget *check_button_new_from_bool(bool init_state);
 static GtkWidget *label_left_new(const gchar *label);
  

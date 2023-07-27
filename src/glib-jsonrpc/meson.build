@@ -12,5 +12,8 @@ libglibjsonrpc = static_library('glibjsonrpc',
                          install : false,
                          include_directories : incjsonglib,
                          dependencies : [glib_dep, gobject_dep],
+                         cpp_args : [
+                           '-Wno-deprecated-declarations'
+                         ]
                         )
   

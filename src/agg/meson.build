@@ -35,4 +35,8 @@ expat_dep = dependency('expat')
 libagg = library('agg',
                  agg_sources,
                  dependencies : expat_dep,
-                 install : false)
+                 install : false,
+                 cpp_args : [
+                   '-Wno-reorder',
+                   '-Wno-unused-function'
+                 ])
