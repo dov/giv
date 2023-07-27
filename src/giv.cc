@@ -17,7 +17,6 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/async_logger.h"
-#include "../config.h"
 #include <glib/gstdio.h>
 #include <plis/plis.h>
 

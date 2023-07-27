@@ -27,7 +27,6 @@ requires 2.0.0
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
-#include "../config.h"
 #include "gtkimageviewer/gtk-image-viewer.h"
 #include "logo_150_inline.i"
 #include "giv-logo.i"
@@ -3249,7 +3248,7 @@ cb_menu_about(GtkAction *action,
                               ,
                               ("The G(reat|tk) Image Viewer"),
                               ARCH,
-                              ("Copyright &#x00a9; Dov Grobgeld, 2022\n"),
+                              ("Copyright &#x00a9; Dov Grobgeld, 2023\n"),
                               ("dov.grobgeld@gmail.com"),
                               GIT_COMMIT_ID,
                               GIT_COMMIT_TIME);
