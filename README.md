@@ -12,12 +12,11 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-Release notes for version 0.9.35, 2022-06-24 Fri
+* Added interactive option "I" for toggling image display
+* Added option for showing ballons by default
+* Added support for Quadratic bezier curves
 
-A bug fix release:
-
-* Fixed clipping of polygons at high zoom levels
-* Fixed grid lines when in horizontal and vertical flip mode
+See also file:NEWS
 
 # Development
 

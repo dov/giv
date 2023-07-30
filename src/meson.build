@@ -153,7 +153,8 @@ giv = executable('giv',
                  include_directories : incglibjsonrpc,
                  dependencies : [gtk_dep, fmt_dep, spdlog_dep],
                  cpp_args : [
-                   '-Wno-deprecated-declarations'] + cpp_args
+                   '-Wno-deprecated-declarations'] + cpp_args,
+                 install : true
                 )
 
 giv_remote_client = executable('giv-remote-client',
