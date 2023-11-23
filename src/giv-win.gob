@@ -1527,7 +1527,7 @@ class Giv:Win from Gtk:Window
                                                  filename,
                                                 NULL))
                     continue;
-                if (!pattern && !(slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))))
+                if (!pattern && !(slip(filename).m("\\.(jpeg|marks|giv|pgm|ppm|png|pbm|bmp|jpg|svg|ssv|npy|webp)$","i") || giv_plugin_supported_file(slipprintf("%s/%s", dirname, filename))))
                     continue;
                 dir_name_list.push(filename);
             }
@@ -1596,6 +1596,8 @@ class Giv:Win from Gtk:Window
     private const gchar *get_filetype_for_index(self,
                                                 int index)
     {
+        if (selfp->filename_list->len==0)
+          return NULL;
         GPtrArray *string_list = (GPtrArray*)g_ptr_array_index(selfp->filename_list, index);
         gchar *filename0 = (gchar*)g_ptr_array_index(string_list, 0);
         const gchar *dot_pos = g_strrstr(filename0, ".");
@@ -1619,6 +1621,8 @@ static gboolean auto_reload_function(gpointer data)
 {
     GivWin *self = GIV_WIN(data);
     gboolean do_reload = false;
+    if (selfp->filename_list->len == 0)
+      return TRUE;
     GPtrArray *fn_list =  (GPtrArray*)g_ptr_array_index(selfp->filename_list,
                                                         selfp->filename_list_index);
     gchar *fn = (gchar*)g_ptr_array_index(fn_list, 0);
@@ -1867,21 +1871,22 @@ cb_key_press_event (GtkWidget * widget,
         const gchar *org_type = giv_win_get_filetype_for_index(self,selfp->filename_list_index);
         int new_index = selfp->filename_list_index;
         int s = selfp->filename_list->len;
-        while(1) {
-            new_index = (new_index + s + index_delta) % s;
-            if (!selfp->giv_settings->do_same_filetype_on_next)
-                break;
-
-            const gchar *new_type = giv_win_get_filetype_for_index(self,new_index);
-            if (org_type == NULL && new_type == NULL)
-                break;
-            if (!org_type || !new_type)
-                continue;
-            
-            if (g_ascii_strcasecmp(org_type,new_type)!=0)
-                continue;
-            break;
-        }
+        if (s)
+          while(1) {
+              new_index = (new_index + s + index_delta) % s;
+              if (!selfp->giv_settings->do_same_filetype_on_next)
+                  break;
+  
+              const gchar *new_type = giv_win_get_filetype_for_index(self,new_index);
+              if (org_type == NULL && new_type == NULL)
+                  break;
+              if (!org_type || !new_type)
+                  continue;
+              
+              if (g_ascii_strcasecmp(org_type,new_type)!=0)
+                  continue;
+              break;
+          }
 
         if (selfp->idle_handle < 0) {
             selfp->idle_index = new_index;

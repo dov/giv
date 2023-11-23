@@ -56,8 +56,15 @@ extern "C" gboolean giv_plugin_supports_file(const char *filename,
                                              guchar *start_chunk,
                                              gint start_chunk_len)
 {
+    char *filename_down = g_utf8_strdown(filename,-1);
+    gboolean is_webp = g_str_has_suffix (filename_down, "webp");
+    g_free(filename_down);
+
+    return is_webp;
+#if 0
     int width, height;
     return WebPGetInfo(start_chunk, start_chunk_len, &width, &height);
+#endif
 }
 
 extern "C" GivImage *giv_plugin_load_file(const char *filename,

@@ -634,7 +634,7 @@ giv_parse_mark_type (const WordBoundaries& wb, int idx, const gchar * fn, gint l
 // Update the bounding box
 static void update_bbox(GivParser *gp,
                         double ms2,  // Half the current mark size
-                        point_t &p)
+                        const point_t &p)
 {
   /* Update bounding box */
   if (p.x < gp->global_mark_min_x)
@@ -739,7 +739,6 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         p.op = Op::OP_CONT;
         p.x = p2.x;
         p.y = p2.y;
-        update_bbox(gp,ms2,p);
       }
     }
     else if (type == STRING_CUBIC_BEZIER) {
@@ -757,7 +756,6 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
         p.op = Op::OP_CONT;
         p.x = wb.GetFloat(5);
         p.y = wb.GetFloat(6);
-        update_bbox(gp,ms2,p);
       }
     }
     else if (type == STRING_ELLIPSE) {
@@ -791,16 +789,7 @@ giv_parser_giv_marks_data_add_line(GivParser *gp,
           p.op = Op::OP_MOVE;
       }
     }
-
-    /* Find marks bounding box */
-    if (p.x < gp->global_mark_min_x)
-      gp->global_mark_min_x = p.x - ms2;
-    if (p.x > gp->global_mark_max_x)
-      gp->global_mark_max_x = p.x + ms2;
-    if (p.y < gp->global_mark_min_y)
-      gp->global_mark_min_y = p.y - ms2;
-    if (p.y > gp->global_mark_max_y)
-      gp->global_mark_max_y = p.y + ms2;
+    update_bbox(gp, ms2, p);
     g_array_append_val(marks->points, p);
     break;
   case STRING_CLOSE_PATH:
