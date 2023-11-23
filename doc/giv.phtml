@@ -93,7 +93,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
 </center>
 <h2 align=center>
     <img src="giv-logo-150.png"><br>
-    <font size=+2>Version 0.9.36</font><br>
+    <font size=+2>Version 0.9.37</font><br>
     <font size=-1>Dov Grobgeld</font><br>
     <font size=-1>Homepage: <a href="http://giv.sourceforge.net/giv">http://giv.sourceforge.net/giv</a></font><br>
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
@@ -571,11 +571,11 @@ giv also contains an embedded JSONRPC client that come in two forms, the simplif
 <p>
 The simplified form splits the arguments on whitespace and takes the first argument as the name of the remote method and the rest as the parameters.
 <pre>
-  giv -remote "load_file /home/dov/pictures/maja.pgm"
+  giv --remote "load_file /home/dov/pictures/maja.pgm"
 </pre>
 The full forms allows specifying the parameters in json syntax. The following command is equivalent to the above code:
 <pre>
-  ./giv -json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
+  ./giv --json_method load_file -json_params '["/home/dov/github/giv/examples/lena.pgm"]'
 </pre>
 <p>
 For windows there is a command line tool called <tt>giv-remote-client.exe</tt> that provides a simple remote client:

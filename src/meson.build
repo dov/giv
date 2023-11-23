@@ -164,5 +164,6 @@ giv_remote_client = executable('giv-remote-client',
                                                gobject_dep,
                                                gio_dep],
                                include_directories : incglibjsonrpc,
+                               install : true,
                               )
 

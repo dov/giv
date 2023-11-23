@@ -51,6 +51,7 @@
 #include "agg_span_allocator.h"
 #include "agg_span_interpolator_linear.h"
 #include "agg_rounded_rect.h"
+#include <cstdint>
 
 namespace agg
 {

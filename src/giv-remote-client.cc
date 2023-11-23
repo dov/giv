@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     while(argp < argc && argv[argp][0] == '-') {
         char *S_ = argv[argp++];
 
-        CASE("-help") {
+        CASE("--help") {
             printf("giv-remote-client - A simple giv protocol client\n\n"
                    "Syntax:\n"
                    "    giv-remote-client [-port] command arguments\n"
@@ -37,11 +37,11 @@ int main(int argc, char **argv)
                    "   to get a list of supported commands.\n"
                    "\n"
                    "Options:\n"
-                   "    -port p    Set port for giv remote jsonrpc server. Default is 8222\n"
+                   "    --port p    Set port for giv remote jsonrpc server. Default is 8222\n"
                    );
             exit(0);
         }
-        CASE("-port") {
+        CASE("--port") {
             giv_port = atoi(argv[argp++]);
             continue;
         }
