@@ -53,7 +53,6 @@ requires 2.0.0
 
 using namespace std;
 using namespace plis;
-using namespace fmt;
 
 #define CASE(s) if (strcmp(s,S_)==0)
 #ifdef WIN32
@@ -591,6 +590,7 @@ class Giv:Win from Gtk:Window
     private gint idle_index = 0;
     private gint idle_handle = -1;
     private time_t cached_mtime = 0;
+    private off_t auto_reload_prev_size = 0;
     private gint current_slice = 0;
     private double pixelsize =  1;
     private gchar *pixelsize_unit = NULL;
@@ -610,6 +610,7 @@ class Giv:Win from Gtk:Window
     public GtkWidget *
       new (bool do_auto_fit_marks,
            bool do_join,
+           bool do_auto_reload,
            int width,
            int height,
            double scale,
@@ -631,6 +632,8 @@ class Giv:Win from Gtk:Window
         GdkPixbuf *pixbuf_icon;
 
         selfp->do_auto_fit_marks = do_auto_fit_marks;
+        if (do_auto_reload)
+            selfp->do_auto_reload = do_auto_reload;
         
         // Heuristically check monitor size and change the default size
         // it for hdpi displays.
@@ -905,6 +908,12 @@ class Giv:Win from Gtk:Window
             gtk_ui_manager_get_widget(selfp->menu_manager,
                                       "/menubar/ViewMenu/Balloons")),
           selfp->giv_settings->default_show_balloons);
+
+        gtk_check_menu_item_set_active(
+            GTK_CHECK_MENU_ITEM(
+                gtk_ui_manager_get_widget(selfp->menu_manager,
+                                          "/menubar/ViewMenu/AutoReload")),
+            selfp->do_auto_reload);
 
         // Handle the filenamelist
         if (argc == argp+1) {
@@ -1230,6 +1239,7 @@ class Giv:Win from Gtk:Window
                     struct stat st;
                     stat(fn, &st);
                     selfp->cached_mtime = st.st_mtime;
+                    selfp->auto_reload_prev_size = st.st_size;
                 }
 
                 g_ptr_array_add(selfp->cb_names, g_strdup(fn));
@@ -1590,7 +1600,7 @@ class Giv:Win from Gtk:Window
 
         // Remember the last measure text
         selfp->last_measure_text =
-            format("{:.5f}", selfp->last_measure_distance_in_pixels*selfp->pixelsize);
+          fmt::format("{:.5f}", selfp->last_measure_distance_in_pixels*selfp->pixelsize);
     }
 
     private const gchar *get_filetype_for_index(self,
@@ -1629,11 +1639,13 @@ static gboolean auto_reload_function(gpointer data)
     struct stat st;
 
     stat(fn, &st);
-    if (st.st_mtime != selfp->cached_mtime) {
+    if (st.st_mtime != selfp->cached_mtime
+        && selfp->auto_reload_prev_size == st.st_size) {
         selfp->cached_mtime = st.st_mtime;
         selfp->auto_reload_trigger = TRUE;
         giv_win_set_current_file(self, selfp->filename_list_index);
     }
+    selfp->auto_reload_prev_size = st.st_size;
 
     if (!selfp->do_auto_reload)
         return FALSE;
@@ -1775,7 +1787,7 @@ cb_button_release_event (GtkWidget * widget,
                                               selfp->measure_y1,
                                               selfp->measure_x2,
                                               selfp->measure_y2);
-      string label = format("{} marks in rectangle", num_marks);
+      string label = fmt::format("{} marks in rectangle", num_marks);
       gtk_label_set_text(GTK_LABEL(selfp->w_info_label), label.c_str());
     }
     selfp->picking_mode = 0;
@@ -2267,12 +2279,11 @@ static void cb_view_auto_reload (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
 
-    selfp->do_auto_reload = !selfp->do_auto_reload;
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(
-            gtk_ui_manager_get_widget(selfp->menu_manager,
-                                      "/menubar/ViewMenu/AutoReload")),
-        selfp->do_auto_reload);
+    GtkWidget *menu_widget = gtk_ui_manager_get_widget(
+      selfp->menu_manager,
+      "/menubar/ViewMenu/AutoReload");
+    selfp->do_auto_reload = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menu_widget));
+    fmt::print("Autoreload = {}\n", selfp->do_auto_reload);
 
     if (selfp->do_auto_reload)
         g_timeout_add(250, auto_reload_function, self);
@@ -2561,10 +2572,10 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
   string font_name = "Sans 10";
 #endif
 
-  string color_string = format("#{:02x}{:02x}{:02x}/0.5",
+  string color_string = fmt::format("#{:02x}{:02x}{:02x}/0.5",
                                0xff,0xaa,0);
   int index = giv_parser_parse_string(giv_parser,
-                                      format("$path measure/{}\n"
+                                      fmt::format("$path measure/{}\n"
                                              "$color {}\n"
                                              "$line_cap butt\n"
                                              "$lw 25\n"
@@ -2583,13 +2594,13 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
                             selfp->measure_x2-selfp->measure_x1);
   double dist = sqrt(sqr(selfp->measure_x2 - selfp->measure_x1)
                      +sqr(selfp->measure_y2 - selfp->measure_y1));
-  string measure_string = format("{:.1f}{}",
+  string measure_string = fmt::format("{:.1f}{}",
                                  dist*selfp->pixelsize,
                                  selfp->pixelsize_unit);
   selfp->measure_indices.push_back(index);
 
   index = giv_parser_parse_string(giv_parser,
-                                  format("$path measure/{}\n"
+                                  fmt::format("$path measure/{}\n"
                                  "$color black\n"
                                  "$text_angle {}\n"
                                  "$text_size 15\n" // Do I need this?
@@ -2608,7 +2619,7 @@ cb_menu_measure_keep (GtkAction *action, gpointer data)
 
 #if 0
   giv_parser_parse_string(giv_parser,
-                          format("$path measure/{}\n"
+                          fmt::format("$path measure/{}\n"
                                  "$color black\n"
                                  "$marks fcircle\n"
                                  "$noline\n"
@@ -2763,6 +2774,7 @@ cb_menu_new_window (GtkAction *action, gpointer data)
 {
     GivWin *self = GIV_WIN(data);
     GtkWidget *w_new_giv = giv_win_new(selfp->do_auto_fit_marks,
+                                       false,
                                        false,
                                        500,500,
                                        -1,0,0,

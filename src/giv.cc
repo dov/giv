@@ -80,6 +80,7 @@ int main(int argc, char **argv)
   // defaults
   bool do_auto_fit_marks = true;
   bool do_join = false;
+  bool do_auto_reload = false;
   double scale = -1;
   double shift_x = 0;
   double shift_y = 0;
@@ -109,6 +110,7 @@ int main(int argc, char **argv)
              "Options:\n"
              "    --log_file log_file  Log giv debug to the given log file\n"
              "    --join               Join the display of all files on command line\n"
+             "    --auto-reload         Force auto reload\n"
              "    -n                   Initially use 1:1 zoom for images.\n"
              "    --geometry           Set size of image viewer\n"
              "    --zoom scale shift_x shift_y   Zoom the image\n"
@@ -132,6 +134,10 @@ int main(int argc, char **argv)
     }
     CASE("--join") {
       do_join = true;
+      continue;
+    }
+    CASE("--auto-reload") {
+      do_auto_reload = true;
       continue;
     }
     CASE("--geometry") {
@@ -280,6 +286,7 @@ int main(int argc, char **argv)
   GtkWidget *giv = giv_win_new(
     do_auto_fit_marks,
     do_join,
+    do_auto_reload,
     width,
     height,
     scale,
