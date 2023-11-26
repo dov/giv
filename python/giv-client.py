@@ -2,7 +2,7 @@
 
 import httplib,json
 
-conn = httplib.HTTPConnection('localhost:8222')
+conn = httplib.HTTPConnection('localhost:8448')
 
 request = {'method':"load_file",
            'params':['/home/dov/github/giv/examples/lena.pgm']} # Full path!

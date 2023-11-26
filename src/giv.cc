@@ -21,7 +21,7 @@
 #include <plis/plis.h>
 
 
-const int GIV_DEFAULT_PORT = 8222;
+const int GIV_DEFAULT_PORT = 8448;
 
 using namespace std;
 using namespace plis;
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   char *export_filename = NULL;
   int giv_port = GIV_DEFAULT_PORT;
   gboolean do_remote = FALSE;
-  int remote_port = 8822;
+  int remote_port = 8448;
   string remote_host = "localhost"; 
   gchar *remote_string=NULL;
   gchar *json_method=NULL;
@@ -114,10 +114,10 @@ int main(int argc, char **argv)
              "    -n                   Initially use 1:1 zoom for images.\n"
              "    --geometry           Set size of image viewer\n"
              "    --zoom scale shift_x shift_y   Zoom the image\n"
-             "    --port p             Set port for giv remote jsonrpc server. Default is 8222\n"
+             "    --port p             Set port for giv remote jsonrpc server. Default is 8448\n"
              "    --remote cmd         Run giv remote command cmd. Use \"-remote\n"
              "                         help\" to get a list of supported commands.\n"
-             "    --remote-port port   Portfor remote client. Default is 8822.\n"
+             "    --remote-port port   Portfor remote client. Default is 8448.\n"
              "    --remote-host host   Host for remote client.\n"
 
              );

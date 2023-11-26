@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import httplib,json
 
-conn = httplib.HTTPConnection('localhost:8222')
+conn = httplib.HTTPConnection('localhost:8448')
 
 request = {'method':"pick_coordinate",
            'params':[]}

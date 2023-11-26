@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const int GIV_DEFAULT_PORT = 8222;
+const int GIV_DEFAULT_PORT = 8448;
 
 static void die(const char *fmt, ...)
 {
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
                    "   to get a list of supported commands.\n"
                    "\n"
                    "Options:\n"
-                   "    --port p    Set port for giv remote jsonrpc server. Default is 8222\n"
+                   "    --port p    Set port for giv remote jsonrpc server. Default is 8448\n"
                    );
             exit(0);
         }
