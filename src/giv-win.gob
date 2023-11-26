@@ -261,7 +261,7 @@ my_lasso_draw_rectangle(cairo_t *cr,
                         DovtkLassoContext context,
                         gpointer user_data);
 static void create_remote_commands(GivWin *self);
-static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y);
+static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y, int button, size_t modifiers);
 
 // The following tables contain all the actions for both the menubar
 // and the popup menus.
@@ -1717,12 +1717,15 @@ cb_button_press_event (GtkWidget * widget,
 
     giv_widget_popdown_balloon(GIV_WIDGET(selfp->w_imgv));
 
-    if (event->button == 1 && selfp->do_pick_coordinate) {
+    if (button!= 2 && selfp->do_pick_coordinate) {
         double world_x, world_y;
         gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                                  event->x, event->y,
                                                  &world_x, &world_y);
-        giv_win_json_pick_reply(self, NULL, world_x, world_y);
+        giv_win_json_pick_reply(self, NULL,
+                                world_x, world_y,
+                                event->button,
+                                event->state);
 
         return true;
     }
@@ -1850,7 +1853,7 @@ cb_key_press_event (GtkWidget * widget,
     if (k==GDK_KEY_Escape)
       {
         if (selfp->do_pick_coordinate)
-          giv_win_json_pick_reply(self, "Aborted", -1,-1);
+            giv_win_json_pick_reply(self, "Aborted", -1,-1,0,0);
       }
     if (// reload
         k == GDK_KEY_KP_Enter
@@ -2286,7 +2289,7 @@ static void cb_view_auto_reload (GtkAction *action, gpointer data)
     fmt::print("Autoreload = {}\n", selfp->do_auto_reload);
 
     if (selfp->do_auto_reload)
-        g_timeout_add(250, auto_reload_function, self);
+        g_timeout_add(100, auto_reload_function, self);
 }
 
 static void
@@ -4600,7 +4603,7 @@ static int cmd_pick_coordinate(GLibJsonRpcServer *server,
   return 0;
 }
 
-static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y)
+static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, double y, int button, size_t modifiers)
 {
   selfp->do_pick_coordinate = false;
 
@@ -4611,6 +4614,8 @@ static void giv_win_json_pick_reply(GivWin *self, const gchar *error, double x, 
       json_builder_begin_array (builder);
       json_builder_add_double_value(builder,x);
       json_builder_add_double_value(builder,y);
+      json_builder_add_int_value(builder,button);
+      json_builder_add_int_value(builder,modifiers);
       json_builder_end_array (builder);
       JsonNode *response = json_node_copy(json_builder_get_root (builder));
       g_object_unref(builder);
