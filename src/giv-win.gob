@@ -1717,7 +1717,7 @@ cb_button_press_event (GtkWidget * widget,
 
     giv_widget_popdown_balloon(GIV_WIDGET(selfp->w_imgv));
 
-    if (button!= 2 && selfp->do_pick_coordinate) {
+    if (event->button!= 2 && selfp->do_pick_coordinate) {
         double world_x, world_y;
         gtk_image_viewer_canv_coord_to_img_coord(GTK_IMAGE_VIEWER(selfp->w_imgv),
                                                  event->x, event->y,

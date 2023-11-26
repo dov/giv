@@ -1,12 +1,13 @@
 #!/usr/bin/python
+######################################################################
+#  A minimal json client
+#
+#  2023-11-26 Sun
+#  Dov Grobgeld <dov.grobgeld@gmail.com>
+######################################################################
+import requests,json
 
-import httplib,json
+data = {'method':"load_file",
+        'params':['/home/dov/github/giv/examples/maja.pgm']} # Full path!
+r = requests.post(f'http://localhost:8448', json.dumps(data))
 
-conn = httplib.HTTPConnection('localhost:8448')
-
-request = {'method':"load_file",
-           'params':['/home/dov/github/giv/examples/lena.pgm']} # Full path!
-
-conn.request("POST", url='', body= json.dumps(request))
-response = json.loads(conn.getresponse().read())['result']
-print response
