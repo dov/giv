@@ -187,6 +187,7 @@ handler (GThreadedSocketService *service,
   gboolean skip_header = TRUE;
   JsonParser *parser = json_parser_new();
   GString *json_string = g_string_new("");
+  JsonNode *response = NULL;
   while (0 < (size = g_input_stream_read (in, buffer,
                                           sizeof buffer, NULL, NULL)))
     {
@@ -214,82 +215,92 @@ handler (GThreadedSocketService *service,
 
   // Get params object without the reader 
   JsonNode *root = json_parser_get_root(parser);
-  JsonObject *root_object = json_node_get_object(root);
-  JsonNode* params = json_object_get_member(root_object, "params");
-
-  // Use reader for method and id
-  JsonReader *reader = json_reader_new(json_parser_get_root(parser));
-  json_reader_read_member (reader, "method");
-  const gchar *method = json_reader_get_string_value (reader);
-  json_reader_end_member (reader);
+  JsonNode* params = NULL;
+  const gchar *method = NULL;
+  gint64 id = 0;
+  if (root == NULL)
+    response = create_fault_msg_response(-2, "Not a valid json object!",id);
+  else
+  {      
+    JsonObject *root_object = json_node_get_object(root);
+    params = json_object_get_member(root_object, "params");
   
-  json_reader_read_member (reader, "id");
-  gint64 id = json_reader_get_int_value(reader);
-  json_reader_end_member (reader);
+    // Use reader for method and id
+    JsonReader *reader = json_reader_new(json_parser_get_root(parser));
+    json_reader_read_member (reader, "method");
+    method = json_reader_get_string_value (reader);
+    json_reader_end_member (reader);
+    
+    json_reader_read_member (reader, "id");
+    id = json_reader_get_int_value(reader);
+    json_reader_end_member (reader);
+  }
 
   // Build the response which is either a response object or an error object
-  JsonNode *response = NULL;
   
   /* Call the callback */
   command_hash_value_t *command_val = NULL;
   if (method)
     command_val = g_hash_table_lookup(jsonrpc_server->command_hash,
                                       method);
-  if (!command_val)
-    response = create_fault_msg_response(-2, "No such method!",id);
-  else if (command_val->async_callback)
-    {
-      if (jsonrpc_server->async_busy)
-        response = create_fault_msg_response(-2, "Busy!",id);
-      else
-        {
-          // With the embedding of the mutex in the query we should
-          // be able to handle more than one connection, so there
-          // is no need to protect against a busy state.
-          // jsonrpc_server->async_busy = TRUE;
-          GLibJsonRpcAsyncQueryPrivate *query = glib_jsonrpc_server_query_new((GLibJsonRpcServer*)jsonrpc_server);
-          
-          // Create a secondary main loop
-          (*command_val->async_callback)((GLibJsonRpcServer*)jsonrpc_server,
-                                         (GLibJsonRpcAsyncQuery*)query,
-                                         method,
-                                         params,
-                                         command_val->user_data);
-          
-          // Lock on a mutex
-          g_mutex_lock(&query->mutex);
-          g_cond_wait(&query->cond, &query->mutex);
-          g_mutex_unlock(&query->mutex);
-
-          if (query->error_num != 0)
-            response = create_fault_value_response(query->error_num,query->reply,id);
-          else
-            response = create_response(query->reply, id);
-          jsonrpc_server->async_busy = FALSE;
-
-          // Erase the query
-          glib_jsonrpc_async_query_free(query);
-        }
-    }
-  else
-    {
-      JsonNode *reply;
-
-      int ret = (*command_val->callback)((GLibJsonRpcServer*)jsonrpc_server,
-                                         method,
-                                         params,
-                                         &reply,
-                                         command_val->user_data);
-
-      if (ret == 0)
-        response = create_response(reply,id);
-      else
-        // For faults expect a string response containing the error
-        response = create_fault_value_response(ret, reply,id);
-
-      if (reply)
-        json_node_free(reply);
-    }
+  if (response == NULL)
+  {
+    if (!command_val)
+      response = create_fault_msg_response(-2, "No such method!",id);
+    else if (command_val->async_callback)
+      {
+        if (jsonrpc_server->async_busy)
+          response = create_fault_msg_response(-2, "Busy!",id);
+        else
+          {
+            // With the embedding of the mutex in the query we should
+            // be able to handle more than one connection, so there
+            // is no need to protect against a busy state.
+            // jsonrpc_server->async_busy = TRUE;
+            GLibJsonRpcAsyncQueryPrivate *query = glib_jsonrpc_server_query_new((GLibJsonRpcServer*)jsonrpc_server);
+            
+            // Create a secondary main loop
+            (*command_val->async_callback)((GLibJsonRpcServer*)jsonrpc_server,
+                                           (GLibJsonRpcAsyncQuery*)query,
+                                           method,
+                                           params,
+                                           command_val->user_data);
+            
+            // Lock on a mutex
+            g_mutex_lock(&query->mutex);
+            g_cond_wait(&query->cond, &query->mutex);
+            g_mutex_unlock(&query->mutex);
+  
+            if (query->error_num != 0)
+              response = create_fault_value_response(query->error_num,query->reply,id);
+            else
+              response = create_response(query->reply, id);
+            jsonrpc_server->async_busy = FALSE;
+  
+            // Erase the query
+            glib_jsonrpc_async_query_free(query);
+          }
+      }
+    else
+      {
+        JsonNode *reply;
+  
+        int ret = (*command_val->callback)((GLibJsonRpcServer*)jsonrpc_server,
+                                           method,
+                                           params,
+                                           &reply,
+                                           command_val->user_data);
+  
+        if (ret == 0)
+          response = create_response(reply,id);
+        else
+          // For faults expect a string response containing the error
+          response = create_fault_value_response(ret, reply,id);
+  
+        if (reply)
+          json_node_free(reply);
+      }
+  }
 
   if (response)
     {

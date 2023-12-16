@@ -4459,8 +4459,89 @@ static int cmd_help(GLibJsonRpcServer *server,
                        "  * load_file fn - Load an image or a giv file\n"
                        "  * giv_string s - Replace the giv file\n"
                        "  * pick_coordinate - Returns the next xy coordinate clicked bythe user\n"
+                       "  * get_transformation - Returns the current image viewer transform\n"
+                       "  * set_transformation - Set the image viewer transformation\n"
                        );
   
+  return 0;
+}
+
+// Get a double value from the current array whether it is
+// expressed as a string or as a json double.
+static double array_get_double(JsonArray *arr, int pos)
+{
+  JsonNode *el = json_array_get_element(arr, pos);
+  const char* str = json_node_get_string(el);
+
+  if (str)
+    return atof(str);
+
+  return json_node_get_double(el);
+}
+
+static int cmd_get_transformation(GLibJsonRpcServer *server,
+                                  const char *method,
+                                  JsonNode *params,
+                                  JsonNode **response,
+                                  gpointer user_data)
+{
+  GivWin *self = (GivWin*)user_data;
+  double scale_x, scale_y;
+  int shift_x, shift_y;
+  gtk_image_viewer_get_scale_and_shift(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                       // output
+                                       &scale_x,
+                                       &scale_y,
+                                       &shift_x,
+                                       &shift_y);
+  JsonBuilder *builder = json_builder_new ();
+  json_builder_begin_array (builder);
+  json_builder_add_double_value(builder,scale_x);
+  json_builder_add_double_value(builder,scale_y);
+  json_builder_add_double_value(builder,1.0*shift_x);
+  json_builder_add_double_value(builder,1.0*shift_y);
+  json_builder_end_array (builder);
+  *response = json_builder_get_root (builder);
+  g_object_unref(builder);
+  return 0;
+}
+
+static int cmd_set_transformation(GLibJsonRpcServer *server,
+                                  const char *method,
+                                  JsonNode *params,
+                                  JsonNode **response,
+                                  gpointer user_data)
+{
+  GivWin *self = (GivWin*)user_data;
+  *response = json_node_new(JSON_NODE_VALUE);
+  
+  if (!JSON_NODE_HOLDS(params, JSON_NODE_ARRAY))
+  {
+    json_node_set_string(*response, "Error! Expected arrayof size 4");
+    return -1;
+  }
+  JsonArray *arr = json_node_get_array(params);
+  if (json_array_get_length(arr)!=4)
+  {
+    json_node_set_string(*response, "Error! Expected arrayof size 4");
+    return -1;
+  }
+
+  // Assume array at the moment
+  double scale_x = array_get_double(arr, 0);
+  double scale_y = array_get_double(arr, 1);
+  double shift_x = array_get_double(arr, 2);
+  double shift_y = array_get_double(arr, 3);
+
+
+  gtk_image_viewer_set_scale_and_shift(GTK_IMAGE_VIEWER(selfp->w_imgv),
+                                       // output
+                                       scale_x,
+                                       scale_y,
+                                       shift_x,
+                                       shift_y);
+  giv_win_redraw(self);
+  json_node_set_string(*response, "Ok");
   return 0;
 }
 
@@ -4658,6 +4739,14 @@ static void create_remote_commands(GivWin *self)
   glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
                                        "help",
                                        cmd_help,
+                                       self);
+  glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
+                                       "get_transformation",
+                                       cmd_get_transformation,
+                                       self);
+  glib_jsonrpc_server_register_command(selfp->jsonrpc_server,
+                                       "set_transformation",
+                                       cmd_set_transformation,
                                        self);
 }
 

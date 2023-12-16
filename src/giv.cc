@@ -117,8 +117,12 @@ int main(int argc, char **argv)
              "    --port p             Set port for giv remote jsonrpc server. Default is 8448\n"
              "    --remote cmd         Run giv remote command cmd. Use \"-remote\n"
              "                         help\" to get a list of supported commands.\n"
+             "                         If a white space separate list cmd is first parameter\n"
+             "                         and the rest are array parameters to the cmd\n"
              "    --remote-port port   Portfor remote client. Default is 8448.\n"
              "    --remote-host host   Host for remote client.\n"
+             "    --json_method cmd    Alternate json remote command syntax including only command\n"
+             "    --json_params prms   Set json remote parameters in json syntax\n"
 
              );
       exit(0);
@@ -241,6 +245,11 @@ int main(int argc, char **argv)
       }
       else if (json_params_string)
         params = glib_jsonrpc_json_string_to_json_node(json_params_string);
+      else
+      {
+        params = json_node_alloc();
+        json_node_init_null(params);
+      }
 
       JsonNode *response = NULL;
       glib_jsonrpc_client_call(client,

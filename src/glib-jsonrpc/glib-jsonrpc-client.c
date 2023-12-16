@@ -146,7 +146,10 @@ int glib_jsonrpc_client_call(GLibJsonRpcClient *client,
           g_error_free(error);
     }
   JsonNode *root_object = json_parser_get_root(parser);
-  *response = json_node_copy(json_object_get_member(json_node_get_object(root_object), "result"));
+  JsonNode *result = json_object_get_member(json_node_get_object(root_object), "result");
+  if (!result)
+    printf("Oops. did not get json result as expected!\n");
+  *response = json_node_copy(result);
   g_object_unref(parser);
 
   return 0;
