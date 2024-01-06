@@ -56,7 +56,7 @@ public class GivColorMap : DrawingArea {
 	{
 		Pango.Rectangle ink_rect, logical_rect;
 		var font_description = new Pango.FontDescription();
-        font_description.set_family("Sans ");
+        font_description.set_family("sans");
         font_description.set_size((int)(9 * Pango.SCALE));
 
 		var layout = Pango.cairo_create_layout(cr);

@@ -36,8 +36,13 @@ while(1):
     this_port = ports[i]
     other_port = ports[1-i]
 
-    r = requests.post(f'http://localhost:{this_port}',
-                      json.dumps(data))
+    # On windows we occasionally fail connecting. Make this a no-op
+    try:
+      r = requests.post(f'http://localhost:{this_port}',
+                        json.dumps(data))
+    except (ConnectionResetError, requests.exceptions.ConnectionError):
+      continue
+
     root = json.loads(r.text)
     if not 'result' in root:
       continue
@@ -46,10 +51,12 @@ while(1):
       # Copy transformation to other
       data = {'method':"set_transformation",
               'params': new_transform}
-#      pdb.set_trace()
-#      print(f'Copying from {this_port} to {other_port}')
-      r = requests.post(f'http://localhost:{other_port}',
-                        json.dumps(data))
+      try:
+        r = requests.post(f'http://localhost:{other_port}',
+                          json.dumps(data))
+      except (ConnectionResetError, requests.exceptions.ConnectionError):
+        continue
+
       transforms[i]=  transforms[1-i] = new_transform
       
   time.sleep(0.05)

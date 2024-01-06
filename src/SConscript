@@ -149,12 +149,11 @@ env.Command("giv-logo.i",
             ["gdk-pixbuf-csource --name=image_giv_icon_inline ../doc/giv-logo.png > giv-logo.i"],
             chdir=1)
 
-if not env['SBOX']:
-    env.Command(["giv-color-map.h",
-                 "giv-color-map.c"],
-                "giv-color-map.vala",
-                ["valac -C --pkg=gtk+-3.0  -H giv-color-map.h --vapi=giv-color-map.vapi giv-color-map.vala"],
-                chdir=True)
+env.Command(["giv-color-map.h",
+             "giv-color-map.c"],
+            "giv-color-map.vala",
+            ["valac -C --pkg=gtk+-3.0  -H giv-color-map.h --vapi=giv-color-map.vapi giv-color-map.vala"],
+            chdir=True)
 
 env.SConscript(['agg/SConscript',
                 'plis/SConscript',
