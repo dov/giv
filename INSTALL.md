@@ -10,9 +10,36 @@ The building steps below have been tested on Fedora, but they probably work with
 
 Both the linux and the cross compilation build require the following dependencies:
 
-- https://github.com/dov/gob2/tree/cpp-new - The `cpp-new` branch. 
-- vala - "Any" resent version will do
-- scons 
+## On Ubuntu
+
+- Run the following command
+```
+sudo apt install libgtk-3-dev bison flex pkg-config libtool \
+valac scons libfmt-dev libzip-dev libspdlog-dev libcfitsio-dev \
+libdcmtk-dev libpcre3-dev gcc g++ libsndfile-dev \
+libglm-dev 
+```
+
+## gob2
+
+- Clone is a gtk preprocessor, which was modified for giv and the following version must be used.
+- Clone from: https://github.com/dov/gob2/tree/cpp-new 
+- Check out the `cpp-new` branch. 
+- Compile as follows:
+```
+./autogen.sh --prefix=/usr/local
+make install
+```
+
+## plis
+
+- plis is a string library developed by the author.
+- Install as follows:
+```
+git clone http://github.com/dov/libplis
+cd libplis/libplis
+scons -u install
+```
 
 # Linux
 
@@ -40,7 +67,7 @@ These are all available by dnf
 
 ## Building giv
 
-Giv may be built:
+After all the above plugin have been installed, giv may be built:
 
 To build giv do in the top directory
 
