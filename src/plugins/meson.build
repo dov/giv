@@ -27,9 +27,9 @@ endif
 foreach plugin_dep : plugins
   shared_library(plugin_dep[0],
                  plugin_dep[1],
-                 link_with:[libgiv_image, libplis],
+                 link_with:[libgiv_image],
                  include_directories : inc,
-                 dependencies : [plugin_dep[2],gtk_dep],
+                 dependencies : [plugin_dep[2],gtk_dep, libplis_dep],
                  install_dir : 'lib/giv-1.0/plugins',
                  install : true
                 )

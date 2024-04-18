@@ -164,7 +164,7 @@ env.Alias("install",
                        glob.glob('src/plugins/*.so')),
            env.Install('/usr/local/share/doc/giv',
                        [g for g in glob.glob('doc/*')
-                        if re.search('\.(png|html|jpg)$',g)]
+                        if re.search(r'\.(png|html|jpg)$',g)]
                        ),
            env.Install('/usr/local/include/giv',
                        ['#/src/giv-widget.h',

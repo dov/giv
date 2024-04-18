@@ -32,11 +32,11 @@ agg_sources = [
 
 expat_dep = dependency('expat')
 
-libagg = library('agg',
-                 agg_sources,
-                 dependencies : expat_dep,
-                 install : false,
-                 cpp_args : [
-                   '-Wno-reorder',
-                   '-Wno-unused-function'
-                 ])
+libagg = static_library('agg',
+                        agg_sources,
+                        dependencies : expat_dep,
+                        install : false,
+                        cpp_args : [
+                          '-Wno-reorder',
+                          '-Wno-unused-function'
+                        ])

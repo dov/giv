@@ -11,6 +11,7 @@
 #include "../givplugin.h"
 #include <glib.h>
 #include <math.h>
+#include <stdint.h>
 #include "tiffio.h"
 
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()

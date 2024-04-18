@@ -99,7 +99,7 @@ static string resolve_path(string filename,
                            string reference)
 {
   // First check if filename is an absolute path
-  if (filesystem::path(filename).is_absolute())
+  if (g_path_is_absolute(filename.c_str()))
     return filename;
 
   size_t i = reference.find_last_of('/');

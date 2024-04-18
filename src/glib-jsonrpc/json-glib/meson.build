@@ -26,6 +26,7 @@ libjsonglib = static_library('jsonglib',
                         '-Wno-deprecated-declarations'
                       ],
                       include_directories: inc,
-                      dependencies : [glib_dep]
+                      dependencies : [glib_dep],
+                      install : false
                      )
 

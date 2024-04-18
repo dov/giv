@@ -54,7 +54,21 @@ This is a small c++ string library that I have been using for various projects. 
 ```
 git clone http://github.com/dov/libplis
 cd libplis
-./autogen.sh --prefix=/usr/local; make -j 8 install
+meson setup build && cd build && ninja 
+sudo ninja install
+```
+
+### gob2
+
+This is a small c++ string library that I have been using for various projects. To install do:
+
+```
+git clone http://github.com/dov/gob2
+cd gob2
+git checkout cpp-new
+./autogen.sh 
+make -j 8
+make install
 ```
 
 ## Prerequisites for the plugins
