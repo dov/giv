@@ -11,7 +11,7 @@ requires 2.0.0
 #include <math.h>
 #include <gtk/gtk.h>
 #include "giv-data.h"
-#include "plis/plis.h"
+#include "libplis/plis.h"
 #include "givimage.h"
 #include "glib-jsonrpc/glib-jsonrpc-server.h"
 %}

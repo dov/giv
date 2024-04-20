@@ -9,7 +9,7 @@
 #include "giv-parser.h"
 #include "giv-data.h"
 #include "GivStringArray.h"
-#include "plis/plis.h"
+#include "libplis/plis.h"
 #include "WordBoundaries.h"
 #include <iostream>
 #include <filesystem>

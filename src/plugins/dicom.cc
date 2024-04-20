@@ -14,7 +14,7 @@
 #include <sstream>
 #include <string.h>
 #include <math.h>
-#include "plis/plis.h"
+#include "libplis/plis.h"
 
 using namespace plis;
 using namespace std;

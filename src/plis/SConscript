@@ -1,7 +1,0 @@
-Import('env')
-
-env.Library("plis_local",
-            ["plis.cc"],
-            CPPDEFINES=[],
-            LIBS=['pcre'])
-

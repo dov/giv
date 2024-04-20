@@ -1,5 +1,6 @@
-gob2 = find_program('gob2')
 patch_src = find_program('patch_src.py')
+
+gob2 = gob2_proj.get_variable('gob2_exe')
 
 gen_src = custom_target('gen-output',
   output : ['gtk-image-viewer.h','gtk-image-viewer-private.h','gtk-image-viewer.c'],

@@ -8,7 +8,7 @@
  * 
  */
 #include "giv-data.h"
-#include "plis/plis.h"
+#include "libplis/plis.h"
 
 using namespace plis;
 

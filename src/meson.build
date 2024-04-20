@@ -1,14 +1,4 @@
-gob2 = find_program('gob2')
-
-PACKAGE_DOC_DIR = '../doc'
-PACKAGE_PLUGIN_DIR = '/usr/local/lib/giv-1.0/plugins/'
-
-add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
-                      '-DPACKAGE_PLUGIN_DIR="'+PACKAGE_PLUGIN_DIR+'" '],
-                     language : 'cpp')
-add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
-                      '-DPACKAGE_PLUGIN_DIR="'+PACKAGE_PLUGIN_DIR+'" '],
-                     language : 'c')
+gob2 = gob2_proj.get_variable('gob2_exe')
 
 giv_widget_src = custom_target('gen-output',
   output : ['giv-widget.h','giv-widget-private.h','giv-widget.cc'],
@@ -29,7 +19,6 @@ giv_widget_sources = [
   'giv-data.cc',
   'giv-markup.cc',
   'giv_agg_arrowhead.cc',
-  'giv-settings.cc',
   'clipper.cpp',
   'SutherlandHodgmanPolygonClipping.cc'
 ]
@@ -46,7 +35,7 @@ gtk_dep = dependency('gtk+-3.0')
 fmt_dep = dependency('fmt')
 spdlog_dep = dependency('spdlog')
 gmodule_dep = dependency('gmodule-2.0')
-libplis_dep = dependency('plis')
+libplis_dep = dependency('libplis')
 
 libgivwidget = shared_library(
   'giv-widget',

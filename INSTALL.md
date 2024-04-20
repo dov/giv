@@ -20,56 +20,11 @@ libdcmtk-dev libpcre3-dev gcc g++ libsndfile-dev \
 libglm-dev 
 ```
 
-## gob2
-
-- Clone is a gtk preprocessor, which was modified for giv and the following version must be used.
-- Clone from: https://github.com/dov/gob2/tree/cpp-new 
-- Check out the `cpp-new` branch. 
-- Compile as follows:
-```
-./autogen.sh --prefix=/usr/local
-make install
-```
-
-## plis
-
-- plis is a string library developed by the author.
-- Install as follows:
-```
-git clone http://github.com/dov/libplis
-cd libplis/libplis
-scons -u install
-```
-
 # Linux
 
-The prefered building system is scons under Linux. automake is currently broken, and I started porting to meson, but I haven't finished it. 
+The prefered building system is meson under Linux. 
 
 ## Prerequisites for giv
-
-### libplis
-
-This is a small c++ string library that I have been using for various projects. To install do:
-
-```
-git clone http://github.com/dov/libplis
-cd libplis
-meson setup build && cd build && ninja 
-sudo ninja install
-```
-
-### gob2
-
-This is a small c++ string library that I have been using for various projects. To install do:
-
-```
-git clone http://github.com/dov/gob2
-cd gob2
-git checkout cpp-new
-./autogen.sh 
-make -j 8
-make install
-```
 
 ## Prerequisites for the plugins
 
@@ -77,17 +32,17 @@ make install
 - dcmtk
 - libwebp
 
-These are all available by dnf
+These are all available by dnf or apt. However, if the dependencies are not found, the plugins are skipped automatically during build.
 
 ## Building giv
 
 After all the above plugin have been installed, giv may be built:
 
-To build giv do in the top directory
-
 ```
-scons -j 8 
-scons -j 8 install
+meson setup build
+cd buid
+ninja
+ninja install
 ```
 
 # Windows
