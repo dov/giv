@@ -1,5 +1,7 @@
 gob2 = gob2_proj.get_variable('gob2_exe')
+pymod = import('python')
 
+python = pymod.find_installation()
 giv_widget_src = custom_target('gen-output',
   output : ['giv-widget.h','giv-widget-private.h','giv-widget.cc'],
   input : 'giv-widget.gob',
@@ -24,7 +26,6 @@ giv_widget_sources = [
 ]
 
 subdir('agg')
-#subdir('plis')
 subdir('glib-jsonrpc')
 subdir('gtkimageviewer')
 
@@ -35,7 +36,6 @@ gtk_dep = dependency('gtk+-3.0')
 fmt_dep = dependency('fmt')
 spdlog_dep = dependency('spdlog')
 gmodule_dep = dependency('gmodule-2.0')
-libplis_dep = dependency('libplis')
 
 libgivwidget = shared_library(
   'giv-widget',
@@ -99,6 +99,33 @@ foreach basename : [
     command : [gob2, '-o', '@OUTDIR@', '--for-cpp', '@INPUT@'],
     )[2]
 endforeach
+
+file2c = find_program('file2c.py')
+
+foreach src_trg : [
+  ['menu-top-xml.i','menu-top.xml'],
+  ['menu-popup-xml.i','menu-popup.xml'],
+  ['copyright.i','copyright.markup']]
+
+  target = src_trg[0]
+  source = src_trg[1]
+  giv_src += custom_target(
+    target,
+    output : [target],
+    input : source,
+    command : [file2c, '--source', '@INPUT@', '--target', '@OUTPUT@'],
+    )
+endforeach
+  
+gdk_pixbuf_csource = find_program('gdk-pixbuf-csource')
+
+giv_src += custom_target(
+  'giv-logo.i',
+  output : ['giv-logo.i'],
+  input : ['../doc/giv-logo.png'],
+  capture : true,
+  command : [gdk_pixbuf_csource,  '--name=image_giv_icon_inline', '@INPUT@']
+)
 
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')

@@ -3,7 +3,6 @@ inc = ['..']
 png_dep = dependency('libpng')
 zip_dep = dependency('libzip')
 tiff_dep = dependency('libtiff-4')
-libplis_dep = dependency('libplis')
 
 plugins = [['npy', 'npy.c',  []],
            ['tiff','tiff.c', [tiff_dep]],

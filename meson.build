@@ -3,7 +3,7 @@ project('giv', ['c','cpp','vala'],
   license: 'LGPLv3+')
 
 PACKAGE_DOC_DIR = 'doc'
-PACKAGE_PLUGIN_DIR = get_option('prefix') + 'lib/giv-1.0/plugins/'
+PACKAGE_PLUGIN_DIR = get_option('prefix') / 'lib/giv-1.0/plugins/'
 
 add_global_arguments('-DSPDLOG_FMT_EXTERNAL',
                      language : 'cpp')
@@ -17,7 +17,7 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
 
 gob2_proj = subproject('gob2')
 
-libsimple_dep = dependency(
+libplis_dep = dependency(
   'libplis',
   fallback : ['libplis', 'libplis_dep'],
   default_options: ['default_library=static']
