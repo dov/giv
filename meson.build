@@ -16,12 +16,7 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                      language : 'c')
 
 gob2_proj = subproject('gob2')
-
-libplis_dep = dependency(
-  'libplis',
-  fallback : ['libplis', 'libplis_dep'],
-  default_options: ['default_library=static']
-)
+libplis_dep = subproject('libplis').get_variable('libplis_dep')
 
 gnome = import('gnome')
 pkgconfig = import('pkgconfig')

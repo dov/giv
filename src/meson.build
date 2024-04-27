@@ -2,6 +2,10 @@ gob2 = gob2_proj.get_variable('gob2_exe')
 pymod = import('python')
 
 python = pymod.find_installation()
+
+# Can't use the gob2 generator for giv-widget.gob because
+# it hides the include file, which we need below. So we
+# must use a custom_target.
 giv_widget_src = custom_target('gen-output',
   output : ['giv-widget.h','giv-widget-private.h','giv-widget.cc'],
   input : 'giv-widget.gob',
@@ -77,28 +81,33 @@ subdir('plugins')
 libgiv_color = static_library(
   'giv-color-map',
   ['giv-color-map.vala'],
-  dependencies : [gtk_dep])
+  dependencies : [gtk_dep],
+  c_args : [
+    '-Wno-deprecated-declarations',
+    '-Wno-discarded-qualifiers',
+    '-Wno-unused-but-set-variable',
+    '-Wno-unused-variable'
+  ]
+)
 
 giv_src = ['giv.cc',
            'dovtk-lasso.c']
 
-foreach basename : [
-  'giv-win',
-  'giv-mark-tree-dialog',
-  'giv-info',
-  'giv-contrast',
-  'giv-histo',
-  'giv-calibrate-dialog',
-  'giv-settings',
-  'giv-settings-editor',
-  ] 
-  giv_src += custom_target(
-    basename + '.cc',
-    output : [basename + '.h',basename + '-private.h',basename + '.cc'],
-    input : basename +'.gob',
-    command : [gob2, '-o', '@OUTDIR@', '--for-cpp', '@INPUT@'],
-    )[2]
-endforeach
+gob_gen = generator(gob2,
+                    output : ['@BASENAME@.h',
+                              '@BASENAME@-private.h',
+                              '@BASENAME@.cc'],
+                    arguments : ['-o','@BUILD_DIR@','--for-cpp', '@INPUT@'])
+                     
+giv_src += gob_gen.process(                    
+  'giv-win.gob',
+  'giv-mark-tree-dialog.gob',
+  'giv-info.gob',
+  'giv-contrast.gob',
+  'giv-histo.gob',
+  'giv-calibrate-dialog.gob',
+  'giv-settings.gob',
+  'giv-settings-editor.gob')
 
 file2c = find_program('file2c.py')
 
