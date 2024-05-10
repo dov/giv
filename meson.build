@@ -44,6 +44,12 @@ endif
 gnome = import('gnome')
 pkgconfig = import('pkgconfig')
 
+if host_machine.system() == 'windows'
+  name_prefix=''
+else
+  name_prefix = 'lib'
+endif
+
 subdir('src')
 
 pkgconfig.generate(libgivwidget,
@@ -72,7 +78,7 @@ if host_machine.system() == 'windows'
     '-DARCH='+arch,
     '-DHOST='+host,
     '-DHOSTBITS=64',
-    '-DVERSION='+'v'+ version,
+    '-DVERSION='+ version,
     '-DLIBGCCDLL=libgcc_s_seh-1.dll',
     '-DSYSROOT=\\usr\\'+arch+'\\sys-root',
     '@INPUT@',
@@ -83,7 +89,7 @@ if host_machine.system() == 'windows'
                        input: files('giv.nsi'),
                        build_always_stale: true,
                        command: nsis_cmd,
-                       depends: [giv]
+                       depends: [giv, giv_remote_client]
                        )
   alias_target('installer', nsis)
 endif

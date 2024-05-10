@@ -56,8 +56,8 @@ libgivwidget = shared_library(
   install : true,
   cpp_args : [
     '-Wno-deprecated-declarations'
-  ]
-    
+  ],
+  name_prefix : name_prefix
 )
 
 libgiv_image_src = ['givimage.cc',
@@ -69,7 +69,8 @@ libgiv_image = shared_library(
   'giv-image',
   libgiv_image_src,
   dependencies : deps,
-  install : true
+  install : true,
+  name_prefix : name_prefix
 )
 
 subdir('plugins')
@@ -175,7 +176,8 @@ giv = executable('giv',
                  dependencies : deps,
                  cpp_args : [
                    '-Wno-deprecated-declarations'] + cpp_args,
-                 install : true
+                 install : true,
+                 gui_app : true
                 )
 
 giv_remote_client = executable('giv-remote-client',

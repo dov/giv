@@ -34,9 +34,10 @@ File /r examples
 File /r python
 
 SetOutPath $INSTDIR\bin
-File src\giv.exe
-File src\giv-image.dll
-File src\giv-remote-client.exe
+File build_mingw64\src\giv.exe
+File build_mingw64\src\giv-image.dll
+File build_mingw64\src\giv-widget.dll
+File build_mingw64\src\giv-remote-client.exe
 File ${SYSROOT}\mingw\bin\${LIBGCCDLL}
 File ${SYSROOT}\mingw\bin\libexpat-1.dll
 File ${SYSROOT}\mingw\bin\libstdc++-6.dll
@@ -74,6 +75,7 @@ File ${SYSROOT}\mingw\bin\libssp-0.dll
 File ${SYSROOT}\mingw\bin\libfribidi-0.dll
 File ${SYSROOT}\mingw\bin\libharfbuzz-0.dll
 File ${SYSROOT}\mingw\bin\libcfitsio-*.dll
+File build_mingw64/subprojects/fmt-10.2.0/libfmt.dll
 
 #File \usr\local\mingw32\bin\libjson-glib-1.0-0.dll
 
@@ -133,7 +135,7 @@ File /r ${SYSROOT}\mingw\share\glib-2.0\schemas
 
 # Plugins
 SetOutPath $INSTDIR\plugins
-File src\plugins\*.dll
+File build_mingw64\src\plugins\*.dll
 
 # Build the gdk-pixbuf.loaders file automatically
 ExpandEnvStrings $0 %COMSPEC%

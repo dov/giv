@@ -31,7 +31,8 @@ foreach plugin_dep : plugins
                  include_directories : inc,
                  dependencies : plugin_dep[2] + [gtk_dep, libplis_dep],
                  install_dir : 'lib/giv-1.0/plugins',
-                 install : true
+                 install : true,
+                 name_prefix : name_prefix
                 )
 endforeach
                         
