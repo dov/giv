@@ -1,0 +1,20 @@
+[binaries]
+c = '/usr/bin/x86_64-w64-mingw32-gcc'
+cpp = '/usr/bin/x86_64-w64-mingw32-g++'
+ar = '/usr/bin/x86_64-w64-mingw32-ar'
+strip = '/usr/bin/x86_64-w64-mingw32-strip'
+pkg-config = 'pkg-config'
+windres = '/usr/bin/x86_64-w64-mingw32-windres'
+exe_wrapper = 'wine64'
+
+[properties]
+sys_root = ''
+pkg_config_path = ''
+pkg_config_libdir = '/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pkgconfig:/usr/local/mingw64/lib/pkgconfig/'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+

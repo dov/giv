@@ -30,11 +30,9 @@ agg_sources = [
 'agg_vpgen_segmentator.cpp',
 ]
 
-expat_dep = dependency('expat')
-
 libagg = static_library('agg',
                         agg_sources,
-                        dependencies : expat_dep,
+                        dependencies : [expat_dep, fmt_dep, spdlog_dep],
                         install : false,
                         cpp_args : [
                           '-Wno-reorder',

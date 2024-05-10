@@ -74,7 +74,7 @@ with open(nsi_file) as fh:
 print('\n'.join('%s -> %s'%f for f in files))
 
 
-zipname = 'Giv-'+vars['VERSION']+'-'+vars['COMMITIDSHORT']
+zipname = 'Giv-'+vars['VERSION']+'-'+vars['COMMITID_SHORT']
 z = zipfile.ZipFile(zipname + '.zip',
                     mode='w',
                     compression=zipfile.ZIP_DEFLATED)

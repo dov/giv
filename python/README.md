@@ -1,6 +1,5 @@
 # Description
-This directory contains some python packages for interactive with
-giv
+This directory contains some python packages for interactive use of giv
 
 # Contents
 

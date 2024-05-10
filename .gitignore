@@ -52,3 +52,6 @@ config.h
 *.gz
 /doc/perl-toc.html
 *~
+/.cache/
+/src/plugins/.deps/
+/src/plugins/.libs/

@@ -62,6 +62,13 @@ sudo dnf -y install mingw64-libwebp
 
 The following libraries are not available as binary downloads and may be installed from source as follows described below:
 
+## Cross compile with meson
+
+```
+env PKG_CONFIG_PATH= meson setup build_mingw64 --cross-file cross_mingw64.txt -Ddefault_library=shared -Dbuildtype=release
+ninja -C build_mingw64
+
+```
 ## Building Prerequisites
 
 ### libplis
@@ -104,27 +111,3 @@ ZLIB_LIBRARY_RELEASE:FILEPATH=/usr/x86_64-w64-mingw32/sys-root/mingw/lib/libz.a
 ```
   - After this change, ~cmake~ may be run again and it worked
 
-### fmt
-    - Compilation:
-```
-unzip  ~/hd/Download/fmt-9.1.0.zip
-cd fmt-9.1.0
-mkdir build_mingw64
-cd build_mingw64
-cmake -DFMT_TEST=OFF -DCMAKE_TOOLCHAIN_FILE=/home/dov/git/dov-env/cmake/mingw-w64-x86_64.cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mingw64 ..
-```
-
-### glm
-    - Currently the main branch is broken with regards to installation. The following pull request fixes it. Use this glm version:
-    - https://github.com/g-truc/glm/pull/1117
-    - Compilation
-
-```
-wget https://github.com/Tachi107/glm/archive/refs/heads/cmake-install-improvements.zip
-unzip cmake-install-improvements.zip
-cd glm-cmake-install-improvements
-mkdir build_mingw64
-cd build_mingw64
-cmake -DGLM_TEST_ENABLE=OFF -DCMAKE_TOOLCHAIN_FILE=/home/dov/git/dov-env/cmake/mingw-w64-x86_64.cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mingw64 ..
-make install
-```

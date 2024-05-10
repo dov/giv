@@ -37,9 +37,9 @@ incagg = include_directories('agg')
 incgtkimageviewer = include_directories('agg')
 
 gtk_dep = dependency('gtk+-3.0')
-fmt_dep = dependency('fmt')
-spdlog_dep = dependency('spdlog')
 gmodule_dep = dependency('gmodule-2.0')
+
+deps = [gtk_dep, fmt_dep, libplis_dep, glm_dep, spdlog_dep, gmodule_dep]
 
 libgivwidget = shared_library(
   'giv-widget',
@@ -52,7 +52,7 @@ libgivwidget = shared_library(
     libagg,
     libgtkimageviewer
   ],
-  dependencies : [gtk_dep,fmt_dep, libplis_dep],
+  dependencies : deps,
   install : true,
   cpp_args : [
     '-Wno-deprecated-declarations'
@@ -68,11 +68,7 @@ libgiv_image_src = ['givimage.cc',
 libgiv_image = shared_library(
   'giv-image',
   libgiv_image_src,
-  dependencies : [
-    gtk_dep,
-    gmodule_dep,
-    fmt_dep,
-    spdlog_dep],
+  dependencies : deps,
   install : true
 )
 
@@ -176,7 +172,7 @@ giv = executable('giv',
                    libgiv_color,
                  ],
                  include_directories : incglibjsonrpc,
-                 dependencies : [gtk_dep, fmt_dep, spdlog_dep, libplis_dep],
+                 dependencies : deps,
                  cpp_args : [
                    '-Wno-deprecated-declarations'] + cpp_args,
                  install : true

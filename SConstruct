@@ -19,7 +19,7 @@ env = Environment(LIBPATH=[],
                   )
 
 env['SBOX'] = False
-env['COMMITIDSHORT'] = commit_id[0:6]
+env['COMMITID_SHORT'] = commit_id[0:6]
 commit_id = os.popen('git rev-parse HEAD').read().replace('\n','')
 commit_time = os.popen('git log --pretty=\'%ci\' -n1').read().replace('\n','')
 env['GIT_COMMIT_ID'] = commit_id
@@ -68,14 +68,14 @@ if ARGUMENTS.get('mingw', 0) or ARGUMENTS.get('mingw64', 0):
                  "src/giv-remote-client.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["makensis -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+                ["makensis -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITID_SHORT=${COMMITID_SHORT} giv.nsi"])
     env.Command("Giv.zip",
                 ["src/giv.exe",
                  "src/giv-image.dll",
                  "src/giv-remote-client.exe",
                  "giv.nsi",
                  ] + glob.glob("src/plugins/*.dll"),
-                ["./nsistozip -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITIDSHORT=${COMMITIDSHORT} giv.nsi"])
+                ["./nsistozip -DHOSTBITS=${HOSTBITS} -DVERSION=${VERSION} -DHOST=${HOST} -DSYSROOT=${SYSROOT} -DLIBGCCDLL=${LIBGCCDLL} -DCOMMITID_SHORT=${COMMITID_SHORT} giv.nsi"])
                 
     env.Append(LINKFLAGS=['-mwindows'])
 

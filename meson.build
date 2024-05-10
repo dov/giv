@@ -2,6 +2,10 @@ project('giv', ['c','cpp','vala'],
   version : '0.9.38',
   license: 'LGPLv3+')
 
+name='giv'
+name_cap = 'Giv'
+version = meson.project_version()
+
 PACKAGE_DOC_DIR = 'doc'
 PACKAGE_PLUGIN_DIR = get_option('prefix') / 'lib/giv-1.0/plugins/'
 
@@ -16,7 +20,26 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                      language : 'c')
 
 gob2_proj = subproject('gob2')
-libplis_dep = subproject('libplis').get_variable('libplis_dep')
+libplis_dep = subproject('libplis',
+                         default_options: ['default_library=static']).get_variable('libplis_dep')
+spdlog_dep = dependency('spdlog', required : false)
+fmt_proj = subproject('fmt')
+
+fmt_dep = dependency('fmt', version : '10.2.0')
+if not fmt_dep.found()
+  fmt_dep = fmt_proj.get_variable('fmt_dep')
+endif
+glm_dep = dependency('glm', version : '1.0.1')
+if not glm_dep.found()
+  glm_dep = glm_proj.get_variable('glm_dep')
+endif
+
+expat_dep = dependency('expat')
+
+if not spdlog_dep.found()
+  spdlog_proj = subproject('spdlog')
+  spdlog_dep = spdlog_proj.get_variable('spdlog_dep')
+endif
 
 gnome = import('gnome')
 pkgconfig = import('pkgconfig')
@@ -30,3 +53,37 @@ pkgconfig.generate(libgivwidget,
   requires: ['gtk-image-viewer','fmt'],
   filebase: 'giv',
 )
+
+fs = import('fs')
+builddir = fs.name(meson.current_build_dir())
+buildroot = fs.name(meson.current_source_dir())
+if host_machine.system() == 'windows'
+  arch = 'x86_64-w64-mingw32'
+  host = 'w64'
+
+  nsis_cmd = [
+    find_program('makensis'),
+    '-DOUTDIR='+builddir,
+    '-DICON_DIR=.',
+    '-DCOMMITID_SHORT='+sha1_short,
+    '-DNAME='+name,
+    '-DNAME_CAP='+name_cap,
+    '-DICON_NAME='+name + '_logo',
+    '-DARCH='+arch,
+    '-DHOST='+host,
+    '-DHOSTBITS=64',
+    '-DVERSION='+'v'+ version,
+    '-DLIBGCCDLL=libgcc_s_seh-1.dll',
+    '-DSYSROOT=\\usr\\'+arch+'\\sys-root',
+    '@INPUT@',
+  ]
+
+  nsis = custom_target('nsis',
+                       output: 'install-giv.exe',
+                       input: files('giv.nsi'),
+                       build_always_stale: true,
+                       command: nsis_cmd,
+                       depends: [giv]
+                       )
+  alias_target('installer', nsis)
+endif
