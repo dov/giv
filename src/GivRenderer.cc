@@ -166,7 +166,8 @@ void GivRenderer::paint()
 
                     if (p_idx==0 || p.op == Op::OP_MOVE) {
                         if (i<2 && p.op == Op::OP_MOVE) {
-                            add_clipped_poly(poly, false);
+                            // is_closed is always true for polygons! 
+                            add_clipped_poly(poly, dataset->do_draw_polygon);
                             poly.clear();
                             painter.new_path();
                             poly.push_back({m_x,m_y});
