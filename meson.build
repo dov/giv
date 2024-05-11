@@ -6,7 +6,7 @@ name='giv'
 name_cap = 'Giv'
 version = meson.project_version()
 
-PACKAGE_DOC_DIR = 'doc'
+PACKAGE_DOC_DIR = get_option('prefix') / 'share/doc/giv'
 PACKAGE_PLUGIN_DIR = get_option('prefix') / 'lib/giv-1.0/plugins/'
 
 add_global_arguments('-DSPDLOG_FMT_EXTERNAL',
@@ -29,7 +29,7 @@ fmt_dep = dependency('fmt', version : '10.2.0')
 if not fmt_dep.found()
   fmt_dep = fmt_proj.get_variable('fmt_dep')
 endif
-glm_dep = dependency('glm', version : '1.0.1')
+glm_dep = dependency('glm')
 if not glm_dep.found()
   glm_dep = glm_proj.get_variable('glm_dep')
 endif
@@ -45,9 +45,9 @@ gnome = import('gnome')
 pkgconfig = import('pkgconfig')
 
 if host_machine.system() == 'windows'
-  name_prefix=''
+  name_prefix = ''
 else
-  name_prefix = 'lib'
+  name_prefix = []
 endif
 
 subdir('src')
