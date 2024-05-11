@@ -78,6 +78,8 @@ static void cb_set_vlock(gboolean vlock,
 static void search_and_replace(std::string& subject,
                                const std::string& needle,
                                const std::string& replace);
+static string named_entities_to_unicode(const std::string& s);
+
 %}
 
 %privateheader{
@@ -257,7 +259,7 @@ class Giv:Widget from Gtk:Image:Viewer
             if (balloon_string.size()) {
                 if (selfp->do_pango_markup)
                   gtk_label_set_markup(GTK_LABEL(selfp->w_balloon_label),
-                                       balloon_string.c_str());
+                                       named_entities_to_unicode(balloon_string).c_str());
                 else
                   gtk_label_set_text(GTK_LABEL(selfp->w_balloon_label),
                                      balloon_string.c_str());
@@ -1123,5 +1125,27 @@ static void search_and_replace(std::string& subject,
         pos = subject.find(needle, pos + replace.size());
     }
 }
+
+static string named_entities_to_unicode(const std::string& s)
+{
+    string ret = s;
+
+    search_and_replace(ret, "&Delta;","Δ");
+    search_and_replace(ret, "&delta;","δ");
+    search_and_replace(ret, "&sigma;","σ");
+    search_and_replace(ret, "&mu;","μ");
+    search_and_replace(ret, "&theta;","θ");
+    search_and_replace(ret, "&phi;","φ");
+    search_and_replace(ret, "&alpha;","α");
+    search_and_replace(ret, "&beta;","β");
+    search_and_replace(ret, "&deg;","°");
+    search_and_replace(ret, "&times;","×");
+    search_and_replace(ret, "&rarr;","→");
+    search_and_replace(ret, "&bra;","〈"); // bra = left angle bracket
+    search_and_replace(ret, "&ket;","〉"); // ket = right anle bracket
+
+    return ret;
+}
+
 %}
 
