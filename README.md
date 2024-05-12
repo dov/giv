@@ -12,10 +12,6 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-* Added interactive option "I" for toggling image display
-* Added option for showing ballons by default
-* Added support for Quadratic bezier curves
-
 See also file:NEWS
 
 # Development

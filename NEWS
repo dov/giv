@@ -3,6 +3,14 @@ Version 0.9.38:
 * Fixed bug in auto_reload
 * Added command line option for auto reload
 * Added mouse button and modifier info to the pick_coordinate jsonrpc command
+* Moved make system to meson entirely with subprojects for 3rd parties
+* Fixed yet another clipping bug
+* Added jsonrpc commands get_transform and set_transform
+* Created python example of how to use remote server to sync between two giv instances
+* Fixed windows plugins for webp and fits formats
+* Added support for a few select entity encoded characters e.g. &Delta;
+* Fixed string parsing related crash
+* Removed deprecated automake and scons build systems from source tree
 
 Version 0.9.37:
 
