@@ -51,6 +51,7 @@ else
 endif
 
 subdir('src')
+subdir('doc')
 
 pkgconfig.generate(libgivwidget,
   name: 'givwidget',

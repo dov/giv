@@ -66,7 +66,8 @@ sub code_snippet {   # usage: code_snippet($filename, title)
    $par = "<table border>" .
            "<tr><th bgcolor=#E0E0FF><a href=\"$filename\">$title</a>" .
 	   "<tr><td bgcolor=#FFE0E0><pre>";
-   open(IN, $filename);
+   # Rely on meson build tree structure
+   open(IN, "../doc/$filename");
    while(<IN>) {
        chomp;
        $_ = html_quote($_);
@@ -99,7 +100,7 @@ sub code_snippet {   # usage: code_snippet($filename, title)
     <font size=-1>Development: <a href="http://github.com/dov/giv">http://github.com/dov/giv</a></font><br>
     <font size=-1>Chat room: <a href="https://gitter.im/dov/giv?utm_source=share-link&utm_medium=link&utm_campaign=share-link">Gitter Giv Chat room</a></font><br>
     <font size=-1><a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></font><br>
-    <font size=-1>Last modified: 2023-11-26 Sun</font>
+    <font size=-1>Last modified: 2024-05-12 Sun</font>
 </h2>
 
 <: section("Description") :>
