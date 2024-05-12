@@ -56,6 +56,8 @@ bool WordBoundaries::CheckMatch(int Index, const char* Candidate) const
 // Get the remaining string starting at word number Index
 const char *WordBoundaries::GetRestAsString(int Index)
 {
+  if (Index >= (int)size())
+    return "";
   return InspectionString + (*this)[Index].first;
 }
 
