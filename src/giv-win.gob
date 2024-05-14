@@ -49,7 +49,7 @@ requires 2.0.0
 #include "glib-jsonrpc/glib-jsonrpc-json.h"
 #include "fmt/core.h"
 #include "spdlog/spdlog.h"
-
+#include "version.h"
 
 using namespace std;
 using namespace plis;

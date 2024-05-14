@@ -1,0 +1,4 @@
+#define ARCH "@ARCH"
+#define GIT_COMMIT_ID "@GIT_COMMIT_ID@"
+#define GIT_COMMIT_TIME "@GIT_COMMIT_TIME@"
+#define VERSION "@VERSION@"

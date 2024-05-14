@@ -19,7 +19,7 @@
 #include "spdlog/async_logger.h"
 #include <glib/gstdio.h>
 #include <libplis/plis.h>
-
+#include "version.h"
 
 const int GIV_DEFAULT_PORT = 8448;
 

@@ -141,26 +141,39 @@ incglibjsonrpc = include_directories('glib-jsonrpc')
 # Config variables
 arch = 'x86_64 GNU/Linux'
 
-r = run_command('git', 'rev-parse', 'HEAD', check: true)
-if r.returncode() != 0
-  # it failed
+r = run_command('git', 'rev-parse', 'HEAD', check: false)
+regenerate_config = false
+if r.returncode() == 0
+  regenerate_config = true
+  sha1 = r.stdout().strip()
+  # meson version 0.56 will have substr()
+  sha1_short = sha1[0]+sha1[1]+sha1[2]+sha1[3]+sha1[4]+sha1[5]
 endif
-sha1 = r.stdout().strip()
-# meson version 0.56 will have substr()
-sha1_short = sha1[0]+sha1[1]+sha1[2]+sha1[3]+sha1[4]+sha1[5]
 
-r = run_command('git', 'log', '--pretty=%ci', '-n1', check: true)
-if r.returncode() != 0
-  # it failed
+r = run_command('git', 'log', '--pretty=%ci', '-n1', check: false)
+if r.returncode() == 0
+  regenerate_config = true
+  commit_time=r.stdout().strip()
 endif
-commit_time=r.stdout().strip()
 
-cpp_args = ['-DARCH="' + arch+ '"',
-            '-DGIT_COMMIT_ID="'+sha1+'"',
-            '-DGIT_COMMIT_TIME="'+commit_time+'"',
-            '-DVERSION="'+meson.project_version()+'"'
-           ]
+fs = import('fs')
 
+if regenerate_config
+  config_args = {
+    'ARCH' : arch,
+    'GIT_COMMIT_ID': sha1,
+    'GIT_COMMIT_TIME': commit_time,
+    'VERSION' : meson.project_version(),
+  }
+  
+  output_file = configure_file(output: 'version.h',
+                               input: 'version.h.in',
+                               configuration: config_args)
+
+  # Copy the file to the source directory (for distribution!)
+  copy = find_program('copy.py')
+  run_command(copy, 'version.h', check: true)
+endif
 
 giv = executable('giv',
                  giv_src,
@@ -175,7 +188,7 @@ giv = executable('giv',
                  include_directories : incglibjsonrpc,
                  dependencies : deps,
                  cpp_args : [
-                   '-Wno-deprecated-declarations'] + cpp_args,
+                   '-Wno-deprecated-declarations'],
                  install : true,
                  gui_app : true
                 )

@@ -1,1 +1,4 @@
-#define VERSION "0.9.0"
+#define ARCH "@ARCH"
+#define GIT_COMMIT_ID "15cff340c260a07270bcc28ddab000290e8aea85"
+#define GIT_COMMIT_TIME "2024-05-12 23:14:42 +0300"
+#define VERSION "0.9.38"
