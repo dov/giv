@@ -17,14 +17,23 @@ Both the linux and the cross compilation build require the following dependencie
 sudo apt install libgtk-3-dev bison flex pkg-config libtool \
 valac scons libfmt-dev libzip-dev libspdlog-dev libcfitsio-dev \
 libdcmtk-dev libpcre3-dev gcc g++ libsndfile-dev \
-libglm-dev 
+libglm-dev python3-pip
 ```
+
+## Ubuntu 20.04.4
+
+Compiling under Ubuntu 20.04.4 requires updating meson. This may be e.g. be done as follows:
+
+```
+pip3 install --user meson==0.56.0
+~/.local/bin/meson setup build
+```
+
+The rest of the build is equal to the Linux compilation below
 
 # Linux
 
 The prefered building system is meson under Linux. 
-
-## Prerequisites for giv
 
 ## Prerequisites for the plugins
 
@@ -40,7 +49,7 @@ After all the above plugin have been installed, giv may be built:
 
 ```
 meson setup build
-cd buid
+cd build
 ninja
 ninja install
 ```

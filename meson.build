@@ -22,13 +22,9 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
 gob2_proj = subproject('gob2')
 libplis_dep = subproject('libplis',
                          default_options: ['default_library=static']).get_variable('libplis_dep')
-spdlog_dep = dependency('spdlog', required : false)
-fmt_proj = subproject('fmt')
+spdlog_dep = dependency('spdlog', version : '>=1.14.1', fallback : ['spdlog', 'spdlog_dep'])
+fmt_dep = dependency('fmt', version : '>=10.2.0', fallback : ['fmt', 'fmt_dep'])
 
-fmt_dep = dependency('fmt', version : '10.2.0')
-if not fmt_dep.found()
-  fmt_dep = fmt_proj.get_variable('fmt_dep')
-endif
 glm_dep = dependency('glm')
 if not glm_dep.found()
   glm_dep = glm_proj.get_variable('glm_dep')
@@ -36,18 +32,13 @@ endif
 
 expat_dep = dependency('expat')
 
-if not spdlog_dep.found()
-  spdlog_proj = subproject('spdlog')
-  spdlog_dep = spdlog_proj.get_variable('spdlog_dep')
-endif
-
 gnome = import('gnome')
 pkgconfig = import('pkgconfig')
 
 if host_machine.system() == 'windows'
   name_prefix = ''
 else
-  name_prefix = []
+  name_prefix = 'lib'
 endif
 
 subdir('src')

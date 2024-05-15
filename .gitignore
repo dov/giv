@@ -55,3 +55,8 @@ config.h
 /.cache/
 /src/plugins/.deps/
 /src/plugins/.libs/
+/build
+/subprojects/fmt-10.2.0/
+/subprojects/gob2/
+/subprojects/libplis/
+/subprojects/spdlog-1.14.1/
