@@ -12,18 +12,18 @@ See: http://giv.sourceforge.net/giv/index.html
 
 # Release notes
 
-See also file:NEWS
+See also [NEWS](NEWS)
 
 # Development
 
 Development takes place on github at http://github.com/dov/giv . Open your issues and send your pull requests there.
 
+# Installation
+
+See: [INSTALL.md](INSTALL.md)
+
 # Discussion board
 
-A Gitter discussion board is available at:
+See: https://github.com/dov/giv/discussions
 
-[![Gitter](https://badges.gitter.im/dov/giv.svg)](https://gitter.im/dov/giv?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
-
-
-
+You are welcome there for all questions on giv
