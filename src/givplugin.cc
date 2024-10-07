@@ -184,7 +184,7 @@ GivImage *giv_plugin_load_image(const char *filename,
             }
         }
         else {
-            // TBD - error about invalid module
+          spdlog::error("Found invalid plugin!");
         }
         ploaders = ploaders->next;
     }

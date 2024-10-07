@@ -5,6 +5,7 @@ zip_dep = dependency('libzip')
 tiff_dep = dependency('libtiff-4')
 
 plugins = [['npy', 'npy.c',  []],
+           ['pgm', 'pgm.cc', []],
            ['tiff','tiff.c', [tiff_dep]],
            ['png', 'png.c',  [png_dep]],
            ['ora', 'ora.cc', [zip_dep, png_dep]]]
@@ -29,7 +30,7 @@ foreach plugin_dep : plugins
                  plugin_dep[1],
                  link_with:[libgiv_image],
                  include_directories : inc,
-                 dependencies : plugin_dep[2] + [gtk_dep, libplis_dep],
+                 dependencies : plugin_dep[2] + [gtk_dep, libplis_dep, fmt_dep],
                  install_dir : 'lib/giv-1.0/plugins',
                  install : true,
                  name_prefix : name_prefix
