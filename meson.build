@@ -23,7 +23,7 @@ gob2_proj = subproject('gob2')
 libplis_dep = subproject('libplis',
                          default_options: ['default_library=static']).get_variable('libplis_dep')
 spdlog_dep = dependency('spdlog', version : '>=1.14.1', fallback : ['spdlog', 'spdlog_dep'])
-fmt_dep = dependency('fmt', version : '>=10.2.0', fallback : ['fmt', 'fmt_dep'])
+fmt_dep = dependency('fmt', version : '>=11.0.0', fallback : ['fmt', 'fmt_dep'])
 
 glm_dep = dependency('glm')
 if not glm_dep.found()
