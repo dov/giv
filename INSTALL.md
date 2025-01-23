@@ -17,7 +17,7 @@ Both the linux and the cross compilation build require the following dependencie
 sudo apt install libgtk-3-dev bison flex pkg-config libtool \
 valac scons libfmt-dev libzip-dev libspdlog-dev libcfitsio-dev \
 libdcmtk-dev libpcre3-dev gcc g++ libsndfile-dev \
-libglm-dev python3-pip
+libglm-dev python3-pip cmake
 ```
 
 ## Ubuntu 20.04.4
