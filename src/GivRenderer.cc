@@ -40,7 +40,7 @@ GivRenderer::GivRenderer(GPtrArray *_datasets,
 }
 
 #if 0
-static void print_polygon(const Polygon& poly)
+static void print_polygon(const ClippingPolygon& poly)
 {
     print("{{");
     for (int i=0; i<(int)poly.size(); i++) {
@@ -54,14 +54,14 @@ static void print_polygon(const Polygon& poly)
 #endif
 
 // Apply the clipping algorithm and add the given polygon
-void GivRenderer::add_clipped_poly(const Polygon& poly,
+void GivRenderer::add_clipped_poly(const ClippingPolygon& poly,
                                    bool is_closed)
 {
     int n = (int)poly.size();
     if (n<2)
         return;
 
-    Polygon clip = poly_clip(poly, clip_rect, is_closed);
+    ClippingPolygon clip = poly_clip(poly, clip_rect, is_closed);
 #if 0
     print("input_poly: "); print_polygon(poly);
     print("clip_poly: "); print_polygon(clip_rect);
@@ -140,7 +140,7 @@ void GivRenderer::paint()
         //    It 2: Draw quiver
         bool has_ellipse = false;
         for (int i=0; i<3; i++) {
-            Polygon poly;
+            ClippingPolygon poly;
 
             if ((i==0 && dataset->do_draw_polygon && dataset->color.alpha != COLOR_NONE)
                 || (i==1 && dataset->do_draw_lines)

@@ -9,6 +9,17 @@
 
 #include <spdlog/spdlog.h>
 
-void registerLogger(std::shared_ptr<spdlog::logger> logger);
+// In giv-image.h
+#ifdef _WIN32
+  #ifdef GIV_EXPORTS
+    #define GIV_API __declspec(dllexport)
+  #else
+    #define GIV_API __declspec(dllimport)
+  #endif
+#else
+  #define GIV_API
+#endif
+
+GIV_API void registerLogger(std::shared_ptr<spdlog::logger> logger);
 
 #endif /* GIVIMAGEDLL */

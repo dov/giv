@@ -1,4 +1,9 @@
-gob2 = gob2_proj.get_variable('gob2_exe')
+if target_machine.system() == 'windows'
+  gob2 = find_program('gob2', native: true)
+else
+  gob2 = gob2_proj.get_variable('gob2_exe')
+endif
+
 pymod = import('python')
 
 python = pymod.find_installation()
@@ -41,6 +46,11 @@ gmodule_dep = dependency('gmodule-2.0')
 
 deps = [gtk_dep, fmt_dep, libplis_dep, glm_dep, spdlog_dep, gmodule_dep]
 
+win_export_all = []
+if target_machine.system() == 'windows'
+  win_export_all = ['-Wl,--export-all-symbols']
+endif
+
 libgivwidget = shared_library(
   'giv-widget',
   giv_widget_sources,
@@ -52,6 +62,7 @@ libgivwidget = shared_library(
     libagg,
     libgtkimageviewer
   ],
+  link_args : win_export_all,
   dependencies : deps,
   install : true,
   cpp_args : [
@@ -70,7 +81,8 @@ libgiv_image = shared_library(
   libgiv_image_src,
   dependencies : deps,
   install : true,
-  name_prefix : name_prefix
+  name_prefix : name_prefix,
+  cpp_args: ['-DGIV_EXPORTS'],
 )
 
 subdir('plugins')
@@ -190,7 +202,7 @@ giv = executable('giv',
                  cpp_args : [
                    '-Wno-deprecated-declarations'],
                  install : true,
-                 gui_app : true
+                 win_subsystem : 'windows',  # 'windows' or 'console'
                 )
 
 giv_remote_client = executable('giv-remote-client',

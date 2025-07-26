@@ -15,6 +15,17 @@
 extern "C" {
 #endif /* __cplusplus */
 
+// In giv-image.h
+#ifdef _WIN32
+  #ifdef GIV_EXPORTS
+    #define GIV_API __declspec(dllexport)
+  #else
+    #define GIV_API __declspec(dllimport)
+  #endif
+#else
+  #define GIV_API
+#endif
+
 #define GIV_IMAGE_ERROR g_spawn_error_quark ()
 
 /** 
@@ -91,26 +102,26 @@ typedef struct {
     GHashTable *attribute_map; 
 } GivImage;
 
-GivImage *giv_image_new_full(GivImageType img_type,
+GIV_API GivImage *giv_image_new_full(GivImageType img_type,
                              int width,
                              int row_stride,
                              int height,
                              int frame_stride,
                              int rank,
                              int depth);
-GivImage *giv_image_new_3d(GivImageType image_type,
+GIV_API GivImage *giv_image_new_3d(GivImageType image_type,
                            int width, int height, int depth);
-GivImage *giv_image_new(GivImageType image_type,
+GIV_API GivImage *giv_image_new(GivImageType image_type,
                         int width,
                         int height);
-GivImage *giv_image_new_from_file(const char *filename,
+GIV_API GivImage *giv_image_new_from_file(const char *filename,
                                   GError **error);
-int giv_image_get_is_color(GivImage *img);
-int giv_image_get_rank(GivImage *img);
-int giv_image_get_width(GivImage *img);
-int giv_image_get_row_stride(GivImage *img);
-int giv_image_get_height(GivImage *img);
-int giv_image_get_depth(GivImage *img);
+GIV_API int giv_image_get_is_color(GivImage *img);
+GIV_API int giv_image_get_rank(GivImage *img);
+GIV_API int giv_image_get_width(GivImage *img);
+GIV_API int giv_image_get_row_stride(GivImage *img);
+GIV_API int giv_image_get_height(GivImage *img);
+GIV_API int giv_image_get_depth(GivImage *img);
 
 /** 
  * Get the size in bits of an image type.
@@ -119,7 +130,7 @@ int giv_image_get_depth(GivImage *img);
  * 
  * @return 
  */
-int giv_image_type_get_size(GivImageType img_type);
+GIV_API int giv_image_type_get_size(GivImageType img_type);
 
 /** 
  * This should only be used for gray level images and it returns
@@ -132,34 +143,34 @@ int giv_image_type_get_size(GivImageType img_type);
  * 
  * @return 
  */
-double giv_image_get_value(GivImage *img,
+GIV_API double giv_image_get_value(GivImage *img,
                            int x_idx,
                            int y_idx,
                            int z_idx);
 
-GivImageRgb16 giv_image_get_rgb_value(GivImage *img,
+GIV_API GivImageRgb16 giv_image_get_rgb_value(GivImage *img,
                                       int x_idx,
                                       int y_idx,
                                       int z_idx);
-GivImageRgbAlpha16 giv_image_get_rgba_value(GivImage *img,
+GIV_API GivImageRgbAlpha16 giv_image_get_rgba_value(GivImage *img,
                                             int x_idx,
                                             int y_idx,
                                             int z_idx);
-guchar *giv_image_get_buf(GivImage *img);
+GIV_API guchar *giv_image_get_buf(GivImage *img);
 
 /** 
  * Get the type of the pixels of the image.
  * 
  * @return 
  */
-GivImageType giv_image_get_type(GivImage *img);
+GIV_API GivImageType giv_image_get_type(GivImage *img);
 
 /** 
  * Increase the objects reference count. This should be done by any method
  * that needs to work on the image.
  * 
  */
-void giv_image_ref(GivImage *img);
+GIV_API void giv_image_ref(GivImage *img);
 
 /** 
  * Decrease the images reference count. If the reference goes to zero, then
@@ -167,10 +178,10 @@ void giv_image_ref(GivImage *img);
  * needs a reference to the image.
  * 
  */
-void giv_image_unref(GivImage *img);
+GIV_API void giv_image_unref(GivImage *img);
 
 // Some simple manipulations - only for gray images
-void giv_image_get_min_max(GivImage *img,
+GIV_API void giv_image_get_min_max(GivImage *img,
                            // output
                            double* min,
                            double* max);
@@ -181,7 +192,7 @@ void giv_image_get_min_max(GivImage *img,
  * 
  * @return 
  */
-GHashTable *giv_image_get_attribute_map(GivImage *img);
+GIV_API GHashTable *giv_image_get_attribute_map(GivImage *img);
 
 
 /** 
@@ -191,7 +202,7 @@ GHashTable *giv_image_get_attribute_map(GivImage *img);
  * 
  * @return 
  */
-gboolean giv_image_attribute_exist(GivImage *img,
+GIV_API gboolean giv_image_attribute_exist(GivImage *img,
                                    const char* key);
     
 /** 
@@ -203,7 +214,7 @@ gboolean giv_image_attribute_exist(GivImage *img,
  * @param key 
  * @param value 
  */
-void giv_image_set_attribute(GivImage *img,
+GIV_API void giv_image_set_attribute(GivImage *img,
                              const gchar* key,
                              const gchar* value);
 
@@ -215,7 +226,7 @@ void giv_image_set_attribute(GivImage *img,
  * 
  * @return 
  */
-const char* giv_image_get_attribute(GivImage *img,
+GIV_API const char* giv_image_get_attribute(GivImage *img,
                                     const gchar* key);
     
 /** 
@@ -226,7 +237,7 @@ const char* giv_image_get_attribute(GivImage *img,
  * 
  * @return atof of the attribute or 0
  */
-double giv_image_get_attribute_double(GivImage *img,
+GIV_API double giv_image_get_attribute_double(GivImage *img,
                                       const gchar* key);
     
 /** 
@@ -237,7 +248,7 @@ double giv_image_get_attribute_double(GivImage *img,
  * 
  * @return atof of the attribute or 0
  */
-int giv_image_attribute_int(GivImage *img,
+GIV_API int giv_image_attribute_int(GivImage *img,
                             const gchar* key);
 
 
@@ -250,7 +261,7 @@ int giv_image_attribute_int(GivImage *img,
  * 
  * @return 
  */
-GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
+GIV_API GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
                                 int slice_idx,
                                 double min, double max);
 
@@ -261,7 +272,7 @@ GdkPixbuf *giv_image_get_pixbuf(GivImage *img,
  * 
  * @return 
  */
-int giv_image_type_get_size(GivImageType img_type);
+GIV_API int giv_image_type_get_size(GivImageType img_type);
 
 /** 
  * Set an indicator that this is a one bit image.
@@ -271,7 +282,7 @@ int giv_image_type_get_size(GivImageType img_type);
  * 
  * @return 
  */
-void giv_image_set_one_bit(GivImage *img, gboolean one_bit);
+GIV_API void giv_image_set_one_bit(GivImage *img, gboolean one_bit);
 
 #ifdef __cplusplus
 }

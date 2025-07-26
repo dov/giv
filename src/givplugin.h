@@ -8,8 +8,19 @@
 extern "C" {
 #endif /* __cplusplus */
 
+// In giv-image.h
+#ifdef _WIN32
+  #ifdef GIV_EXPORTS
+    #define GIV_API __declspec(dllexport)
+  #else
+    #define GIV_API __declspec(dllimport)
+  #endif
+#else
+  #define GIV_API
+#endif
+
 #define GIV_PLUGIN_ERROR               (giv_plugin_error_quark ())
-GQuark giv_plugin_error_quark (void);
+GIV_API GQuark giv_plugin_error_quark (void);
 enum {
   GLIB_PLUGIN_ERROR_UNKNOWN
 };
@@ -37,12 +48,12 @@ typedef struct {
  * 
  * @return 
  */
-giv_plugin_support_t *get_plugin_support();
+GIV_API giv_plugin_support_t *get_plugin_support();
 
-GivImage *giv_plugin_load_image(const char *filename,
+GIV_API GivImage *giv_plugin_load_image(const char *filename,
                                 GError **error);
 
-gboolean giv_plugin_supported_file(const char *filename);
+GIV_API gboolean giv_plugin_supported_file(const char *filename);
 
 #ifdef __cplusplus
 }

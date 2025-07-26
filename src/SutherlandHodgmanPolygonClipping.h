@@ -22,11 +22,11 @@ struct vec2pair {
   vec2 p0, p1;
 };
 
-using Polygon = std::vector<vec2>;
+using ClippingPolygon = std::vector<vec2>;
 
-Polygon poly_clip(const Polygon& path,
-                  const Polygon& rect_clip_path,
-                  bool is_closed);
+ClippingPolygon poly_clip(const ClippingPolygon& path,
+                          const ClippingPolygon& rect_clip_path,
+                          bool is_closed);
 }
 
 #endif

@@ -282,7 +282,7 @@ GivImage *giv_image_new_from_file(const char *filename,
         gboolean is_supported_type = TRUE;
         gboolean is_fortran_type = FALSE;
         gint width=-1, height = -1;
-        GivImageType image_type;
+        GivImageType image_type = GIVIMAGE_U8;
         if (is_match) {
             gchar *match_string = g_match_info_fetch(match_info, 1);
 

@@ -147,22 +147,22 @@ void save_algo_snapshot(const Polygon& path,
 // Sutherland Hodgman Polygon clipping algorithm modified to
 // work with either polylines or polygons depending on the
 // is_closed parameter.
-Polygon poly_clip(const Polygon& path,
-                  const Polygon& rect_clip_path,
-                  bool is_closed)
+ClippingPolygon poly_clip(const ClippingPolygon& path,
+                          const ClippingPolygon& rect_clip_path,
+                          bool is_closed)
 {
 #if 0
   print("-----\n");
   Counter = 0;
 #endif
-  Polygon out_list = path;
+  ClippingPolygon out_list = path;
 
   int m = (int)rect_clip_path.size();
   for (int i=0; i<m; i++)
   {
     vec2pair clip_edge {rect_clip_path[(i-1+m)%m], rect_clip_path[i]};
 
-    Polygon in_list = out_list;
+    ClippingPolygon in_list = out_list;
     int n = (int)in_list.size();
     out_list.clear();
 

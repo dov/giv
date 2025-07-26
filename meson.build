@@ -19,8 +19,14 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                       '-DPACKAGE_PLUGIN_DIR="'+PACKAGE_PLUGIN_DIR+'" '],
                      language : 'c')
 
-gob2_proj = subproject('gob2')
-nifti_dep = dependency('NIFTI', modules: ['NIFTI::niftiio'], fallback: 'nifti_clib')
+if target_machine.system() != 'windows'
+  gob2_proj = subproject('gob2')
+endif  
+
+if target_machine.system() != 'windows'
+    nifti_dep = dependency('NIFTI', modules: ['NIFTI::niftiio'], fallback: 'nifti_clib')
+endif
+
 libplis_dep = subproject('libplis',
                          default_options: ['default_library=static']).get_variable('libplis_dep')
 

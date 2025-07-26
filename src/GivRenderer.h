@@ -24,7 +24,7 @@ class GivRenderer {
     }
 
  private:
-    void add_clipped_poly(const sutherland_hodgeman_polygon_clipping::Polygon& poly, bool is_closed);
+    void add_clipped_poly(const sutherland_hodgeman_polygon_clipping::ClippingPolygon& poly, bool is_closed);
     void build_clip_rect(double margin);
 
 
@@ -38,7 +38,7 @@ class GivRenderer {
     double height;
     double quiver_scale;
     bool do_no_transparency;
-    sutherland_hodgeman_polygon_clipping::Polygon clip_rect;
+    sutherland_hodgeman_polygon_clipping::ClippingPolygon clip_rect;
 };
 
 #endif /* GIVRENDERER */
