@@ -8,6 +8,7 @@ plugins = [['npy', 'npy.c',  []],
            ['pgm', 'pgm.cc', []],
            ['tiff','tiff.c', [tiff_dep]],
            ['png', 'png.c',  [png_dep]],
+           ['nifti', 'nifti.c',  [nifti_dep]],
            ['ora', 'ora.cc', [zip_dep, png_dep]]]
 
 cfitsio_dep = dependency('cfitsio', required : false)

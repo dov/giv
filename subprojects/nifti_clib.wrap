@@ -1,0 +1,9 @@
+[wrap-git]
+directory = nifti_clib
+url = https://github.com/NIFTI-Imaging/nifti_clib.git
+revision = 8f72d1165aa62320cc6982d6ddd71a7f6b9924c5
+method = cmake
+
+[provide]
+NIFTI::niftiio = nifti_clib
+

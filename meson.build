@@ -20,8 +20,10 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                      language : 'c')
 
 gob2_proj = subproject('gob2')
+nifti_dep = dependency('NIFTI', modules: ['NIFTI::niftiio'], fallback: 'nifti_clib')
 libplis_dep = subproject('libplis',
                          default_options: ['default_library=static']).get_variable('libplis_dep')
+
 spdlog_dep = dependency('spdlog', version : '>=1.14.1', fallback : ['spdlog', 'spdlog_dep'])
 fmt_dep = dependency('fmt', version : '>=9.0.0', fallback : ['fmt', 'fmt_dep'])
 
