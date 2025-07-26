@@ -28,7 +28,13 @@ endif
 # Don't suport windows because of cross compilation issues
 if target_machine.system() != 'windows'
     plugins += [['nifti', 'nifti.c',  [nifti_dep]]]
+else
+    nifti_dep = dependency('nifti_clib', required : false)
+    if nifti_dep.found()
+        plugins += [['nifti','nifti.c', [nifti_dep]]]
+    endif
 endif
+
 
 foreach plugin_dep : plugins
   shared_library(plugin_dep[0],

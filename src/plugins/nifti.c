@@ -59,7 +59,6 @@ GivImage *giv_plugin_load_file(const char *filename,
     struct stat buf;
     nifti_image *nim = NULL;
     GivImage *img = NULL;
-    void *data = NULL;
     int type, wsize, width, height, depth;
 
     // Check file exists
