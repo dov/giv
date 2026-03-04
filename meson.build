@@ -20,7 +20,11 @@ add_global_arguments(['-DPACKAGE_DOC_DIR="'+PACKAGE_DOC_DIR+'" ',
                      language : 'c')
 
 if target_machine.system() != 'windows'
-  gob2_proj = subproject('gob2')
+  gob2_proj = subproject('gob2',
+                         default_options: [
+                           'cpp_args=-Wno-array-bounds,-Wno-unused-result'
+                         ]                         
+                        )
 endif  
 
 if target_machine.system() != 'windows'

@@ -79,7 +79,7 @@ GivImage *giv_plugin_load_file(const char *filename,
     gboolean is_fortran_type = FALSE;
     gint dim0_size=-1, dim1_size=-1, dim2_size=-1;
     gint width=-1, height = -1, depth=-1;
-    GivImageType image_type;
+    GivImageType image_type = GIVIMAGE_RGB_U8;
     if (is_match) {
         gchar *match_string = g_match_info_fetch(match_info, 1);
         

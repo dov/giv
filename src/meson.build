@@ -66,7 +66,10 @@ libgivwidget = shared_library(
   dependencies : deps,
   install : true,
   cpp_args : [
-    '-Wno-deprecated-declarations'
+    '-Wno-deprecated-declarations',
+    '-Wno-unused-result',
+    '-Wno-unused-function',
+    '-Wno-maybe-uninitialized', # agg
   ],
   name_prefix : name_prefix
 )
@@ -183,7 +186,7 @@ if regenerate_config
                                configuration: config_args)
 
   # Copy the file to the source directory (for distribution!)
-  copy = find_program('copy.py')
+  copy = find_program('my_copy.py')
   run_command(copy, 'version.h', check: true)
 endif
 
@@ -200,7 +203,9 @@ giv = executable('giv',
                  include_directories : incglibjsonrpc,
                  dependencies : deps,
                  cpp_args : [
-                   '-Wno-deprecated-declarations'],
+                   '-Wno-deprecated-declarations',
+                   '-Wno-strict-aliasing'
+                 ],
                  install : true,
                  win_subsystem : 'windows',  # 'windows' or 'console'
                 )

@@ -58,12 +58,12 @@ extern "C" GivImage *giv_plugin_load_file(const char *filename,
     guint8 *buf = NULL;
     slip pnm_id;
     if (bpp == 16 && spp == 1) {
-	// get pixel data
-	ds->findAndGetUint16Array(DCM_PixelData, (const Uint16*&)buf);
+        // get pixel data
+        ds->findAndGetUint16Array(DCM_PixelData, (const Uint16*&)buf);
     }
     else if (bpp == 8 && spp == 1) {
-	// get pixel data
-	ds->findAndGetUint8Array(DCM_PixelData, (const Uint8*&)buf);
+        // get pixel data
+        ds->findAndGetUint8Array(DCM_PixelData, (const Uint8*&)buf);
     }
     else
         printf("Unsupported dicom bpp=%d spp=%d!\n", (int)bpp, (int)spp);

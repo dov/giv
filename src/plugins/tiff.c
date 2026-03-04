@@ -61,11 +61,11 @@ GivImage *giv_plugin_load_file(const char *filename,
         
     TIFF* tif = TIFFOpen(filename, "r");
 
-    GivImageType image_type;
+    GivImageType image_type = GIVIMAGE_RGB_U8;
 
     if (tif) {
         uint32_t w, h, config=9999, bps=1, spp=1, sample_format=9999;
-	uint8_t* raster;
+        uint8_t* raster;
         gboolean has_colormap = FALSE;
         uint16_t *rmap, *gmap, *bmap;
         uint16_t pn=0, num_pages=0;
@@ -73,9 +73,9 @@ GivImage *giv_plugin_load_file(const char *filename,
         gboolean do_invert = TRUE;
         gboolean one_bit = FALSE;
 
-	TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
-	TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-	TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &config);
+        TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
+        TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
+        TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &config);
         TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps);
         TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &spp);
         TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sample_format);
@@ -92,7 +92,7 @@ GivImage *giv_plugin_load_file(const char *filename,
         printf("pn num_pages = %d %d\n", pn, num_pages);
 #endif
 
-	raster = (uint8_t*) _TIFFmalloc(TIFFScanlineSize(tif));
+        raster = (uint8_t*) _TIFFmalloc(TIFFScanlineSize(tif));
         if (config == PLANARCONFIG_CONTIG) {
         }
         else if (config == PLANARCONFIG_SEPARATE) {
@@ -102,7 +102,7 @@ GivImage *giv_plugin_load_file(const char *filename,
         else
             printf("Unknown planar config==%d\n", config);
             
-	if (raster != NULL) {
+        if (raster != NULL) {
             int row_idx, col_idx, clr_idx;
             int dst_spp = 1;
 
@@ -187,10 +187,10 @@ GivImage *giv_plugin_load_file(const char *filename,
                             src_ptr++;
                     }
                 }
-	    }
-	    _TIFFfree(raster);
-	}
-	TIFFClose(tif);
+            }
+            _TIFFfree(raster);
+        }
+        TIFFClose(tif);
 
         char buf[32];
         sprintf(buf,"%d",photometric);

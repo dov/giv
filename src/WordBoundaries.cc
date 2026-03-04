@@ -77,7 +77,7 @@ double WordBoundaries::GetFloat(int Index)
 int WordBoundaries::GetInt(int Index)
 {
   const pair<int,int>& pp = (*this)[Index];
-  int i;
+  int i=-1;
   from_chars(InspectionString+pp.first, InspectionString+pp.second, i);
 
   return i;

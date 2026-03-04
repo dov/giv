@@ -44,7 +44,10 @@ foreach plugin_dep : plugins
                  dependencies : plugin_dep[2] + [gtk_dep, libplis_dep, fmt_dep],
                  install_dir : 'lib/giv-1.0/plugins',
                  install : true,
-                 name_prefix : name_prefix
+                 name_prefix : name_prefix,
+                 cpp_args : [
+                   '-Wno-strict-aliasing',
+                 ],
                 )
 endforeach
                         
